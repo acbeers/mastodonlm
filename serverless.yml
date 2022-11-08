@@ -1,0 +1,38 @@
+service: list-manager
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: python3.9
+  stage: dev
+  region: us-west-2
+
+functions:
+  info:
+    timeout: 120
+    handler: handler.info
+    events:
+      - httpApi: "GET /info"
+  add:
+    timeout: 120
+    handler: handler.add_to_list
+    events:
+      - httpApi: "POST /add"
+  remove:
+    timeout: 120
+    handler: handler.remove_from_list
+    events:
+      - httpApi: "POST /remove"
+
+package:
+  patterns:
+    - "!node_modules"
+
+custom:
+  serverless-offline:
+    httpPort: 4000
+
+plugins:
+  - serverless-python-requirements
+  - serverless-offline
