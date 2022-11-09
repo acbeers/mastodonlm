@@ -64,7 +64,7 @@ def info(event, context):
     outlists = lists
     outpeople = [
         {
-            k: str(x[k])
+            k: str(x[k]) if k=="id" else x[k]
             for k in ["id", "lists", "display_name", "username", "note", "avatar"]
         }
         for x in followers

@@ -34,7 +34,6 @@ function App() {
       method: "POST",
     }).then((resp) => {
       if (resp.ok) {
-        console.log("Succeeded");
         setInfo(newInfo);
       } else {
         console.log("An error happened");
@@ -45,12 +44,12 @@ function App() {
   const add = (index, lid) => {
     const newInfo = { ...info };
     const fol = newInfo.followers[index];
+    console.log(fol);
     fol.lists.push(lid);
     fetch(`http://localhost:4000/add?list_id=${lid}&account_id=${fol.id}`, {
       method: "POST",
     }).then((resp) => {
       if (resp.ok) {
-        console.log("Succeeded");
         setInfo(newInfo);
       } else {
         console.log("An error happened");
