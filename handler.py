@@ -1,21 +1,29 @@
 """Handler for list manager functions"""
 
 import json
-from mastodon import Mastodon, MastodonAPIError
+from mastodon import (
+    Mastodon,
+    MastodonAPIError,
+    MastodonIllegalArgumentError,
+    MastodonInternalServerError,
+)
 from cfg import Config
 
-mastodon = Mastodon(
-    client_id=Config.client_id,
-    client_secret=Config.client_secret,
-    access_token=Config.access_token,
-    api_base_url="https://hachyderm.io",
-)
-mastodon.log_in(
-    username=Config.username,
-    password=Config.password,
-    scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
-    to_file="pytooter_usercred.secret",
-)
+
+def get_mastodon():
+    mastodon = Mastodon(
+        client_id=Config.client_id,
+        client_secret=Config.client_secret,
+        access_token=Config.access_token,
+        api_base_url="https://hachyderm.io",
+    )
+    mastodon.log_in(
+        username=Config.username,
+        password=Config.password,
+        scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
+        to_file="pytooter_usercred.secret",
+    )
+    return mastodon
 
 
 def get_all(func, *args):
@@ -36,6 +44,13 @@ def get_all(func, *args):
 
 def info(event, context):
     """Returns info for a"""
+    try:
+        mastodon = get_mastodon()
+    except MastodonIllegalArgumentError:
+        return {"statusCode": 500, "body": "ERROR"}
+    except MastodonInternalServerError:
+        return {"statusCode": 500, "body": "ERROR"}
+
     # Find out info about me
     me = mastodon.me()
     me_id = me["id"]
@@ -64,8 +79,16 @@ def info(event, context):
     outlists = lists
     outpeople = [
         {
-            k: str(x[k]) if k=="id" else x[k]
-            for k in ["id", "lists", "display_name", "username", "note", "avatar"]
+            k: str(x[k]) if k == "id" else x[k]
+            for k in [
+                "id",
+                "lists",
+                "display_name",
+                "username",
+                "acct",
+                "note",
+                "avatar",
+            ]
         }
         for x in followers
     ]
@@ -75,6 +98,13 @@ def info(event, context):
 
 
 def add_to_list(event, context):
+    try:
+        mastodon = get_mastodon()
+    except MastodonIllegalArgumentError:
+        return {"statusCode": 500, "body": "ERROR"}
+    except MastodonInternalServerError:
+        return {"statusCode": 500, "body": "ERROR"}
+
     lid = event["queryStringParameters"]["list_id"]
     accountid = event["queryStringParameters"]["account_id"]
     try:
@@ -85,6 +115,13 @@ def add_to_list(event, context):
 
 
 def remove_from_list(event, context):
+    try:
+        mastodon = get_mastodon()
+    except MastodonIllegalArgumentError:
+        return {"statusCode": 500, "body": "ERROR"}
+    except MastodonInternalServerError:
+        return {"statusCode": 500, "body": "ERROR"}
+
     lid = event["queryStringParameters"]["list_id"]
     accountid = event["queryStringParameters"]["account_id"]
     try:
