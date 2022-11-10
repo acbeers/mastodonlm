@@ -43,7 +43,25 @@ th {
   text-align: left;
 }
 
+table {
+  border-spacing: 0;
+}
+
+.usercell {
+  padding: 0;
+  padding-right: 4px;
+  border-right: 1px solid lightgray;
+}
+
 .cell {
   cursor: arrow;
   user-select: none;
+  border-right: 1px solid lightgray;
+  border-bottom: 1px dashed #eee;
+  padding: 0;
+  text-align: center;
+}
+
+.userpop {
+  max-width: 400px;
 }
