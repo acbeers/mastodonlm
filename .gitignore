@@ -1,3 +1,4 @@
 node_modules
 cfg.py
 *.secret
+.serverless

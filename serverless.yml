@@ -8,19 +8,46 @@ provider:
   stage: dev
   region: us-west-2
 
+resources: # CloudFormation template syntax from here on.
+  Resources:
+    usersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: authTable
+        AttributeDefinitions:
+          - AttributeName: key
+            AttributeType: S
+        KeySchema:
+          - AttributeName: key
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TimeToLiveSpecification:
+          Enabled: true
+          AttributeName: expires_at
+
 functions:
+  auth:
+    handler: handler.auth
+    events:
+      - httpApi: "GET /auth"
+  callback:
+    handler: handler.callback
+    events:
+      - httpApi: "POST /callback"
   info:
-    timeout: 120
+    timeout: 30
     handler: handler.info
     events:
       - httpApi: "GET /info"
   add:
-    timeout: 120
+    timeout: 30
     handler: handler.add_to_list
     events:
       - httpApi: "POST /add"
   remove:
-    timeout: 120
+    timeout: 30
     handler: handler.remove_from_list
     events:
       - httpApi: "POST /remove"
@@ -28,10 +55,15 @@ functions:
 package:
   patterns:
     - "!node_modules"
+    - "!list-manager"
 
 custom:
   serverless-offline:
     httpPort: 4000
+  dynamodb:
+    ttl:
+      - table: authTable
+        field: your-ttl-property-name
 
 plugins:
   - serverless-python-requirements
