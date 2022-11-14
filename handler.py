@@ -306,9 +306,53 @@ def remove_from_list(event, context):
         return response("ERROR", statusCode=500)
 
 
-def create_list():
-    pass
+def create_list(event, context):
+    """Create a new list"""
+    cookies = parse_cookies(event["cookies"])
+    cookie = cookies.get("list-manager-cookie", None)
+
+    # If we have no cookie, tell the client to go away
+    if cookie is None:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    try:
+        mastodon = get_mastodon(cookie)
+    except MastodonIllegalArgumentError:
+        return {"statusCode": 500, "body": "ERROR"}
+    except MastodonInternalServerError:
+        return {"statusCode": 500, "body": "ERROR"}
+
+    lname = event["queryStringParameters"]["list_name"]
+
+    try:
+        mastodon.list_create(lname)
+        return response("OK")
+    except MastodonAPIError:
+        return response("ERROR", statusCode=500)
 
 
-def remove_list():
-    pass
+def delete_list(event, context):
+    """Remove a list"""
+    cookies = parse_cookies(event["cookies"])
+    cookie = cookies.get("list-manager-cookie", None)
+
+    # If we have no cookie, tell the client to go away
+    if cookie is None:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    try:
+        mastodon = get_mastodon(cookie)
+    except MastodonIllegalArgumentError:
+        return {"statusCode": 500, "body": "ERROR"}
+    except MastodonInternalServerError:
+        return {"statusCode": 500, "body": "ERROR"}
+
+    lid = event["queryStringParameters"]["list_id"]
+
+    try:
+        mastodon.list_delete(lid)
+        return response("OK")
+    except MastodonAPIError:
+        return response("ERROR", statusCode=500)

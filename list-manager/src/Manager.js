@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
+import AppBar from "@mui/material/AppBar";
 import Avatar from "@mui/material/Avatar";
+import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardHeader from "@mui/material/CardHeader";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import Popover from "@mui/material/Popover";
+import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
+import IconButton from "@mui/material/IconButton";
+import DeleteIcon from "@mui/icons-material/Delete";
+import MenuIcon from "@mui/icons-material/Menu";
+import AboutDialog from "./AboutDialog";
+import CreateListDialog from "./CreateListDialog";
+import DeleteListDialog from "./DeleteListDialog";
 import "./Manager.css";
 
 const style = {
@@ -30,10 +41,11 @@ const style = {
 const urlInfo = process.env.REACT_APP_BACKEND_URL + "/info";
 const urlAdd = process.env.REACT_APP_BACKEND_URL + "/add";
 const urlRemove = process.env.REACT_APP_BACKEND_URL + "/remove";
+const urlCreate = process.env.REACT_APP_BACKEND_URL + "/create";
+const urlDelete = process.env.REACT_APP_BACKEND_URL + "/delete";
 
 function Manager() {
-  // Fetcth the data
-  useEffect(() => {
+  const loadData = () => {
     fetch(urlInfo, {
       credentials: "include",
     })
@@ -51,13 +63,19 @@ function Manager() {
           setInfo(data);
         }
       });
+  };
+
+  // Fetcth the data
+  useEffect(() => {
+    loadData();
   }, []);
 
   // The data
   const [info, setInfo] = useState({ lists: [], followers: [] });
   // A redirect if we need it
   const [redirect, setRedirect] = useState(null);
-  // Popover anchor
+
+  // Popover anchor and handlers
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [follower, setFollower] = React.useState(null);
 
@@ -70,14 +88,66 @@ function Manager() {
     setAnchorEl(null);
   };
 
+  // Menu anchor and handlers
+  const [anchorMenuEl, setAnchorMenuEl] = React.useState(null);
+  const handleMenuClick = (event) => {
+    setAnchorMenuEl(event.currentTarget);
+  };
+  const handleMenuClose = () => {
+    setAnchorMenuEl(null);
+  };
+  const handleMenuAbout = () => {
+    setAboutOpen(true);
+    handleMenuClose();
+  };
+  const handleMenuNewList = () => {
+    setCreateOpen(true);
+    handleMenuClose();
+  };
+
+  // About dialog handlers
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const handleAboutClose = () => {
+    setAboutOpen(false);
+  };
+
+  // Create List Dialog
+  const [createOpen, setCreateOpen] = useState(false);
+  const handleCreateClose = () => {
+    setCreateOpen(false);
+  };
+  const handleCreateCommit = (name) => {
+    fetch(`${urlCreate}?list_name=${name}`, {
+      method: "POST",
+      credentials: "include",
+    }).then(() => {
+      setCreateOpen(false);
+      loadData();
+    });
+  };
+
   // Build the crazy table.
   const followers = info.followers;
   const lists = info.lists;
 
-  const listmap = {};
-  lists.forEach((l, index) => {
-    listmap[l.id] = index;
-  });
+  // Delete list dialog
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteList, setDeleteList] = useState(null);
+  const handleDeleteClose = () => {
+    setDeleteOpen(false);
+  };
+  const handleDeleteClick = (list) => {
+    setDeleteList(list);
+    setDeleteOpen(true);
+  };
+  const handleDelete = (list) => {
+    fetch(`${urlDelete}?list_id=${list.id}`, {
+      method: "POST",
+      credentials: "include",
+    })
+      .then(() => loadData())
+      .then(() => setDeleteOpen(false));
+  };
 
   const remove = (index, lid) => {
     const newInfo = { ...info };
@@ -111,7 +181,8 @@ function Manager() {
     });
   };
 
-  const open = Boolean(anchorEl);
+  const popoverOpen = Boolean(anchorEl);
+  const menuOpen = Boolean(anchorMenuEl);
 
   // TODO: For really large lists, this will have to be hierarchical at some point.
 
@@ -140,11 +211,11 @@ function Manager() {
       }
     });
     return (
-      <tr>
+      <tr key={fol.id}>
         <td align="right" className="usercell">
           <Typography
             variant="body2"
-            aria-owns={open ? "mouse-over-popover" : undefined}
+            aria-owns={popoverOpen ? "mouse-over-popover" : undefined}
             aria-haspopup="true"
             onMouseEnter={(evt) => handlePopoverOpen(evt, fol)}
             onMouseLeave={handlePopoverClose}
@@ -162,6 +233,9 @@ function Manager() {
       <th key={l.id}>
         <div key={l.id} className="listname">
           {l.title}
+          <div className="icon">
+            <DeleteIcon onClick={() => handleDeleteClick(l)} />
+          </div>
         </div>
       </th>
     );
@@ -172,7 +246,7 @@ function Manager() {
     popover = (
       <Popover
         id="mouse-over-popover"
-        open={open}
+        open={popoverOpen}
         onClose={handlePopoverClose}
         anchorEl={anchorEl}
         anchorOrigin={{
@@ -212,6 +286,35 @@ function Manager() {
 
   return (
     <div className="App">
+      <Box sx={{ flexGrow: 1 }}>
+        <AppBar position="static">
+          <Toolbar>
+            <IconButton
+              size="large"
+              edge="start"
+              color="inherit"
+              aria-label="menu"
+              sx={{ mr: 2 }}
+              onClick={handleMenuClick}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Menu
+              id="basic-menu"
+              anchorEl={anchorMenuEl}
+              open={menuOpen}
+              onClose={handleMenuClose}
+              MenuListProps={{
+                "aria-labelledby": "basic-button",
+              }}
+            >
+              <MenuItem onClick={handleMenuNewList}>New List</MenuItem>
+              <MenuItem onClick={handleMenuAbout}>About</MenuItem>
+            </Menu>{" "}
+            <Typography>Mastodon List Manager</Typography>
+          </Toolbar>
+        </AppBar>
+      </Box>
       <table>
         <thead>
           <tr>
@@ -222,6 +325,18 @@ function Manager() {
         <tbody>{rows}</tbody>
       </table>
       {popover}
+      <AboutDialog open={aboutOpen} handleClose={handleAboutClose} />
+      <CreateListDialog
+        open={createOpen}
+        handleClose={handleCreateClose}
+        handleCreate={handleCreateCommit}
+      />
+      <DeleteListDialog
+        open={deleteOpen}
+        list={deleteOpen ? deleteList : ""}
+        handleClose={handleDeleteClose}
+        handleDelete={handleDelete}
+      />
     </div>
   );
 }
