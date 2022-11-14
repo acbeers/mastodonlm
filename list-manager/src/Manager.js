@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import Avatar from "@mui/material/Avatar";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -38,19 +39,24 @@ function Manager() {
     })
       .then((resp) => resp.json())
       .then((data) => {
-        data.followers.forEach((f) => {
-          if (f.display_name === "") f.display_name = f.username;
-        });
-        data.followers.sort((a, b) =>
-          a.display_name.localeCompare(b.display_name)
-        );
-        data.lists.sort((a, b) => a.title.localeCompare(b.title));
-        setInfo(data);
+        if (data.status === "no_cookie") setRedirect("/login");
+        else {
+          data.followers.forEach((f) => {
+            if (f.display_name === "") f.display_name = f.username;
+          });
+          data.followers.sort((a, b) =>
+            a.display_name.localeCompare(b.display_name)
+          );
+          data.lists.sort((a, b) => a.title.localeCompare(b.title));
+          setInfo(data);
+        }
       });
   }, []);
 
   // The data
   const [info, setInfo] = useState({ lists: [], followers: [] });
+  // A redirect if we need it
+  const [redirect, setRedirect] = useState(null);
   // Popover anchor
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [follower, setFollower] = React.useState(null);
@@ -198,6 +204,10 @@ function Manager() {
         </Card>
       </Popover>
     );
+  }
+
+  if (redirect) {
+    return <Navigate to={redirect} />;
   }
 
   return (

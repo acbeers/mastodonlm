@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Manager from "./Manager";
 import Login from "./Login";
 import LoginCallback from "./LoginCallback";
@@ -22,6 +22,7 @@ function App() {
         <Route path="/manager" element={<Manager />} />
         <Route path="/login" element={<Login />} />
         <Route path="/callback" element={<LoginCallback />} />
+        <Route path="/" element={<Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
   );

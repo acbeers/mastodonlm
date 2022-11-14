@@ -98,7 +98,8 @@ def info(event, context):
 
     # If we have no cookie, tell the client to go away
     if cookie is None:
-        return response("no_cookie", statusCode=403)
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
 
     try:
         mastodon = get_mastodon(cookie)
@@ -254,7 +255,8 @@ def add_to_list(event, context):
 
     # If we have no cookie, tell the client to go away
     if cookie is None:
-        return response("no_cookie", statusCode=403)
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
 
     try:
         mastodon = get_mastodon(cookie)
@@ -285,7 +287,8 @@ def remove_from_list(event, context):
 
     # If we have no cookie, tell the client to go away
     if cookie is None:
-        return response("no_cookie", statusCode=403)
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
 
     try:
         mastodon = get_mastodon(cookie)
