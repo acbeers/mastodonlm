@@ -17,7 +17,7 @@ function App() {
   //return <Manager />;
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={process.env.REACT_APP_BASE_PATH}>
       <Routes>
         <Route path="/manager" element={<Manager />} />
         <Route path="/login" element={<Login />} />

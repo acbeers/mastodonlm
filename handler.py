@@ -60,6 +60,7 @@ def parse_cookies(cookies):
         res[name] = val
     return res
 
+
 def get_mastodon(cookie):
     token = Database.get(cookie)
     mastodon = Mastodon(
@@ -92,8 +93,12 @@ def info(event, context):
     Handler to get the lists and follower information that the webapp needs.
     """
 
-    cookies = parse_cookies(event["cookies"])
-    cookie = cookies["list-manager-cookie"]
+    cookies = parse_cookies(event.get("cookies", []))
+    cookie = cookies.get("list-manager-cookie", None)
+
+    # If we have no cookie, tell the client to go away
+    if cookie is None:
+        return response("no_cookie", statusCode=403)
 
     try:
         mastodon = get_mastodon(cookie)
@@ -148,13 +153,37 @@ def info(event, context):
     return json.dumps(output)
 
 
+def response(body, statusCode=200):
+    return {
+        "statusCode": statusCode,
+        "body": body,
+    }
+
+
+def make_redirect_url(event):
+    """Create a redirect URL based on the origin of the request"""
+    origin = event["headers"]["origin"]
+    if origin == "http://localhost:3000":
+        return "http://localhost:3000/callback"
+    return "https://acbeers.github.io/mastodonlm/callback"
+
+
+def make_cookie_options(event):
+    """Create a cookie options based on the request"""
+    host = event["headers"]["host"]
+    if host[-13:] == "amazonaws.com":
+        return "Domain=amazonaws.com; SameSite=None; Secure; "
+    return "Domain=localhost; "
+
+
 def auth(event, context):
     """
     Handler for the start of an authentication flow.
     """
     # First, see if we have an active session
-    cookies = parse_cookies(event["cookies"])
+    cookies = parse_cookies(event.get("cookies", []))
     cookie = cookies.get("list-manager-cookie", None)
+
     if cookie is not None:
         try:
             test = get_mastodon(cookie)
@@ -166,6 +195,9 @@ def auth(event, context):
             # oAuth flow.
             pass
 
+    # For now, we'll create the right redirect_url based on the event object.
+    redirect_url = make_redirect_url(event)
+
     # TODO: Map this to a place where I store secrets.
     mastodon = Mastodon(
         client_id=Config.client_id,
@@ -175,9 +207,9 @@ def auth(event, context):
     )
     url = mastodon.auth_request_url(
         scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
-        redirect_uris="http://localhost:3000/callback",
+        redirect_uris=redirect_url,
     )
-    return {"statusCode": 200, "body": json.dumps({"url": url})}
+    return response(json.dumps({"url": url}))
 
 
 def callback(event, context):
@@ -189,18 +221,22 @@ def callback(event, context):
         api_base_url="https://hachyderm.io",
     )
 
+    # For now, we'll create the right redirect_url based on the event object.
+    redirect_url = make_redirect_url(event)
+    cookie_options = make_cookie_options(event)
+
     token = mastodon.log_in(
         code=code,
-        redirect_uri="http://localhost:3000/callback",
+        redirect_uri=redirect_url,
         scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
     )
     cookie = uuid.uuid4().urn
     Database.set(cookie, token)
 
-    cookie_str = f"{cookie}; Domain=localhost; Max-Age={60*60*24}"
+    cookie_str = f"{cookie}; {cookie_options} Max-Age={60*60*24}"
     return {
         "statusCode": 200,
-        "multiValueHeaders": {"Set-Cookie": f"list-manager-cookie={cookie_str}"},
+        "headers": {"Set-Cookie": f"list-manager-cookie={cookie_str}"},
         "body": '{"status":"OK"}',
     }
 
@@ -214,7 +250,11 @@ def add_to_list(event, context):
     - account_id - numeric id of a Mastodon user.
     """
     cookies = parse_cookies(event["cookies"])
-    cookie = cookies["list-manager-cookie"]
+    cookie = cookies.get("list-manager-cookie", None)
+
+    # If we have no cookie, tell the client to go away
+    if cookie is None:
+        return response("no_cookie", statusCode=403)
 
     try:
         mastodon = get_mastodon(cookie)
@@ -227,9 +267,9 @@ def add_to_list(event, context):
     accountid = event["queryStringParameters"]["account_id"]
     try:
         mastodon.list_accounts_add(lid, [accountid])
-        return {"statusCode": 200, "body": "OK"}
+        return response("OK")
     except MastodonAPIError:
-        return {"statusCode": 500, "body": "ERROR"}
+        return response("ERROR", statusCode=500)
 
 
 def remove_from_list(event, context):
@@ -241,7 +281,11 @@ def remove_from_list(event, context):
     - account_id - numeric id of a Mastodon user.
     """
     cookies = parse_cookies(event["cookies"])
-    cookie = cookies["list-manager-cookie"]
+    cookie = cookies.get("list-manager-cookie", None)
+
+    # If we have no cookie, tell the client to go away
+    if cookie is None:
+        return response("no_cookie", statusCode=403)
 
     try:
         mastodon = get_mastodon(cookie)
@@ -254,9 +298,9 @@ def remove_from_list(event, context):
     accountid = event["queryStringParameters"]["account_id"]
     try:
         mastodon.list_accounts_delete(lid, [accountid])
-        return {"statusCode": 200, "body": "OK"}
+        return response("OK")
     except MastodonAPIError:
-        return {"statusCode": 500, "body": "ERROR"}
+        return response("ERROR", statusCode=500)
 
 
 def create_list():

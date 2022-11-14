@@ -26,10 +26,14 @@ const style = {
   },
 };
 
+const urlInfo = process.env.REACT_APP_BACKEND_URL + "/info";
+const urlAdd = process.env.REACT_APP_BACKEND_URL + "/add";
+const urlRemove = process.env.REACT_APP_BACKEND_URL + "/remove";
+
 function Manager() {
   // Fetcth the data
   useEffect(() => {
-    fetch("http://localhost:4000/info", {
+    fetch(urlInfo, {
       credentials: "include",
     })
       .then((resp) => resp.json())
@@ -73,7 +77,7 @@ function Manager() {
     const newInfo = { ...info };
     const fol = newInfo.followers[index];
     fol.lists = fol.lists.filter((value) => value !== lid);
-    fetch(`http://localhost:4000/remove?list_id=${lid}&account_id=${fol.id}`, {
+    fetch(`${urlRemove}?list_id=${lid}&account_id=${fol.id}`, {
       method: "POST",
       credentials: "include",
     }).then((resp) => {
@@ -89,7 +93,7 @@ function Manager() {
     const newInfo = { ...info };
     const fol = newInfo.followers[index];
     fol.lists.push(lid);
-    fetch(`http://localhost:4000/add?list_id=${lid}&account_id=${fol.id}`, {
+    fetch(`${urlAdd}?list_id=${lid}&account_id=${fol.id}`, {
       method: "POST",
       credentials: "include",
     }).then((resp) => {
