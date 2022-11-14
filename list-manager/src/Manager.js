@@ -6,6 +6,7 @@ import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardHeader from "@mui/material/CardHeader";
+import LinearProgress from "@mui/material/LinearProgress";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Popover from "@mui/material/Popover";
@@ -284,38 +285,52 @@ function Manager() {
     return <Navigate to={redirect} />;
   }
 
+  const acct = info.me ? info.me.acct : "";
+  const appbar = (
+    <Box sx={{ flexGrow: 1 }}>
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton
+            size="large"
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            sx={{ mr: 2 }}
+            onClick={handleMenuClick}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Menu
+            id="basic-menu"
+            anchorEl={anchorMenuEl}
+            open={menuOpen}
+            onClose={handleMenuClose}
+            MenuListProps={{
+              "aria-labelledby": "basic-button",
+            }}
+          >
+            <MenuItem onClick={handleMenuNewList}>New List</MenuItem>
+            <MenuItem onClick={handleMenuAbout}>About</MenuItem>
+          </Menu>{" "}
+          <Typography>Mastodon List Manager</Typography>&nbsp;
+          <Typography align="right">(@{acct})</Typography>
+        </Toolbar>
+      </AppBar>
+    </Box>
+  );
+
+  if (headers.length === 0) {
+    return (
+      <div className="App">
+        {appbar}
+        <LinearProgress />
+      </div>
+    );
+  }
+
   return (
     <div className="App">
-      <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static">
-          <Toolbar>
-            <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              aria-label="menu"
-              sx={{ mr: 2 }}
-              onClick={handleMenuClick}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Menu
-              id="basic-menu"
-              anchorEl={anchorMenuEl}
-              open={menuOpen}
-              onClose={handleMenuClose}
-              MenuListProps={{
-                "aria-labelledby": "basic-button",
-              }}
-            >
-              <MenuItem onClick={handleMenuNewList}>New List</MenuItem>
-              <MenuItem onClick={handleMenuAbout}>About</MenuItem>
-            </Menu>{" "}
-            <Typography>Mastodon List Manager</Typography>&nbsp;
-            <Typography align="right">(@{info.me.acct})</Typography>
-          </Toolbar>
-        </AppBar>
-      </Box>
+      {appbar}
       <table>
         <thead>
           <tr>
