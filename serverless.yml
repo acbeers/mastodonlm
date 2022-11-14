@@ -7,6 +7,27 @@ provider:
   runtime: python3.9
   stage: dev
   region: us-west-2
+  httpApi:
+    cors:
+      allowedOrigins:
+        - https://acbeers.github.io
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+      allowedMethods:
+        - GET
+        - POST
+        - OPTIONS
+      allowCredentials: true
+
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:PutItem"
+            - "dynamodb:GetItem"
+          Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/authTable"
 
 resources: # CloudFormation template syntax from here on.
   Resources:
@@ -31,26 +52,36 @@ functions:
   auth:
     handler: handler.auth
     events:
-      - httpApi: "GET /auth"
+      - httpApi:
+          path: /auth
+          method: GET
   callback:
     handler: handler.callback
     events:
-      - httpApi: "POST /callback"
+      - httpApi:
+          path: /callback
+          method: POST
   info:
     timeout: 30
     handler: handler.info
     events:
-      - httpApi: "GET /info"
+      - httpApi:
+          path: /info
+          method: GET
   add:
     timeout: 30
     handler: handler.add_to_list
     events:
-      - httpApi: "POST /add"
+      - httpApi:
+          path: /add
+          method: POST
   remove:
     timeout: 30
     handler: handler.remove_from_list
     events:
-      - httpApi: "POST /remove"
+      - httpApi:
+          path: /remove
+          method: POST
 
 package:
   patterns:

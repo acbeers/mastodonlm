@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, Navigate } from "react-router-dom";
 
 // This fancy function prevents multiple fetches in useEffect
 // in development mode.
@@ -17,7 +17,11 @@ const createFetch = () => {
 };
 const myFetch = createFetch();
 
+const urlCallback = process.env.REACT_APP_BACKEND_URL + "/callback";
+
 function LoginCallback() {
+  const [redirect, setRedirect] = useState(null);
+
   // We'll get code as a URL parameter at this point.
   let { search } = useLocation();
 
@@ -27,14 +31,19 @@ function LoginCallback() {
   // Our job is to hand this code to the backend, so it can be used
   // for our work with the server.
 
+  console.log("skljealkdsfjlsdfkj");
+
   useEffect(() => {
-    myFetch("http://localhost:4000/callback?code=" + code, {
+    myFetch(`${urlCallback}?code=${code}`, {
       credentials: "include",
       method: "POST",
       data: { code: code },
-    }).then(() => (window.location = "/manager"));
+    }).then(() => setRedirect(`/manager`));
   }, [code]);
 
-  return <div>code={code}</div>;
+  if (redirect) {
+    return <Navigate to={redirect} />;
+  }
+  return "";
 }
 export default LoginCallback;
