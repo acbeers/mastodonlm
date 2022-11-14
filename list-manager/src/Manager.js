@@ -311,7 +311,8 @@ function Manager() {
               <MenuItem onClick={handleMenuNewList}>New List</MenuItem>
               <MenuItem onClick={handleMenuAbout}>About</MenuItem>
             </Menu>{" "}
-            <Typography>Mastodon List Manager</Typography>
+            <Typography>Mastodon List Manager</Typography>&nbsp;
+            <Typography align="right">(@{info.me.acct})</Typography>
           </Toolbar>
         </AppBar>
       </Box>

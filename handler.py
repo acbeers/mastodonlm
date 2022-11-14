@@ -13,6 +13,7 @@ from mastodon import (
     MastodonAPIError,
     MastodonIllegalArgumentError,
     MastodonInternalServerError,
+    MastodonUnauthorizedError,
 )
 from cfg import Config
 
@@ -29,23 +30,29 @@ class Database:
 
     @staticmethod
     def get(cookie):
-        """Gets the auth token associated with the cookie"""
+        """Gets the info associated with the cookie"""
         resp = Database._client.get_item(
-            TableName="authTable", Key={"key": {"S": cookie}}, AttributesToGet=["token"]
+            TableName="authTable",
+            Key={"key": {"S": cookie}},
+            AttributesToGet=["token", "domain"],
         )
         if "Item" in resp:
-            return resp["Item"]["token"]["S"]
+            return {
+                "token": resp["Item"]["token"]["S"],
+                "domain": resp["Item"]["domain"]["S"],
+            }
         return None
 
     @staticmethod
-    def set(cookie, token):
-        """Sets the auth token associated with the cookie"""
+    def set(cookie, token, domain="hachyderm.io"):
+        """Sets the info associated with the cookie"""
         now = datetime.datetime.now()
         expire = now + datetime.timedelta(days=1)
         unix = time.mktime(expire.timetuple())
         item = {
             "key": {"S": cookie},
             "token": {"S": token},
+            "domain": {"S": domain},
             "expires_at": {"N": str(unix)},
         }
         Database._client.put_item(TableName="authTable", Item=item)
@@ -62,7 +69,8 @@ def parse_cookies(cookies):
 
 
 def get_mastodon(cookie):
-    token = Database.get(cookie)
+    info = Database.get(cookie)
+    token = None if info is None else info["token"]
     mastodon = Mastodon(
         client_id=Config.client_id,
         client_secret=Config.client_secret,
@@ -103,13 +111,16 @@ def info(event, context):
 
     try:
         mastodon = get_mastodon(cookie)
+        me = mastodon.me()
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "ERROR"}
     except MastodonInternalServerError:
         return {"statusCode": 500, "body": "ERROR"}
+    except MastodonUnauthorizedError:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
 
     # Find out info about me
-    me = mastodon.me()
     me_id = me["id"]
     # And people I follow
     followers = get_all(mastodon.account_following, me_id)
@@ -150,7 +161,14 @@ def info(event, context):
         for x in followers
     ]
 
-    output = {"lists": outlists, "followers": outpeople}
+    info = Database.get(cookie)
+    domain = "" if info is None else info["domain"]
+    meinfo = {
+        "username": me["username"],
+        "acct": f"{me['acct']}@{domain}",
+        "display_name": me["display_name"],
+    }
+    output = {"lists": outlists, "followers": outpeople, "me": meinfo}
     return json.dumps(output)
 
 
