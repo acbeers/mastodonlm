@@ -82,6 +82,20 @@ functions:
       - httpApi:
           path: /remove
           method: POST
+  create:
+    timeout: 30
+    handler: handler.create_list
+    events:
+      - httpApi:
+          path: /create
+          method: POST
+  delete:
+    timeout: 30
+    handler: handler.delete_list
+    events:
+      - httpApi:
+          path: /delete
+          method: POST
 
 package:
   patterns:
