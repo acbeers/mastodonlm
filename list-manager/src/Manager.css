@@ -12,6 +12,7 @@ table {
   padding: 0;
   padding-right: 4px;
   border-right: 1px solid lightgray;
+  width: 300px;
 }
 
 .cell {
@@ -37,4 +38,14 @@ div.listname div.icon {
 
 div.listname:hover div.icon {
   visibility: visible;
+}
+
+div.group {
+  font-size: 12pt;
+  cursor: pointer;
+  background-color: #eee;
+}
+
+.followerTable {
+  margin-bottom: 12px;
 }

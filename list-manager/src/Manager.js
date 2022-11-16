@@ -6,10 +6,14 @@ import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardHeader from "@mui/material/CardHeader";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
 import LinearProgress from "@mui/material/LinearProgress";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Popover from "@mui/material/Popover";
+import Select from "@mui/material/Select";
+import TextField from "@mui/material/TextField";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -18,6 +22,8 @@ import MenuIcon from "@mui/icons-material/Menu";
 import AboutDialog from "./AboutDialog";
 import CreateListDialog from "./CreateListDialog";
 import DeleteListDialog from "./DeleteListDialog";
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import "./Manager.css";
 
 const style = {
@@ -45,7 +51,54 @@ const urlRemove = process.env.REACT_APP_BACKEND_URL + "/remove";
 const urlCreate = process.env.REACT_APP_BACKEND_URL + "/create";
 const urlDelete = process.env.REACT_APP_BACKEND_URL + "/delete";
 
+function info2Groups(info, by, search) {
+  // First, compute the groups
+  const getGroupName = (fol) => fol.display_name.toUpperCase()[0];
+  const getGroupNone = (fol) => "All";
+  const getGroupDomain = (fol) => {
+    const arr = fol.acct.match(/@(.*)/) || ["", "XX"];
+    return arr[1];
+  };
+  const methods = {
+    none: getGroupNone,
+    name: getGroupName,
+    domain: getGroupDomain,
+  };
+  const method = methods[by];
+  const groups = {};
+
+  const lwrSearch = search.toLowerCase();
+
+  info.followers.forEach((fol) => {
+    // First, see if it passes the search
+    const dnidx = fol.display_name.toLowerCase().indexOf(lwrSearch);
+    const unidx = fol.username.toLowerCase().indexOf(lwrSearch);
+    const noidx = fol.note.toLowerCase().indexOf(lwrSearch);
+
+    if (dnidx === -1 && unidx === -1 && noidx === -1) return;
+
+    const g = method(fol);
+    if (!groups[g]) {
+      groups[g] = [];
+    }
+    groups[g].push(fol);
+  });
+  // Now, order the groups and produce an array
+  const keys = Object.keys(groups);
+  keys.sort();
+  return keys.map((k) => ({ key: k, open: false, followers: groups[k] }));
+}
+
 function Manager() {
+  // The data
+  const [info, setInfo] = useState({ lists: [], followers: [] });
+  // The grouped data - as an array of info objects.
+  const [groups, setGroups] = useState([]);
+  // How we want things grouped
+  const [groupBy, setGroupBy] = useState("none");
+  // For searching
+  const [search, setSearch] = useState("");
+
   const loadData = () => {
     fetch(urlInfo, {
       credentials: "include",
@@ -66,13 +119,18 @@ function Manager() {
       });
   };
 
-  // Fetcth the data
+  // Generate the groups
+  useEffect(() => {
+    const groups = info2Groups(info, groupBy, search);
+    if (groups.length === 1) groups[0].open = true;
+    setGroups(groups);
+  }, [info, groupBy, search]);
+
+  // Fetch the data
   useEffect(() => {
     loadData();
   }, []);
 
-  // The data
-  const [info, setInfo] = useState({ lists: [], followers: [] });
   // A redirect if we need it
   const [redirect, setRedirect] = useState(null);
 
@@ -128,7 +186,6 @@ function Manager() {
   };
 
   // Build the crazy table.
-  const followers = info.followers;
   const lists = info.lists;
 
   // Delete list dialog
@@ -185,49 +242,7 @@ function Manager() {
   const popoverOpen = Boolean(anchorEl);
   const menuOpen = Boolean(anchorMenuEl);
 
-  // TODO: For really large lists, this will have to be hierarchical at some point.
-
-  const rows = followers.map((fol, index) => {
-    const cols = lists.map((l) => {
-      if (fol.lists.includes(l.id)) {
-        return (
-          <td
-            key={l.id + fol.id}
-            className="cell"
-            onClick={() => remove(index, l.id)}
-          >
-            X
-          </td>
-        );
-      } else {
-        return (
-          <td
-            key={l.id + fol.id}
-            className="cell"
-            onClick={() => add(index, l.id)}
-          >
-            &nbsp;
-          </td>
-        );
-      }
-    });
-    return (
-      <tr key={fol.id}>
-        <td align="right" className="usercell">
-          <Typography
-            variant="body2"
-            aria-owns={popoverOpen ? "mouse-over-popover" : undefined}
-            aria-haspopup="true"
-            onMouseEnter={(evt) => handlePopoverOpen(evt, fol)}
-            onMouseLeave={handlePopoverClose}
-          >
-            <span>{fol.display_name}</span>
-          </Typography>
-        </td>
-        {cols}
-      </tr>
-    );
-  });
+  // Build one table per group.
 
   const headers = lists.map((l) => {
     return (
@@ -239,6 +254,87 @@ function Manager() {
           </div>
         </div>
       </th>
+    );
+  });
+
+  const toggleOpen = (group) => {
+    const newGroups = groups.slice();
+    const item = newGroups.find((val) => val.key === group.key);
+    item.open = !item.open;
+    setGroups(newGroups);
+  };
+
+  const makeFollowerTable = (followers) => {
+    const rows = followers.map((fol, index) => {
+      const cols = lists.map((l) => {
+        if (fol.lists.includes(l.id)) {
+          return (
+            <td
+              key={l.id + fol.id}
+              className="cell"
+              onClick={() => remove(index, l.id)}
+            >
+              X
+            </td>
+          );
+        } else {
+          return (
+            <td
+              key={l.id + fol.id}
+              className="cell"
+              onClick={() => add(index, l.id)}
+            >
+              &nbsp;
+            </td>
+          );
+        }
+      });
+      return (
+        <tr key={fol.id}>
+          <td align="right" className="usercell">
+            <Typography
+              variant="body2"
+              aria-owns={popoverOpen ? "mouse-over-popover" : undefined}
+              aria-haspopup="true"
+              onMouseEnter={(evt) => handlePopoverOpen(evt, fol)}
+              onMouseLeave={handlePopoverClose}
+            >
+              <span>{fol.display_name}</span>
+            </Typography>
+          </td>
+          {cols}
+        </tr>
+      );
+    });
+
+    const table = (
+      <table className="followerTable">
+        <thead>
+          <tr>
+            <th>&nbsp;</th>
+            {headers}
+          </tr>
+        </thead>
+        <tbody>{rows}</tbody>
+      </table>
+    );
+    return table;
+  };
+
+  const tables = groups.map((group) => {
+    const table = group.open ? makeFollowerTable(group.followers) : "";
+    const icon = group.open ? (
+      <KeyboardArrowDownIcon />
+    ) : (
+      <KeyboardArrowRightIcon />
+    );
+    return (
+      <div key={group.key}>
+        <div className="group" onClick={() => toggleOpen(group)}>
+          {icon} {group.key} ({group.followers.length})
+        </div>
+        {table}
+      </div>
     );
   });
 
@@ -328,18 +424,38 @@ function Manager() {
     );
   }
 
+  const select = (
+    <div>
+      <FormControl sx={{ marginTop: "12px", width: 200, marginBottom: "12px" }}>
+        <InputLabel id="demo-simple-select-label">Group By</InputLabel>
+        <Select
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          value={groupBy}
+          label="Group By"
+          onChange={(event) => setGroupBy(event.target.value)}
+        >
+          <MenuItem value={"none"}>Nothing</MenuItem>
+          <MenuItem value={"name"}>Name (first letter)</MenuItem>
+          <MenuItem value={"domain"}>Account domain</MenuItem>
+        </Select>
+      </FormControl>
+      <FormControl sx={{ marginTop: "12px", width: 400, marginBottom: "12px" }}>
+        <TextField
+          labelId="demo-simple-search-label"
+          label="Search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+      </FormControl>
+    </div>
+  );
+
   return (
     <div className="App">
       {appbar}
-      <table>
-        <thead>
-          <tr>
-            <th>&nbsp;</th>
-            {headers}
-          </tr>
-        </thead>
-        <tbody>{rows}</tbody>
-      </table>
+      {select}
+      {tables}
       {popover}
       <AboutDialog open={aboutOpen} handleClose={handleAboutClose} />
       <CreateListDialog
