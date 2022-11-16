@@ -5,7 +5,7 @@ import json
 import time
 import uuid
 
-import boto3
+from models import AuthTable
 
 
 from mastodon import (
@@ -16,46 +16,6 @@ from mastodon import (
     MastodonUnauthorizedError,
 )
 from cfg import Config
-
-
-# We hold mappings of users to tokens in a database.
-# For testing, this is our stupid database.
-
-
-class Database:
-    """Simple database interface that abstracts Dynamo"""
-
-    _data = {}
-    _client = boto3.client("dynamodb")
-
-    @staticmethod
-    def get(cookie):
-        """Gets the info associated with the cookie"""
-        resp = Database._client.get_item(
-            TableName="authTable",
-            Key={"key": {"S": cookie}},
-            AttributesToGet=["token", "domain"],
-        )
-        if "Item" in resp:
-            return {
-                "token": resp["Item"]["token"]["S"],
-                "domain": resp["Item"]["domain"]["S"],
-            }
-        return None
-
-    @staticmethod
-    def set(cookie, token, domain="hachyderm.io"):
-        """Sets the info associated with the cookie"""
-        now = datetime.datetime.now()
-        expire = now + datetime.timedelta(days=1)
-        unix = time.mktime(expire.timetuple())
-        item = {
-            "key": {"S": cookie},
-            "token": {"S": token},
-            "domain": {"S": domain},
-            "expires_at": {"N": str(unix)},
-        }
-        Database._client.put_item(TableName="authTable", Item=item)
 
 
 def parse_cookies(cookies):
@@ -69,8 +29,12 @@ def parse_cookies(cookies):
 
 
 def get_mastodon(cookie):
-    info = Database.get(cookie)
-    token = None if info is None else info["token"]
+    """Construct a Mastodon objecct for the given cookie"""
+    # Get cookie
+    # Lookup domain info from cookie.domain
+    # If no domain info, then register app with domain.
+    info = AuthTable.lookup(cookie)
+    token = None if info is None else info.token
     mastodon = Mastodon(
         client_id=Config.client_id,
         client_secret=Config.client_secret,
@@ -161,8 +125,8 @@ def info(event, context):
         for x in followers
     ]
 
-    info = Database.get(cookie)
-    domain = "" if info is None else info["domain"]
+    res = AuthTable.lookup(cookie)
+    domain = "" if res is None else res.domain
     meinfo = {
         "username": me["username"],
         "acct": f"{me['acct']}@{domain}",
@@ -173,6 +137,7 @@ def info(event, context):
 
 
 def response(body, statusCode=200):
+    """Construct a lambda response object"""
     return {
         "statusCode": statusCode,
         "body": body,
@@ -231,6 +196,13 @@ def auth(event, context):
     return response(json.dumps({"url": url}))
 
 
+def get_expire():
+    now = datetime.datetime.now()
+    expire = now + datetime.timedelta(days=1)
+    unix = time.mktime(expire.timetuple())
+    return unix
+
+
 def callback(event, context):
     code = event["queryStringParameters"]["code"]
     mastodon = Mastodon(
@@ -250,7 +222,9 @@ def callback(event, context):
         scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
     )
     cookie = uuid.uuid4().urn
-    Database.set(cookie, token)
+
+    info = AuthTable(cookie, token, "hachyderm.io", get_expire())
+    info.save()
 
     cookie_str = f"{cookie}; {cookie_options} Max-Age={60*60*24}"
     return {
