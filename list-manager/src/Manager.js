@@ -13,6 +13,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Popover from "@mui/material/Popover";
 import Select from "@mui/material/Select";
+import TextField from "@mui/material/TextField";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -50,7 +51,7 @@ const urlRemove = process.env.REACT_APP_BACKEND_URL + "/remove";
 const urlCreate = process.env.REACT_APP_BACKEND_URL + "/create";
 const urlDelete = process.env.REACT_APP_BACKEND_URL + "/delete";
 
-function info2Groups(info, by) {
+function info2Groups(info, by, search) {
   // First, compute the groups
   const getGroupName = (fol) => fol.display_name.toUpperCase()[0];
   const getGroupNone = (fol) => "All";
@@ -65,7 +66,17 @@ function info2Groups(info, by) {
   };
   const method = methods[by];
   const groups = {};
+
+  const lwrSearch = search.toLowerCase();
+
   info.followers.forEach((fol) => {
+    // First, see if it passes the search
+    const dnidx = fol.display_name.toLowerCase().indexOf(lwrSearch);
+    const unidx = fol.username.toLowerCase().indexOf(lwrSearch);
+    const noidx = fol.note.toLowerCase().indexOf(lwrSearch);
+
+    if (dnidx === -1 && unidx === -1 && noidx === -1) return;
+
     const g = method(fol);
     if (!groups[g]) {
       groups[g] = [];
@@ -85,6 +96,8 @@ function Manager() {
   const [groups, setGroups] = useState([]);
   // How we want things grouped
   const [groupBy, setGroupBy] = useState("none");
+  // For searching
+  const [search, setSearch] = useState("");
 
   const loadData = () => {
     fetch(urlInfo, {
@@ -108,10 +121,10 @@ function Manager() {
 
   // Generate the groups
   useEffect(() => {
-    const groups = info2Groups(info, groupBy);
+    const groups = info2Groups(info, groupBy, search);
     if (groups.length === 1) groups[0].open = true;
     setGroups(groups);
-  }, [info, groupBy]);
+  }, [info, groupBy, search]);
 
   // Fetch the data
   useEffect(() => {
@@ -412,20 +425,30 @@ function Manager() {
   }
 
   const select = (
-    <FormControl sx={{ marginTop: "12px", width: 200, marginBottom: "12px" }}>
-      <InputLabel id="demo-simple-select-label">Group By</InputLabel>
-      <Select
-        labelId="demo-simple-select-label"
-        id="demo-simple-select"
-        value={groupBy}
-        label="Group By"
-        onChange={(event) => setGroupBy(event.target.value)}
-      >
-        <MenuItem value={"none"}>Nothing</MenuItem>
-        <MenuItem value={"name"}>Name (first letter)</MenuItem>
-        <MenuItem value={"domain"}>Account domain</MenuItem>
-      </Select>
-    </FormControl>
+    <div>
+      <FormControl sx={{ marginTop: "12px", width: 200, marginBottom: "12px" }}>
+        <InputLabel id="demo-simple-select-label">Group By</InputLabel>
+        <Select
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          value={groupBy}
+          label="Group By"
+          onChange={(event) => setGroupBy(event.target.value)}
+        >
+          <MenuItem value={"none"}>Nothing</MenuItem>
+          <MenuItem value={"name"}>Name (first letter)</MenuItem>
+          <MenuItem value={"domain"}>Account domain</MenuItem>
+        </Select>
+      </FormControl>
+      <FormControl sx={{ marginTop: "12px", width: 400, marginBottom: "12px" }}>
+        <TextField
+          labelId="demo-simple-search-label"
+          label="Search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+      </FormControl>
+    </div>
   );
 
   return (
