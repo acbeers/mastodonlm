@@ -44,7 +44,7 @@ function LoginForm() {
         <TextField
           value={domain}
           onChange={(evt) => setDomain(evt.target.value)}
-          sx={{ width: 300 }}
+          sx={{ width: 300, marginTop: "8px" }}
           label="Host"
         />
         <br />
@@ -52,6 +52,10 @@ function LoginForm() {
           Go
         </Button>
         <div>{error}</div>
+        <Typography variant="caption">
+          NOTE: This tool uses AWS as a backend, so you'll have to allow
+          third-party cookies.
+        </Typography>
       </div>
     </div>
   );
