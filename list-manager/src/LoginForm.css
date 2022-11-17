@@ -1,0 +1,12 @@
+div.loginForm {
+  display: inline-block;
+  padding: 15px;
+  max-width: 400px;
+  text-align: left;
+  border: 1px solid lightgray;
+}
+
+.loginform_container {
+  margin-top: 50px;
+  text-align: center;
+}

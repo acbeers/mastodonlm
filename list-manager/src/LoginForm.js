@@ -1,0 +1,60 @@
+import React, { useState } from "react";
+import { Navigate } from "react-router-dom";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import "./LoginForm.css";
+
+const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
+
+function LoginForm() {
+  const [error, setError] = useState(null);
+  const [redirect, setRedirect] = useState(null);
+  const [domain, setDomain] = useState("");
+
+  const handleGo = () => {
+    fetch(`${urlAuth}?domain=${domain}`, {
+      credentials: "include",
+    })
+      .then((resp) => resp.json())
+      .then((data) => {
+        console.log(data);
+        if (data.status === "OK") {
+          setRedirect(`/manager`);
+        } else if (data.status === "not_allowed") {
+          setError("Looks like your domain is not currently supported!");
+        } else {
+          // This one has to be done here, as it is to an external URL.
+          const url = data.url;
+          window.location = url;
+        }
+      });
+  };
+
+  if (redirect) {
+    return <Navigate to={redirect} />;
+  }
+  return (
+    <div className="loginform_container">
+      <div className="loginForm">
+        <Typography>
+          Welcome to the Mastondon List Manager. To get started, enter your
+          instance name below.
+        </Typography>
+        <TextField
+          value={domain}
+          onChange={(evt) => setDomain(evt.target.value)}
+          sx={{ width: 300 }}
+          label="Host"
+        />
+        <br />
+        <Button sx={{ width: 300 }} label="Go" onClick={handleGo}>
+          Go
+        </Button>
+        <div>{error}</div>
+      </div>
+    </div>
+  );
+}
+
+export default LoginForm;

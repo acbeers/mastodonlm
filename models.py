@@ -1,13 +1,29 @@
+"""Models for DynamoDB access"""
+
 from pynamodb.models import Model
 from pynamodb.attributes import UnicodeAttribute, NumberAttribute
 
 
-class AuthTable(Model):
+class MyModel(Model):
+    """An extension to pynamodb.Model"""
+
+    @classmethod
+    def lookup(cls, key):
+        """Lookup a single value or return none"""
+        res = list(cls.query(key))
+        if len(res) == 0:
+            return None
+        return res[0]
+
+
+class AuthTable(MyModel):
     """
-    A DynamoDB User
+    Auth information for a user
     """
 
     class Meta:
+        """Metadata for this table"""
+
         table_name = "authTable"
         region = "us-west-2"
 
@@ -16,9 +32,32 @@ class AuthTable(Model):
     domain = UnicodeAttribute()
     expires_at = NumberAttribute()
 
-    @classmethod
-    def lookup(cls, key):
-        res = list(cls.query(key))
-        if len(res) == 0:
-            return None
-        return res[0]
+
+class AllowedHost(MyModel):
+    """
+    A list of allowed hosts
+    """
+
+    class Meta:
+        """Metadata for this table"""
+
+        table_name = "allowedHosts"
+        region = "us-west-2"
+
+    host = UnicodeAttribute(hash_key=True)
+
+
+class HostConfig(MyModel):
+    """
+    A list of allowed hosts
+    """
+
+    class Meta:
+        """Metadata for this table"""
+
+        table_name = "hostsTable"
+        region = "us-west-2"
+
+    host = UnicodeAttribute(hash_key=True)
+    client_id = UnicodeAttribute()
+    client_secret = UnicodeAttribute()

@@ -27,6 +27,7 @@ function LoginCallback() {
 
   const query = new URLSearchParams(search);
   const code = query.get("code");
+  const domain = query.get("domain");
 
   // Our job is to hand this code to the backend, so it can be used
   // for our work with the server.
@@ -34,12 +35,12 @@ function LoginCallback() {
   console.log("skljealkdsfjlsdfkj");
 
   useEffect(() => {
-    myFetch(`${urlCallback}?code=${code}`, {
+    myFetch(`${urlCallback}?code=${code}&domain=${domain}`, {
       credentials: "include",
       method: "POST",
       data: { code: code },
     }).then(() => setRedirect(`/manager`));
-  }, [code]);
+  }, [code, domain]);
 
   if (redirect) {
     return <Navigate to={redirect} />;

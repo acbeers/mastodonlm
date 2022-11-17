@@ -415,7 +415,7 @@ function Manager() {
     </Box>
   );
 
-  if (headers.length === 0) {
+  if (groups.length === 0) {
     return (
       <div className="App">
         {appbar}
