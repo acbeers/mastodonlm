@@ -5,9 +5,6 @@ import json
 import time
 import uuid
 
-import boto3
-
-
 from mastodon import (
     Mastodon,
     MastodonAPIError,
@@ -15,47 +12,8 @@ from mastodon import (
     MastodonInternalServerError,
     MastodonUnauthorizedError,
 )
-from cfg import Config
 
-
-# We hold mappings of users to tokens in a database.
-# For testing, this is our stupid database.
-
-
-class Database:
-    """Simple database interface that abstracts Dynamo"""
-
-    _data = {}
-    _client = boto3.client("dynamodb")
-
-    @staticmethod
-    def get(cookie):
-        """Gets the info associated with the cookie"""
-        resp = Database._client.get_item(
-            TableName="authTable",
-            Key={"key": {"S": cookie}},
-            AttributesToGet=["token", "domain"],
-        )
-        if "Item" in resp:
-            return {
-                "token": resp["Item"]["token"]["S"],
-                "domain": resp["Item"]["domain"]["S"],
-            }
-        return None
-
-    @staticmethod
-    def set(cookie, token, domain="hachyderm.io"):
-        """Sets the info associated with the cookie"""
-        now = datetime.datetime.now()
-        expire = now + datetime.timedelta(days=1)
-        unix = time.mktime(expire.timetuple())
-        item = {
-            "key": {"S": cookie},
-            "token": {"S": token},
-            "domain": {"S": domain},
-            "expires_at": {"N": str(unix)},
-        }
-        Database._client.put_item(TableName="authTable", Item=item)
+from models import AuthTable, AllowedHost, HostConfig
 
 
 def parse_cookies(cookies):
@@ -68,14 +26,35 @@ def parse_cookies(cookies):
     return res
 
 
+def make_app(domain, redirect_url):
+    (client_id, client_secret) = Mastodon.create_app(
+        "Mastondon List Manager",
+        scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
+        redirect_uris=redirect_url,
+        api_base_url=f"https://{domain}",
+    )
+    return (client_id, client_secret)
+
+
 def get_mastodon(cookie):
-    info = Database.get(cookie)
-    token = None if info is None else info["token"]
+    """Construct a Mastodon objecct for the given cookie"""
+    # Get cookie
+    # Lookup domain info from cookie.domain
+    # If no domain info, then register app with domain.
+    authinfo = AuthTable.lookup(cookie)
+    if authinfo is None:
+        return None
+
+    # Get the configuration that we need
+    cfg = HostConfig.lookup(authinfo.domain)
+    if cfg is None:
+        return None
+
     mastodon = Mastodon(
-        client_id=Config.client_id,
-        client_secret=Config.client_secret,
-        access_token=token,
-        api_base_url="https://hachyderm.io",
+        client_id=cfg.client_id,
+        client_secret=cfg.client_secret,
+        access_token=authinfo.token,
+        api_base_url=f"https://{authinfo.domain}",
     )
     return mastodon
 
@@ -116,7 +95,8 @@ def info(event, context):
         return {"statusCode": 500, "body": "ERROR"}
     except MastodonInternalServerError:
         return {"statusCode": 500, "body": "ERROR"}
-    except MastodonUnauthorizedError:
+    except MastodonUnauthorizedError as e:
+        print(e)
         resp = {"status": "no_cookie"}
         return response(json.dumps(resp), statusCode=403)
 
@@ -161,8 +141,8 @@ def info(event, context):
         for x in followers
     ]
 
-    info = Database.get(cookie)
-    domain = "" if info is None else info["domain"]
+    res = AuthTable.lookup(cookie)
+    domain = "" if res is None else res.domain
     meinfo = {
         "username": me["username"],
         "acct": f"{me['acct']}@{domain}",
@@ -173,18 +153,19 @@ def info(event, context):
 
 
 def response(body, statusCode=200):
+    """Construct a lambda response object"""
     return {
         "statusCode": statusCode,
         "body": body,
     }
 
 
-def make_redirect_url(event):
+def make_redirect_url(event, domain):
     """Create a redirect URL based on the origin of the request"""
     origin = event["headers"]["origin"]
     if origin == "http://localhost:3000":
-        return "http://localhost:3000/callback"
-    return "https://acbeers.github.io/mastodonlm/callback"
+        return f"http://localhost:3000/callback?domain={domain}"
+    return f"https://acbeers.github.io/mastodonlm/callback?domain={domain}"
 
 
 def make_cookie_options(event):
@@ -203,9 +184,20 @@ def auth(event, context):
     cookies = parse_cookies(event.get("cookies", []))
     cookie = cookies.get("list-manager-cookie", None)
 
+    params = event.get("queryStringParameters", {}) or {}
+    domain = params.get("domain", "hachyderm.io")
+
+    # Ignore the cookie if it belongs to some other domain
+    if cookie is not None:
+        authinfo = AuthTable.lookup(cookie)
+        if authinfo is not None and authinfo.domain != domain:
+            cookie = None
+
     if cookie is not None:
         try:
             test = get_mastodon(cookie)
+            if test is None:
+                raise AttributeError
             test.me()
             print("Already logged in")
             return {"statusCode": 200, "body": json.dumps({"status": "OK"})}
@@ -213,16 +205,33 @@ def auth(event, context):
             # If here, we aren't logged in, so drop through to start the
             # oAuth flow.
             pass
+        except AttributeError:
+            # If here, we didn't get a mastodon instance back, so start the
+            # oAuth flow
+            pass
+
+    # See if this domain is allowed
+    allow = AllowedHost.lookup(domain)
+    if allow is None:
+        res = {"status": "not_allowed"}
+        return response(json.dumps(res))
 
     # For now, we'll create the right redirect_url based on the event object.
-    redirect_url = make_redirect_url(event)
+    redirect_url = make_redirect_url(event, domain)
 
-    # TODO: Map this to a place where I store secrets.
+    print(redirect_url)
+
+    cfg = HostConfig.lookup(domain)
+    if cfg is None:
+        # Make an app
+        (client_id, client_secret) = make_app(domain, redirect_url)
+        cfg = HostConfig(domain, client_id=client_id, client_secret=client_secret)
+        cfg.save()
+
     mastodon = Mastodon(
-        client_id=Config.client_id,
-        client_secret=Config.client_secret,
-        access_token=Config.access_token,
-        api_base_url="https://hachyderm.io",
+        client_id=cfg.client_id,
+        client_secret=cfg.client_secret,
+        api_base_url=f"https://{domain}",
     )
     url = mastodon.auth_request_url(
         scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
@@ -231,17 +240,33 @@ def auth(event, context):
     return response(json.dumps({"url": url}))
 
 
+def get_expire():
+    """Compute a 1-day expire time"""
+    now = datetime.datetime.now()
+    expire = now + datetime.timedelta(days=1)
+    unix = time.mktime(expire.timetuple())
+    return unix
+
+
 def callback(event, context):
-    code = event["queryStringParameters"]["code"]
+    # The challenge here - I don't know what server that this code is associated with.
+    # I need to ensure that "domain" comes back here.
+    # The web app also doesn't necessarily know this.
+    params = event.get("queryStringParameters", {}) or {}
+    domain = params.get("domain", "hachyderm.io")
+    code = params.get("code")
+
+    print(domain)
+    cfg = HostConfig.lookup(domain)
+
     mastodon = Mastodon(
-        client_id=Config.client_id,
-        client_secret=Config.client_secret,
-        access_token=Config.access_token,
-        api_base_url="https://hachyderm.io",
+        client_id=cfg.client_id,
+        client_secret=cfg.client_secret,
+        api_base_url=f"https://{domain}",
     )
 
     # For now, we'll create the right redirect_url based on the event object.
-    redirect_url = make_redirect_url(event)
+    redirect_url = make_redirect_url(event, domain)
     cookie_options = make_cookie_options(event)
 
     token = mastodon.log_in(
@@ -250,7 +275,9 @@ def callback(event, context):
         scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
     )
     cookie = uuid.uuid4().urn
-    Database.set(cookie, token)
+
+    authinfo = AuthTable(cookie, token=token, domain=domain, expires_at=get_expire())
+    authinfo.save()
 
     cookie_str = f"{cookie}; {cookie_options} Max-Age={60*60*24}"
     return {

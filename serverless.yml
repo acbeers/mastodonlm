@@ -27,10 +27,24 @@ provider:
           Action:
             - "dynamodb:PutItem"
             - "dynamodb:GetItem"
+            - "dynamodb:Query"
           Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/authTable"
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:PutItem"
+            - "dynamodb:GetItem"
+            - "dynamodb:Query"
+          Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/allowedHosts"
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:PutItem"
+            - "dynamodb:GetItem"
+            - "dynamodb:Query"
+          Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/hostsTable"
 
 resources: # CloudFormation template syntax from here on.
   Resources:
+    # Stores auth tokens for users and other info
     usersTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -47,6 +61,36 @@ resources: # CloudFormation template syntax from here on.
         TimeToLiveSpecification:
           Enabled: true
           AttributeName: expires_at
+
+    # Essentially, a list of allowed hosts.
+    allowTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: allowedHosts
+        AttributeDefinitions:
+          - AttributeName: host
+            AttributeType: S
+        KeySchema:
+          - AttributeName: host
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    # Stores host information (secrets, urls, etc)
+    hostsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: hostsTable
+        AttributeDefinitions:
+          - AttributeName: host
+            AttributeType: S
+        KeySchema:
+          - AttributeName: host
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
 
 functions:
   auth:

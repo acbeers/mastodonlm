@@ -4,9 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"mastodon.py" = "*"
 black = "*"
 boto3 = "*"
+pynamodb = "*"
+pytz = "*"
+requests = "*"
+decorator = "*"
 
 [dev-packages]
 

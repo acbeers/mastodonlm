@@ -4,8 +4,6 @@ import { Navigate } from "react-router-dom";
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
 
 function Login(params) {
-  //const site = params.site;
-
   const [redirect, setRedirect] = useState(null);
 
   useEffect(() => {
@@ -16,11 +14,13 @@ function Login(params) {
       .then((data) => {
         console.log(data);
         if (data.status === "OK") {
+          // This means we are already logged in
           setRedirect(`/manager`);
+        } else if (data.status === "not_allowed") {
+          setRedirect(`/loginform`);
         } else {
-          // This one has to be done here, as it is to an external URL.
-          const url = data.url;
-          window.location = url;
+          // If we aren't logged in, we have to ask he user for a domain
+          setRedirect("/loginform");
         }
       });
   }, []);
