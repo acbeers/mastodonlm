@@ -1,0 +1,5 @@
+[MASTER]
+
+[MESSAGES CONTROL]
+
+disable=invalid-name,unspecified-encoding,unnecessary-lambda-assignment,duplicate-code,too-many-locals,too-few-public-methods

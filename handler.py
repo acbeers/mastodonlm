@@ -13,7 +13,36 @@ from mastodon import (
     MastodonUnauthorizedError,
 )
 
-from models import AuthTable, AllowedHost, HostConfig
+from models import Datastore
+
+
+class MastodonFactory:
+    """Factory class for Mastodon instances"""
+
+    @classmethod
+    def from_cookie(cls, cookie):
+        """Construct a mastodon object from the cookie"""
+        authinfo = Datastore.get_auth(cookie)
+        if authinfo is None:
+            return None
+
+        # Get the configuration that we need
+        cfg = Datastore.get_host_config(authinfo.domain)
+        if cfg is None:
+            return None
+
+        return MastodonFactory.from_config(cfg)
+
+    @classmethod
+    def from_config(cls, cfg):
+        """Create a Mastodon interface from a HostConfig object"""
+        mastodon = Mastodon(
+            client_id=cfg.client_id,
+            client_secret=cfg.client_secret,
+            # access_token=authinfo.token,
+            api_base_url=f"https://{cfg.host}",
+        )
+        return mastodon
 
 
 def parse_cookies(cookies):
@@ -27,6 +56,7 @@ def parse_cookies(cookies):
 
 
 def make_app(domain, redirect_url):
+    """Creates a Mastodon app on a given host"""
     (client_id, client_secret) = Mastodon.create_app(
         "Mastondon List Manager",
         scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
@@ -41,20 +71,16 @@ def get_mastodon(cookie):
     # Get cookie
     # Lookup domain info from cookie.domain
     # If no domain info, then register app with domain.
-    authinfo = AuthTable.lookup(cookie)
-    if authinfo is None:
-        return None
+    return MastodonFactory.from_cookie(cookie)
 
-    # Get the configuration that we need
-    cfg = HostConfig.lookup(authinfo.domain)
-    if cfg is None:
-        return None
 
+def get_mastodon_from_config(cfg, domain):
+    """Create a Mastodon interface from a HostConfig object"""
     mastodon = Mastodon(
         client_id=cfg.client_id,
         client_secret=cfg.client_secret,
-        access_token=authinfo.token,
-        api_base_url=f"https://{authinfo.domain}",
+        # access_token=authinfo.token,
+        api_base_url=f"https://{domain}",
     )
     return mastodon
 
@@ -67,7 +93,12 @@ def get_all(func, *args):
     while True:
         res.extend(page)
         try:
-            page = func(*args, max_id=page._pagination_next["max_id"])
+            page = func(
+                *args,
+                max_id=page._pagination_next[
+                    "max_id"
+                ],  # pylint: disable=protected-access
+            )
         except AttributeError:
             # It looks like _pagination_next isn't an attribute when there is no
             # further data.
@@ -75,7 +106,7 @@ def get_all(func, *args):
     return res
 
 
-def info(event, context):
+def info(event, _):
     """
     Handler to get the lists and follower information that the webapp needs.
     """
@@ -141,7 +172,7 @@ def info(event, context):
         for x in followers
     ]
 
-    res = AuthTable.lookup(cookie)
+    res = Datastore.get_auth(cookie)
     domain = "" if res is None else res.domain
     meinfo = {
         "username": me["username"],
@@ -176,7 +207,7 @@ def make_cookie_options(event):
     return "Domain=localhost; "
 
 
-def auth(event, context):
+def auth(event, _):
     """
     Handler for the start of an authentication flow.
     """
@@ -185,17 +216,19 @@ def auth(event, context):
     cookie = cookies.get("list-manager-cookie", None)
 
     params = event.get("queryStringParameters", {}) or {}
-    domain = params.get("domain", "hachyderm.io")
+    domain = params.get("domain", None)
 
     # Ignore the cookie if it belongs to some other domain
     if cookie is not None:
-        authinfo = AuthTable.lookup(cookie)
+        authinfo = Datastore.get_auth(cookie)
+        if domain is None:
+            domain = authinfo.domain
         if authinfo is not None and authinfo.domain != domain:
             cookie = None
 
     if cookie is not None:
         try:
-            test = get_mastodon(cookie)
+            test = MastodonFactory.from_cookie(cookie)
             if test is None:
                 raise AttributeError
             test.me()
@@ -211,28 +244,25 @@ def auth(event, context):
             pass
 
     # See if this domain is allowed
-    allow = AllowedHost.lookup(domain)
-    if allow is None:
+    allow = Datastore.is_allowed(domain)
+    if not allow:
         res = {"status": "not_allowed"}
         return response(json.dumps(res))
 
     # For now, we'll create the right redirect_url based on the event object.
     redirect_url = make_redirect_url(event, domain)
 
-    print(redirect_url)
+    cfg = Datastore.get_host_config(domain)
 
-    cfg = HostConfig.lookup(domain)
     if cfg is None:
         # Make an app
         (client_id, client_secret) = make_app(domain, redirect_url)
-        cfg = HostConfig(domain, client_id=client_id, client_secret=client_secret)
+        cfg = Datastore.set_host_config(
+            domain, client_id=client_id, client_secret=client_secret
+        )
         cfg.save()
 
-    mastodon = Mastodon(
-        client_id=cfg.client_id,
-        client_secret=cfg.client_secret,
-        api_base_url=f"https://{domain}",
-    )
+    mastodon = MastodonFactory.from_config(cfg)
     url = mastodon.auth_request_url(
         scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
         redirect_uris=redirect_url,
@@ -248,7 +278,9 @@ def get_expire():
     return unix
 
 
-def callback(event, context):
+def callback(event, _):
+    """The callback method of the oAuth dance"""
+
     # The challenge here - I don't know what server that this code is associated with.
     # I need to ensure that "domain" comes back here.
     # The web app also doesn't necessarily know this.
@@ -256,8 +288,7 @@ def callback(event, context):
     domain = params.get("domain", "hachyderm.io")
     code = params.get("code")
 
-    print(domain)
-    cfg = HostConfig.lookup(domain)
+    cfg = Datastore.get_host_config(domain)
 
     mastodon = Mastodon(
         client_id=cfg.client_id,
@@ -276,8 +307,7 @@ def callback(event, context):
     )
     cookie = uuid.uuid4().urn
 
-    authinfo = AuthTable(cookie, token=token, domain=domain, expires_at=get_expire())
-    authinfo.save()
+    Datastore.set_auth(cookie, token=token, domain=domain)
 
     cookie_str = f"{cookie}; {cookie_options} Max-Age={60*60*24}"
     return {
@@ -287,7 +317,7 @@ def callback(event, context):
     }
 
 
-def add_to_list(event, context):
+def add_to_list(event, _):
     """
     Handler for adding a user to a list.
 
@@ -319,7 +349,7 @@ def add_to_list(event, context):
         return response("ERROR", statusCode=500)
 
 
-def remove_from_list(event, context):
+def remove_from_list(event, _):
     """
     Handler for removing a user from a list.
 
@@ -351,7 +381,7 @@ def remove_from_list(event, context):
         return response("ERROR", statusCode=500)
 
 
-def create_list(event, context):
+def create_list(event, _):
     """Create a new list"""
     cookies = parse_cookies(event["cookies"])
     cookie = cookies.get("list-manager-cookie", None)
@@ -377,7 +407,7 @@ def create_list(event, context):
         return response("ERROR", statusCode=500)
 
 
-def delete_list(event, context):
+def delete_list(event, _):
     """Remove a list"""
     cookies = parse_cookies(event["cookies"])
     cookie = cookies.get("list-manager-cookie", None)
