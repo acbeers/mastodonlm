@@ -86,6 +86,7 @@ def get_mastodon_from_config(cfg, domain):
 
 
 def get_all(func, *args):
+    # pylint: disable=protected-access
     """Calls a paginated function func, which is assumed to be a method
     on a Mastodon instance, and returns a list of all results"""
     res = []
@@ -95,9 +96,7 @@ def get_all(func, *args):
         try:
             page = func(
                 *args,
-                max_id=page._pagination_next[
-                    "max_id"
-                ],  # pylint: disable=protected-access
+                max_id=page._pagination_next["max_id"],
             )
         except AttributeError:
             # It looks like _pagination_next isn't an attribute when there is no
@@ -120,7 +119,7 @@ def info(event, _):
         return response(json.dumps(resp), statusCode=403)
 
     try:
-        mastodon = get_mastodon(cookie)
+        mastodon = MastodonFactory.from_cookie(cookie)
         me = mastodon.me()
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "ERROR"}
@@ -180,7 +179,7 @@ def info(event, _):
         "display_name": me["display_name"],
     }
     output = {"lists": outlists, "followers": outpeople, "me": meinfo}
-    return json.dumps(output)
+    return response(json.dumps(output))
 
 
 def response(body, statusCode=200):
