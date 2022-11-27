@@ -12,6 +12,11 @@ requests = "*"
 decorator = "*"
 
 [dev-packages]
+pylint = "*"
+
+[scripts]
+format = "black handler.py models.py test"
+lint = "pylint handler.py models.py test"
 
 [requires]
 python_version = "3.9"
