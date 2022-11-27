@@ -324,7 +324,7 @@ def add_to_list(event, _):
     - list_id - numeric idea of a Mastodon list
     - account_id - numeric id of a Mastodon user.
     """
-    cookies = parse_cookies(event["cookies"])
+    cookies = parse_cookies(event.get("cookies", []))
     cookie = cookies.get("list-manager-cookie", None)
 
     # If we have no cookie, tell the client to go away
@@ -333,7 +333,7 @@ def add_to_list(event, _):
         return response(json.dumps(resp), statusCode=403)
 
     try:
-        mastodon = get_mastodon(cookie)
+        mastodon = MastodonFactory.from_cookie(cookie)
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "ERROR"}
     except MastodonInternalServerError:
@@ -356,7 +356,7 @@ def remove_from_list(event, _):
     - list_id - numeric idea of a Mastodon list
     - account_id - numeric id of a Mastodon user.
     """
-    cookies = parse_cookies(event["cookies"])
+    cookies = parse_cookies(event.get("cookies", []))
     cookie = cookies.get("list-manager-cookie", None)
 
     # If we have no cookie, tell the client to go away
@@ -365,7 +365,7 @@ def remove_from_list(event, _):
         return response(json.dumps(resp), statusCode=403)
 
     try:
-        mastodon = get_mastodon(cookie)
+        mastodon = MastodonFactory.from_cookie(cookie)
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "ERROR"}
     except MastodonInternalServerError:
@@ -382,7 +382,7 @@ def remove_from_list(event, _):
 
 def create_list(event, _):
     """Create a new list"""
-    cookies = parse_cookies(event["cookies"])
+    cookies = parse_cookies(event.get("cookies", []))
     cookie = cookies.get("list-manager-cookie", None)
 
     # If we have no cookie, tell the client to go away
@@ -391,7 +391,7 @@ def create_list(event, _):
         return response(json.dumps(resp), statusCode=403)
 
     try:
-        mastodon = get_mastodon(cookie)
+        mastodon = MastodonFactory.from_cookie(cookie)
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "ERROR"}
     except MastodonInternalServerError:
@@ -408,7 +408,7 @@ def create_list(event, _):
 
 def delete_list(event, _):
     """Remove a list"""
-    cookies = parse_cookies(event["cookies"])
+    cookies = parse_cookies(event.get("cookies", []))
     cookie = cookies.get("list-manager-cookie", None)
 
     # If we have no cookie, tell the client to go away
@@ -417,7 +417,7 @@ def delete_list(event, _):
         return response(json.dumps(resp), statusCode=403)
 
     try:
-        mastodon = get_mastodon(cookie)
+        mastodon = MastodonFactory.from_cookie(cookie)
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "ERROR"}
     except MastodonInternalServerError:

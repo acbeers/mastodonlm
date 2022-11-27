@@ -116,9 +116,6 @@ class TestAuth(TestCase):
 
         (event, context) = setupWithCookies()
 
-        mastodon = mock_mastodon()
-        mastodon.me.return_value = MagicMock()
-
         data_store.is_allowed.return_value = True
         auth = MagicMock()
         auth.domain = "mydomain"
@@ -231,7 +228,7 @@ class TestInfo(TestCase):
             """Mocks get_all with reasonable return values"""
             if func == sentinel.account_following:
                 # Return a list of user dicts
-                return [mock_userdict("u1")]
+                return [mock_userdict("u1"), mock_userdict("u2")]
             if func == sentinel.list_accounts:
                 # Return a list of user dicts
                 return [mock_userdict("u1")]
@@ -239,7 +236,7 @@ class TestInfo(TestCase):
 
         with patch("handler.get_all", new=Mock(wraps=get_all_mock)) as gam:
             res = handler.info(event, context)
-            # We should return a 200 response with the correct redirect URL.
+            # We should return a 200 response with the correct output
             self.assertEqual(res["statusCode"], 200)
             # Make sure the right methods got called to fill this out.
             self.assertEqual(
@@ -249,3 +246,116 @@ class TestInfo(TestCase):
                 ],
                 gam.mock_calls,
             )
+
+
+class TestCRUD(TestCase):
+    """Tests for /create, /delete, /add, /remove methods"""
+
+    def helper_no_cookie(self, func):
+        """Helper function for no cookie test cases"""
+        (event, context) = setupNoCookies()
+
+        res = func(event, context)
+        # We should return a 403 response with the correct status info
+        self.assertEqual(res["statusCode"], 403)
+        self.assertEqual(json.loads(res["body"])["status"], "no_cookie")
+
+    def helper_badcookie(self, factory, func):
+        """Test /info when cookie is present but mastodon API throws an error"""
+
+        (event, context) = setupWithCookies()
+
+        # We use Mastodon.me() to ensure someone has logged in.
+        factory.from_cookie.return_value.me.side_effect = MastodonUnauthorizedError
+
+        res = handler.info(event, context)
+
+        # We should return a 403 response with the correct status info
+        self.assertEqual(res["statusCode"], 403)
+        self.assertEqual(json.loads(res["body"])["status"], "no_cookie")
+
+    def test_create_no_cookie(self):
+        """Test /create with no cookie"""
+
+        self.helper_no_cookie(handler.create_list)
+
+    def test_delete_no_cookie(self):
+        """Test /delete with no cookie"""
+
+        self.helper_no_cookie(handler.delete_list)
+
+    def test_add_no_cookie(self):
+        """Test /add with no cookie"""
+
+        self.helper_no_cookie(handler.add_to_list)
+
+    def test_remove_no_cookie(self):
+        """Test /remove with no cookie"""
+
+        self.helper_no_cookie(handler.remove_from_list)
+
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_create_badcookie(self, factory):
+        """Test /create with a bad cookie"""
+
+        self.helper_badcookie(factory, handler.create_list)
+
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_delete_badcookie(self, factory):
+        """Test /create with a bad cookie"""
+
+        self.helper_badcookie(factory, handler.delete_list)
+
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_add_badcookie(self, factory):
+        """Test /create with a bad cookie"""
+
+        self.helper_badcookie(factory, handler.add_to_list)
+
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_remove_badcookie(self, factory):
+        """Test /create with a bad cookie"""
+
+        self.helper_badcookie(factory, handler.remove_from_list)
+
+    def helper_func(self, factory, data_store, query_params, func, mastofunc):
+        """Test a CRUD function assuming good auth"""
+        (event, context) = setupWithCookies()
+        event["queryStringParameters"] = query_params
+
+        res = func(event, context)
+
+        self.assertEqual(res["statusCode"], 200)
+        self.assertTrue(mastofunc.called)
+
+    @patch("handler.Datastore")
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_create(self, factory, data_store):
+        """Test /create"""
+        mf = factory.from_cookie.return_value.list_create
+        qs = {"list_name": "listname"}
+        self.helper_func(factory, data_store, qs, handler.create_list, mf)
+
+    @patch("handler.Datastore")
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_delete(self, factory, data_store):
+        """Test /delete"""
+        mf = factory.from_cookie.return_value.list_delete
+        qs = {"list_id": "listid"}
+        self.helper_func(factory, data_store, qs, handler.delete_list, mf)
+
+    @patch("handler.Datastore")
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_add(self, factory, data_store):
+        """Test /add"""
+        mf = factory.from_cookie.return_value.list_accounts_add
+        qs = {"list_id": "listid", "account_id": "acctid"}
+        self.helper_func(factory, data_store, qs, handler.add_to_list, mf)
+
+    @patch("handler.Datastore")
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_remove(self, factory, data_store):
+        """Test /remove"""
+        mf = factory.from_cookie.return_value.list_accounts_delete
+        qs = {"list_id": "listid", "account_id": "acctid"}
+        self.helper_func(factory, data_store, qs, handler.remove_from_list, mf)
