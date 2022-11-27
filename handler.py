@@ -31,15 +31,15 @@ class MastodonFactory:
         if cfg is None:
             return None
 
-        return MastodonFactory.from_config(cfg)
+        return MastodonFactory.from_config(cfg, token=authinfo.token)
 
     @classmethod
-    def from_config(cls, cfg):
+    def from_config(cls, cfg, token=None):
         """Create a Mastodon interface from a HostConfig object"""
         mastodon = Mastodon(
             client_id=cfg.client_id,
             client_secret=cfg.client_secret,
-            # access_token=authinfo.token,
+            access_token=token,
             api_base_url=f"https://{cfg.host}",
         )
         return mastodon
@@ -126,7 +126,6 @@ def info(event, _):
     except MastodonInternalServerError:
         return {"statusCode": 500, "body": "ERROR"}
     except MastodonUnauthorizedError as e:
-        print(e)
         resp = {"status": "no_cookie"}
         return response(json.dumps(resp), statusCode=403)
 
@@ -256,10 +255,9 @@ def auth(event, _):
     if cfg is None:
         # Make an app
         (client_id, client_secret) = make_app(domain, redirect_url)
-        cfg = Datastore.set_host_config(
+        Datastore.set_host_config(
             domain, client_id=client_id, client_secret=client_secret
         )
-        cfg.save()
 
     mastodon = MastodonFactory.from_config(cfg)
     url = mastodon.auth_request_url(
