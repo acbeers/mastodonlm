@@ -255,7 +255,7 @@ def auth(event, _):
     if cfg is None:
         # Make an app
         (client_id, client_secret) = make_app(domain, redirect_url)
-        Datastore.set_host_config(
+        cfg = Datastore.set_host_config(
             domain, client_id=client_id, client_secret=client_secret
         )
 
