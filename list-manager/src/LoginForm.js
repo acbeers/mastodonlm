@@ -23,10 +23,12 @@ function LoginForm() {
           setRedirect(`/manager`);
         } else if (data.status === "not_allowed") {
           setError("Looks like your domain is not currently supported!");
-        } else {
+        } else if (data.url) {
           // This one has to be done here, as it is to an external URL.
           const url = data.url;
           window.location = url;
+        } else {
+          setError("Hm.  Something has gone wrong.  Try again later.");
         }
       });
   };

@@ -1,12 +1,12 @@
 """Tests for Mastodon factory"""
 
-import json
 from unittest.mock import MagicMock, patch, sentinel
 from unittest import TestCase
 from handler import MastodonFactory
 
 
 def mock_hostconfig():
+    """Returns a mock HostConfig"""
     cfg = MagicMock()
     cfg.client_id = sentinel.client_id
     cfg.client_secret = sentinel.client_secret

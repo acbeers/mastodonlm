@@ -102,6 +102,9 @@ function Manager() {
   const loadData = () => {
     fetch(urlInfo, {
       credentials: "include",
+      headers: {
+        authorization: sessionStorage.getItem("list-manager-cookie"),
+      },
     })
       .then((resp) => resp.json())
       .then((data) => {
@@ -179,6 +182,9 @@ function Manager() {
     fetch(`${urlCreate}?list_name=${name}`, {
       method: "POST",
       credentials: "include",
+      headers: {
+        authorization: sessionStorage.getItem("list-manager-cookie"),
+      },
     }).then(() => {
       setCreateOpen(false);
       loadData();
@@ -202,6 +208,9 @@ function Manager() {
     fetch(`${urlDelete}?list_id=${list.id}`, {
       method: "POST",
       credentials: "include",
+      headers: {
+        authorization: sessionStorage.getItem("list-manager-cookie"),
+      },
     })
       .then(() => loadData())
       .then(() => setDeleteOpen(false));
@@ -214,6 +223,9 @@ function Manager() {
     fetch(`${urlRemove}?list_id=${lid}&account_id=${fol.id}`, {
       method: "POST",
       credentials: "include",
+      headers: {
+        authorization: sessionStorage.getItem("list-manager-cookie"),
+      },
     }).then((resp) => {
       if (resp.ok) {
         setInfo(newInfo);
@@ -230,6 +242,9 @@ function Manager() {
     fetch(`${urlAdd}?list_id=${lid}&account_id=${fol.id}`, {
       method: "POST",
       credentials: "include",
+      headers: {
+        authorization: sessionStorage.getItem("list-manager-cookie"),
+      },
     }).then((resp) => {
       if (resp.ok) {
         setInfo(newInfo);

@@ -9,6 +9,9 @@ function Login(params) {
   useEffect(() => {
     fetch(urlAuth, {
       credentials: "include",
+      headers: {
+        authorization: window.sessionStorage.getItem("list-manager-cookie"),
+      },
     })
       .then((resp) => resp.json())
       .then((data) => {
