@@ -263,9 +263,11 @@ function Manager() {
     return (
       <th key={l.id}>
         <div key={l.id} className="listname">
-          {l.title}
           <div className="icon">
             <DeleteIcon onClick={() => handleDeleteClick(l)} />
+          </div>
+          <div>
+            <span className="listTitle">{l.title}</span>
           </div>
         </div>
       </th>
