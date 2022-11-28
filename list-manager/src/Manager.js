@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
+
 import AppBar from "@mui/material/AppBar";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
@@ -20,11 +21,16 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
 import MenuIcon from "@mui/icons-material/Menu";
+
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+
 import AboutDialog from "./AboutDialog";
 import CreateListDialog from "./CreateListDialog";
 import DeleteListDialog from "./DeleteListDialog";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+
+import API from "./api";
+
 import "./Manager.css";
 
 const style = {
@@ -45,12 +51,6 @@ const style = {
     },
   },
 };
-
-const urlInfo = process.env.REACT_APP_BACKEND_URL + "/info";
-const urlAdd = process.env.REACT_APP_BACKEND_URL + "/add";
-const urlRemove = process.env.REACT_APP_BACKEND_URL + "/remove";
-const urlCreate = process.env.REACT_APP_BACKEND_URL + "/create";
-const urlDelete = process.env.REACT_APP_BACKEND_URL + "/delete";
 
 function info2Groups(info, by, search) {
   // First, compute the groups
@@ -103,12 +103,7 @@ function Manager() {
   const [inProgress, setInProgress] = useState(null);
 
   const loadData = () => {
-    fetch(urlInfo, {
-      credentials: "include",
-      headers: {
-        authorization: sessionStorage.getItem("list-manager-cookie"),
-      },
-    })
+    API.getInfo()
       .then((resp) => resp.json())
       .then((data) => {
         if (data.status === "no_cookie") setRedirect("/login");
@@ -182,14 +177,9 @@ function Manager() {
     setCreateOpen(false);
   };
   const handleCreateCommit = (name) => {
-    fetch(`${urlCreate}?list_name=${name}`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        authorization: sessionStorage.getItem("list-manager-cookie"),
-      },
-    }).then(() => {
+    API.createList(name).then(() => {
       setCreateOpen(false);
+      // We have to do this to get the new ID of the list.
       loadData();
     });
   };
@@ -208,13 +198,7 @@ function Manager() {
     setDeleteOpen(true);
   };
   const handleDelete = (list) => {
-    fetch(`${urlDelete}?list_id=${list.id}`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        authorization: sessionStorage.getItem("list-manager-cookie"),
-      },
-    })
+    API.deleteList(list.id)
       .then(() => loadData())
       .then(() => setDeleteOpen(false));
   };
@@ -224,13 +208,7 @@ function Manager() {
     const fol = newInfo.followers[index];
     setInProgress({ list: lid, follower: fol.id });
     fol.lists = fol.lists.filter((value) => value !== lid);
-    fetch(`${urlRemove}?list_id=${lid}&account_id=${fol.id}`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        authorization: sessionStorage.getItem("list-manager-cookie"),
-      },
-    }).then((resp) => {
+    API.removeFromList(lid, fol.id).then((resp) => {
       setInProgress(null);
       if (resp.ok) {
         setInfo(newInfo);
@@ -245,13 +223,7 @@ function Manager() {
     const fol = newInfo.followers[index];
     fol.lists.push(lid);
     setInProgress({ list: lid, follower: fol.id });
-    fetch(`${urlAdd}?list_id=${lid}&account_id=${fol.id}`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        authorization: sessionStorage.getItem("list-manager-cookie"),
-      },
-    }).then((resp) => {
+    API.addToList(lid, fol.id).then((resp) => {
       setInProgress(null);
       if (resp.ok) {
         setInfo(newInfo);
@@ -464,7 +436,7 @@ function Manager() {
       <FormControl sx={{ marginTop: "12px", width: 200, marginBottom: "12px" }}>
         <InputLabel id="demo-simple-select-label">Group By</InputLabel>
         <Select
-          labelId="demo-simple-select-label"
+          labelid="demo-simple-select-label"
           id="demo-simple-select"
           value={groupBy}
           label="Group By"
@@ -477,7 +449,7 @@ function Manager() {
       </FormControl>
       <FormControl sx={{ marginTop: "12px", width: 400, marginBottom: "12px" }}>
         <TextField
-          labelId="demo-simple-search-label"
+          labelid="demo-simple-search-label"
           label="Search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}

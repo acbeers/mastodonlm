@@ -60,7 +60,6 @@ function LoginForm() {
           sx={{ width: "100%", mt: 2, mb: 1 }}
           label="Host"
           onKeyPress={(ev) => {
-            console.log(`Pressed keyCode ${ev.key}`);
             if (ev.key === "Enter") {
               handleGo();
               ev.preventDefault();

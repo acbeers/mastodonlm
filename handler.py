@@ -371,9 +371,9 @@ def remove_from_list(event, _):
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
     except MastodonIllegalArgumentError:
-        return {"statusCode": 500, "body": "ERROR"}
+        return {"statusCode": 500, "body": "Illegal argument"}
     except MastodonInternalServerError:
-        return {"statusCode": 500, "body": "ERROR"}
+        return {"statusCode": 500, "body": "Mastodon internal server error"}
 
     lid = event["queryStringParameters"]["list_id"]
     accountid = event["queryStringParameters"]["account_id"]

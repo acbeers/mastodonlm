@@ -1,18 +1,13 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
-const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
+import API from "./api";
 
 function Login(params) {
   const [redirect, setRedirect] = useState(null);
 
   useEffect(() => {
-    fetch(urlAuth, {
-      credentials: "include",
-      headers: {
-        authorization: window.sessionStorage.getItem("list-manager-cookie"),
-      },
-    })
+    API.tryAuth()
       .then((resp) => resp.json())
       .then((data) => {
         console.log(data);
