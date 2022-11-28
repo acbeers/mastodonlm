@@ -105,13 +105,19 @@ def get_all(func, *args):
     return res
 
 
+def get_cookie(event):
+    """Retrieves the auth cookie from the event object"""
+    headers = event.get("headers", {})
+    cookie = headers.get("authorization", None)
+    return cookie
+
+
 def info(event, _):
     """
     Handler to get the lists and follower information that the webapp needs.
     """
 
-    cookies = parse_cookies(event.get("cookies", []))
-    cookie = cookies.get("list-manager-cookie", None)
+    cookie = get_cookie(event)
 
     # If we have no cookie, tell the client to go away
     if cookie is None:
@@ -120,12 +126,15 @@ def info(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
+        if mastodon is None:
+            resp = {"status": "no_cookie"}
+            return response(json.dumps(resp), statusCode=403)
         me = mastodon.me()
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "ERROR"}
     except MastodonInternalServerError:
         return {"statusCode": 500, "body": "ERROR"}
-    except MastodonUnauthorizedError as e:
+    except MastodonUnauthorizedError:
         resp = {"status": "no_cookie"}
         return response(json.dumps(resp), statusCode=403)
 
@@ -210,8 +219,7 @@ def auth(event, _):
     Handler for the start of an authentication flow.
     """
     # First, see if we have an active session
-    cookies = parse_cookies(event.get("cookies", []))
-    cookie = cookies.get("list-manager-cookie", None)
+    cookie = get_cookie(event)
 
     params = event.get("queryStringParameters", {}) or {}
     domain = params.get("domain", None)
@@ -219,10 +227,11 @@ def auth(event, _):
     # Ignore the cookie if it belongs to some other domain
     if cookie is not None:
         authinfo = Datastore.get_auth(cookie)
-        if domain is None:
-            domain = authinfo.domain
-        if authinfo is not None and authinfo.domain != domain:
-            cookie = None
+        if authinfo is not None:
+            if domain is None:
+                domain = authinfo.domain
+            elif authinfo.domain != domain:
+                cookie = None
 
     if cookie is not None:
         try:
@@ -240,6 +249,10 @@ def auth(event, _):
             # If here, we didn't get a mastodon instance back, so start the
             # oAuth flow
             pass
+
+    # If we don't have a domain here, then we have to bail
+    if domain is None:
+        return response(json.dumps({"status": "no_login"}), statusCode=401)
 
     # See if this domain is allowed
     allow = Datastore.is_allowed(domain)
@@ -295,7 +308,6 @@ def callback(event, _):
 
     # For now, we'll create the right redirect_url based on the event object.
     redirect_url = make_redirect_url(event, domain)
-    cookie_options = make_cookie_options(event)
 
     token = mastodon.log_in(
         code=code,
@@ -306,12 +318,7 @@ def callback(event, _):
 
     Datastore.set_auth(cookie, token=token, domain=domain)
 
-    cookie_str = f"{cookie}; {cookie_options} Max-Age={60*60*24}"
-    return {
-        "statusCode": 200,
-        "headers": {"Set-Cookie": f"list-manager-cookie={cookie_str}"},
-        "body": '{"status":"OK"}',
-    }
+    return {"statusCode": 200, "body": json.dumps({"status": "OK", "auth": cookie})}
 
 
 def add_to_list(event, _):
@@ -322,8 +329,7 @@ def add_to_list(event, _):
     - list_id - numeric idea of a Mastodon list
     - account_id - numeric id of a Mastodon user.
     """
-    cookies = parse_cookies(event.get("cookies", []))
-    cookie = cookies.get("list-manager-cookie", None)
+    cookie = get_cookie(event)
 
     # If we have no cookie, tell the client to go away
     if cookie is None:
@@ -354,8 +360,7 @@ def remove_from_list(event, _):
     - list_id - numeric idea of a Mastodon list
     - account_id - numeric id of a Mastodon user.
     """
-    cookies = parse_cookies(event.get("cookies", []))
-    cookie = cookies.get("list-manager-cookie", None)
+    cookie = get_cookie(event)
 
     # If we have no cookie, tell the client to go away
     if cookie is None:
@@ -380,8 +385,7 @@ def remove_from_list(event, _):
 
 def create_list(event, _):
     """Create a new list"""
-    cookies = parse_cookies(event.get("cookies", []))
-    cookie = cookies.get("list-manager-cookie", None)
+    cookie = get_cookie(event)
 
     # If we have no cookie, tell the client to go away
     if cookie is None:
@@ -406,8 +410,7 @@ def create_list(event, _):
 
 def delete_list(event, _):
     """Remove a list"""
-    cookies = parse_cookies(event.get("cookies", []))
-    cookie = cookies.get("list-manager-cookie", None)
+    cookie = get_cookie(event)
 
     # If we have no cookie, tell the client to go away
     if cookie is None:

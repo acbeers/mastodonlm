@@ -32,14 +32,16 @@ function LoginCallback() {
   // Our job is to hand this code to the backend, so it can be used
   // for our work with the server.
 
-  console.log("skljealkdsfjlsdfkj");
-
   useEffect(() => {
     myFetch(`${urlCallback}?code=${code}&domain=${domain}`, {
       credentials: "include",
       method: "POST",
       data: { code: code },
-    }).then(() => setRedirect(`/manager`));
+    }).then((data) => {
+      // This data will have an token that we can use.
+      window.sessionStorage.setItem("list-manager-cookie", data.auth);
+      setRedirect(`/manager`);
+    });
   }, [code, domain]);
 
   if (redirect) {

@@ -57,8 +57,7 @@ def setupWithCookies():
     """Returns event and context objects for tests with with a cookie"""
 
     event = {
-        "headers": {"origin": "none"},
-        "cookies": ["list-manager-cookie=mycookie"],
+        "headers": {"origin": "none", "authorization": "mycookie"},
     }
     context = {}
 
@@ -68,6 +67,15 @@ def setupWithCookies():
 class TestAuth(TestCase):
     """Tests for /auth methods"""
 
+    def test_auth_nodomain(self):
+        """Test /auth with no domain parameter - there's little we can do!"""
+        (event, context) = setupNoCookies()
+
+        res = handler.auth(event, context)
+        # We should return a 401 response
+        self.assertEqual(res["statusCode"], 401)
+        self.assertEqual(json.loads(res["body"])["status"], "no_login")
+
     @patch("handler.Datastore")
     @patch("handler.MastodonFactory", new_callable=mock_factory)
     @patch("handler.make_app")
@@ -75,6 +83,7 @@ class TestAuth(TestCase):
         """Test /auth when we haven't seen this host before"""
 
         (event, context) = setupNoCookies()
+        event["queryStringParameters"] = {"domain": "mydomain"}
 
         dataStore.is_allowed.return_value = True
         dataStore.get_host_config.return_value = None
@@ -95,6 +104,7 @@ class TestAuth(TestCase):
         """Test /auth when no cookie is present"""
 
         (event, context) = setupNoCookies()
+        event["queryStringParameters"] = {"domain": "mydomain"}
 
         dataStore.is_allowed.return_value = True
         dataStore.get_host_config.return_value = sentinel.host_cfg
@@ -268,7 +278,7 @@ class TestCRUD(TestCase):
         # We use Mastodon.me() to ensure someone has logged in.
         factory.from_cookie.return_value.me.side_effect = MastodonUnauthorizedError
 
-        res = handler.info(event, context)
+        res = func(event, context)
 
         # We should return a 403 response with the correct status info
         self.assertEqual(res["statusCode"], 403)
@@ -318,7 +328,7 @@ class TestCRUD(TestCase):
 
         self.helper_badcookie(factory, handler.remove_from_list)
 
-    def helper_func(self, factory, data_store, query_params, func, mastofunc):
+    def helper_func(self, _factory, _data_store, query_params, func, mastofunc):
         """Test a CRUD function assuming good auth"""
         (event, context) = setupWithCookies()
         event["queryStringParameters"] = query_params

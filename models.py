@@ -28,7 +28,7 @@ class AuthTable(MyModel):
     class Meta:
         """Metadata for this table"""
 
-        table_name = os.environ.get("TABLE_AUTH", "list-manager-auth-prod")
+        table_name = os.environ.get("TABLE_AUTH", "list-manager-auth-dev")
         region = "us-west-2"
 
     key = UnicodeAttribute(hash_key=True)
@@ -45,7 +45,7 @@ class AllowedHost(MyModel):
     class Meta:
         """Metadata for this table"""
 
-        table_name = os.environ.get("TABLE_ALLOWED", "list-manager-allowedHosts-prod")
+        table_name = os.environ.get("TABLE_ALLOWED", "list-manager-allowedHosts-dev")
         region = "us-west-2"
 
     host = UnicodeAttribute(hash_key=True)
@@ -59,7 +59,7 @@ class HostConfig(MyModel):
     class Meta:
         """Metadata for this table"""
 
-        table_name = os.environ.get("TABLE_HOSTCFG", "list-manager-hostConfig-prod")
+        table_name = os.environ.get("TABLE_HOSTCFG", "list-manager-hostConfig-dev")
         region = "us-west-2"
 
     host = UnicodeAttribute(hash_key=True)
