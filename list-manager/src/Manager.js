@@ -6,6 +6,7 @@ import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardHeader from "@mui/material/CardHeader";
+import CircularProgress from "@mui/material/CircularProgress";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import LinearProgress from "@mui/material/LinearProgress";
@@ -98,6 +99,8 @@ function Manager() {
   const [groupBy, setGroupBy] = useState("none");
   // For searching
   const [search, setSearch] = useState("");
+  // For showing in progress actions
+  const [inProgress, setInProgress] = useState(null);
 
   const loadData = () => {
     fetch(urlInfo, {
@@ -219,6 +222,7 @@ function Manager() {
   const remove = (index, lid) => {
     const newInfo = { ...info };
     const fol = newInfo.followers[index];
+    setInProgress({ list: lid, follower: fol.id });
     fol.lists = fol.lists.filter((value) => value !== lid);
     fetch(`${urlRemove}?list_id=${lid}&account_id=${fol.id}`, {
       method: "POST",
@@ -227,6 +231,7 @@ function Manager() {
         authorization: sessionStorage.getItem("list-manager-cookie"),
       },
     }).then((resp) => {
+      setInProgress(null);
       if (resp.ok) {
         setInfo(newInfo);
       } else {
@@ -239,6 +244,7 @@ function Manager() {
     const newInfo = { ...info };
     const fol = newInfo.followers[index];
     fol.lists.push(lid);
+    setInProgress({ list: lid, follower: fol.id });
     fetch(`${urlAdd}?list_id=${lid}&account_id=${fol.id}`, {
       method: "POST",
       credentials: "include",
@@ -246,6 +252,7 @@ function Manager() {
         authorization: sessionStorage.getItem("list-manager-cookie"),
       },
     }).then((resp) => {
+      setInProgress(null);
       if (resp.ok) {
         setInfo(newInfo);
       } else {
@@ -284,7 +291,18 @@ function Manager() {
   const makeFollowerTable = (followers) => {
     const rows = followers.map((fol, index) => {
       const cols = lists.map((l) => {
-        if (fol.lists.includes(l.id)) {
+        const cmp = { list: l.id, follower: fol.id };
+        if (JSON.stringify(inProgress) === JSON.stringify(cmp)) {
+          return (
+            <td
+              key={l.id + fol.id}
+              className="cell"
+              onClick={() => remove(index, l.id)}
+            >
+              <CircularProgress size={10} />
+            </td>
+          );
+        } else if (fol.lists.includes(l.id)) {
           return (
             <td
               key={l.id + fol.id}
