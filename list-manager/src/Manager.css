@@ -1,7 +1,12 @@
 th {
+  display: table-cell;
+  vertical-align: bottom;
+  text-align: center;
+}
+
+span.listTitle {
   writing-mode: vertical-lr;
-  transform: rotate(180deg);
-  text-align: left;
+  -webkit-transform: rotate(180deg);
 }
 
 table {
