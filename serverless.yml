@@ -100,12 +100,14 @@ resources: # CloudFormation template syntax from here on.
 functions:
   auth:
     handler: handler.auth
+    timeout: 30
     events:
       - httpApi:
           path: /auth
           method: GET
   callback:
     handler: handler.callback
+    timeout: 30
     events:
       - httpApi:
           path: /callback

@@ -10,3 +10,7 @@ div.loginForm {
   margin-top: 50px;
   text-align: center;
 }
+
+.error {
+  margin-top: 5px;
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, Navigate } from "react-router-dom";
+import Typography from "@mui/material/Typography";
 
 // This fancy function prevents multiple fetches in useEffect
 // in development mode.
@@ -47,6 +48,10 @@ function LoginCallback() {
   if (redirect) {
     return <Navigate to={redirect} />;
   }
-  return "";
+  return (
+    <div>
+      <Typography variant="body">Logging you in...</Typography>
+    </div>
+  );
 }
 export default LoginCallback;

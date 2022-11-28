@@ -20,10 +20,10 @@ function Login(params) {
           // This means we are already logged in
           setRedirect(`/manager`);
         } else if (data.status === "not_allowed") {
-          setRedirect(`/loginform`);
+          setRedirect(`/main`);
         } else {
           // If we aren't logged in, we have to ask he user for a domain
-          setRedirect("/loginform");
+          setRedirect("/main");
         }
       });
   }, []);

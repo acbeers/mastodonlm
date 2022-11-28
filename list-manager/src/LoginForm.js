@@ -11,53 +11,77 @@ function LoginForm() {
   const [error, setError] = useState(null);
   const [redirect, setRedirect] = useState(null);
   const [domain, setDomain] = useState("");
+  const [enabled, setEnabled] = useState(true);
 
   const handleGo = () => {
+    setError("");
+    setEnabled(false);
     fetch(`${urlAuth}?domain=${domain}`, {
       credentials: "include",
     })
       .then((resp) => resp.json())
       .then((data) => {
-        console.log(data);
-        if (data.status === "OK") {
+        if (data.errorType === "LambdaTimeoutError") {
+          setError("Seems the backend has timed out.  Try again another time.");
+          setEnabled(true);
+        } else if (data.status === "OK") {
           setRedirect(`/manager`);
         } else if (data.status === "not_allowed") {
           setError("Looks like your domain is not currently supported!");
+          setEnabled(true);
         } else if (data.url) {
           // This one has to be done here, as it is to an external URL.
           const url = data.url;
           window.location = url;
         } else {
           setError("Hm.  Something has gone wrong.  Try again later.");
+          setEnabled(true);
         }
+      })
+      .catch((err) => {
+        setEnabled(true);
+        setError("Hm.  Something has gone wrong.  Try again later.");
       });
   };
 
   if (redirect) {
     return <Navigate to={redirect} />;
   }
+
   return (
     <div className="loginform_container">
       <div className="loginForm">
-        <Typography>
-          Welcome to the Mastondon List Manager. To get started, enter your
-          instance name below.
+        <Typography variant="body">
+          To get started, enter your instance name below (e.g. mastodon.social)
         </Typography>
         <TextField
           value={domain}
           onChange={(evt) => setDomain(evt.target.value)}
-          sx={{ width: 300, marginTop: "8px" }}
+          sx={{ width: "100%", mt: 2, mb: 1 }}
           label="Host"
+          onKeyPress={(ev) => {
+            console.log(`Pressed keyCode ${ev.key}`);
+            if (ev.key === "Enter") {
+              handleGo();
+              ev.preventDefault();
+            }
+          }}
         />
         <br />
-        <Button sx={{ width: 300 }} label="Go" onClick={handleGo}>
-          Go
+        <Button
+          sx={{ width: "100%" }}
+          label={enabled ? "Go" : "Authenticating..."}
+          onClick={handleGo}
+          variant="contained"
+          disabled={!enabled}
+        >
+          {enabled ? "Go" : "Authenticating..."}
         </Button>
-        <div>{error}</div>
-        <Typography variant="caption">
-          NOTE: This tool uses AWS as a backend, so you'll have to allow
-          third-party cookies.
-        </Typography>
+        <div className="error">
+          <Typography variant="caption" color="error">
+            {error}
+          </Typography>
+        </div>
       </div>
     </div>
   );

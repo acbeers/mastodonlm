@@ -255,7 +255,7 @@ def auth(event, _):
         return response(json.dumps({"status": "no_login"}), statusCode=401)
 
     # See if this domain is allowed
-    allow = Datastore.is_allowed(domain)
+    allow = Datastore.is_allowed(domain.lower())
     if not allow:
         res = {"status": "not_allowed"}
         return response(json.dumps(res))
@@ -299,6 +299,7 @@ def callback(event, _):
     code = params.get("code")
 
     cfg = Datastore.get_host_config(domain)
+    print(domain)
 
     mastodon = Mastodon(
         client_id=cfg.client_id,

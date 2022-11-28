@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Manager from "./Manager";
 import Login from "./Login";
-import LoginForm from "./LoginForm";
 import LoginCallback from "./LoginCallback";
+import MainPage from "./MainPage";
 import "./App.css";
 
 /* 
@@ -20,7 +20,7 @@ function App() {
       <Routes>
         <Route path="/manager" element={<Manager />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/loginform" element={<LoginForm />} />
+        <Route path="/main" element={<MainPage />} />
         <Route path="/callback" element={<LoginCallback />} />
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>
