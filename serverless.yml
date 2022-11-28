@@ -5,12 +5,17 @@ frameworkVersion: "3"
 provider:
   name: aws
   runtime: python3.9
-  stage: dev
+  stage: ${opt:stage, "dev"}
   region: us-west-2
+  environment:
+    TABLE_AUTH: ${self:custom.authTable}
+    TABLE_ALLOWED: ${self:custom.allowedTable}
+    TABLE_HOSTCFG: ${self:custom.hostcfgTable}
   httpApi:
     cors:
       allowedOrigins:
         - https://acbeers.github.io
+        - http://localhost:3000
       allowedHeaders:
         - Content-Type
         - Authorization
@@ -28,19 +33,19 @@ provider:
             - "dynamodb:PutItem"
             - "dynamodb:GetItem"
             - "dynamodb:Query"
-          Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/authTable"
+          Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/${self:custom.authTable}"
         - Effect: "Allow"
           Action:
             - "dynamodb:PutItem"
             - "dynamodb:GetItem"
             - "dynamodb:Query"
-          Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/allowedHosts"
+          Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/${self:custom.allowedTable}"
         - Effect: "Allow"
           Action:
             - "dynamodb:PutItem"
             - "dynamodb:GetItem"
             - "dynamodb:Query"
-          Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/hostsTable"
+          Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/${self:custom.hostcfgTable}"
 
 resources: # CloudFormation template syntax from here on.
   Resources:
@@ -48,7 +53,7 @@ resources: # CloudFormation template syntax from here on.
     usersTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: authTable
+        TableName: "${self:custom.authTable}"
         AttributeDefinitions:
           - AttributeName: key
             AttributeType: S
@@ -66,7 +71,7 @@ resources: # CloudFormation template syntax from here on.
     allowTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: allowedHosts
+        TableName: "${self:custom.allowedTable}"
         AttributeDefinitions:
           - AttributeName: host
             AttributeType: S
@@ -81,7 +86,7 @@ resources: # CloudFormation template syntax from here on.
     hostsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: hostsTable
+        TableName: "${self:custom.hostcfgTable}"
         AttributeDefinitions:
           - AttributeName: host
             AttributeType: S
@@ -147,11 +152,14 @@ package:
     - "!list-manager"
 
 custom:
+  authTable: "${self:service}-auth-${self:provider.stage}"
+  allowedTable: "${self:service}-allowedHosts-${self:provider.stage}"
+  hostcfgTable: "${self:service}-hostConfig-${self:provider.stage}"
   serverless-offline:
     httpPort: 4000
   dynamodb:
     ttl:
-      - table: authTable
+      - table: ${self:custom.authTable}
         field: your-ttl-property-name
 
 plugins:

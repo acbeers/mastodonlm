@@ -1,6 +1,7 @@
 """Models for DynamoDB access"""
 
 import datetime
+import os
 import time
 
 from pynamodb.models import Model
@@ -27,7 +28,7 @@ class AuthTable(MyModel):
     class Meta:
         """Metadata for this table"""
 
-        table_name = "authTable"
+        table_name = os.environ.get("TABLE_AUTH", "list-manager-auth-prod")
         region = "us-west-2"
 
     key = UnicodeAttribute(hash_key=True)
@@ -44,7 +45,7 @@ class AllowedHost(MyModel):
     class Meta:
         """Metadata for this table"""
 
-        table_name = "allowedHosts"
+        table_name = os.environ.get("TABLE_ALLOWED", "list-manager-allowedHosts-prod")
         region = "us-west-2"
 
     host = UnicodeAttribute(hash_key=True)
@@ -58,7 +59,7 @@ class HostConfig(MyModel):
     class Meta:
         """Metadata for this table"""
 
-        table_name = "hostsTable"
+        table_name = os.environ.get("TABLE_HOSTCFG", "list-manager-hostConfig-prod")
         region = "us-west-2"
 
     host = UnicodeAttribute(hash_key=True)
@@ -107,3 +108,4 @@ class Datastore:
         """Stores client ID and secret for the given host"""
         cfg = HostConfig(host, client_id=client_id, client_secret=client_secret)
         cfg.save()
+        return cfg
