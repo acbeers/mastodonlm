@@ -1,23 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocation, Navigate } from "react-router-dom";
+import Typography from "@mui/material/Typography";
 
-// This fancy function prevents multiple fetches in useEffect
-// in development mode.
-const createFetch = () => {
-  // Create a cache of fetches by URL
-  const fetchMap = {};
-  return (url, options) => {
-    // Check to see if its not in the cache otherwise fetch it
-    if (!fetchMap[url]) {
-      fetchMap[url] = fetch(url, options).then((res) => res.json());
-    }
-    // Return the cached promise
-    return fetchMap[url];
-  };
-};
-const myFetch = createFetch();
-
-const urlCallback = process.env.REACT_APP_BACKEND_URL + "/callback";
+import API from "./api";
 
 function LoginCallback() {
   const [redirect, setRedirect] = useState(null);
@@ -33,11 +18,7 @@ function LoginCallback() {
   // for our work with the server.
 
   useEffect(() => {
-    myFetch(`${urlCallback}?code=${code}&domain=${domain}`, {
-      credentials: "include",
-      method: "POST",
-      data: { code: code },
-    }).then((data) => {
+    API.authCallback(code, domain).then((data) => {
       // This data will have an token that we can use.
       window.sessionStorage.setItem("list-manager-cookie", data.auth);
       setRedirect(`/manager`);
@@ -47,6 +28,10 @@ function LoginCallback() {
   if (redirect) {
     return <Navigate to={redirect} />;
   }
-  return "";
+  return (
+    <div>
+      <Typography variant="body">Logging you in...</Typography>
+    </div>
+  );
 }
 export default LoginCallback;

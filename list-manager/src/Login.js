@@ -1,18 +1,13 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
-const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
+import API from "./api";
 
 function Login(params) {
   const [redirect, setRedirect] = useState(null);
 
   useEffect(() => {
-    fetch(urlAuth, {
-      credentials: "include",
-      headers: {
-        authorization: window.sessionStorage.getItem("list-manager-cookie"),
-      },
-    })
+    API.tryAuth()
       .then((resp) => resp.json())
       .then((data) => {
         console.log(data);
@@ -20,10 +15,10 @@ function Login(params) {
           // This means we are already logged in
           setRedirect(`/manager`);
         } else if (data.status === "not_allowed") {
-          setRedirect(`/loginform`);
+          setRedirect(`/main`);
         } else {
           // If we aren't logged in, we have to ask he user for a domain
-          setRedirect("/loginform");
+          setRedirect("/main");
         }
       });
   }, []);
