@@ -339,10 +339,14 @@ def add_to_list(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
+        mastodon.me()
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "ERROR"}
     except MastodonInternalServerError:
         return {"statusCode": 500, "body": "ERROR"}
+    except MastodonUnauthorizedError:
+        resp = {"status": "not_authorized"}
+        return response(json.dumps(resp), statusCode=403)
 
     lid = event["queryStringParameters"]["list_id"]
     accountid = event["queryStringParameters"]["account_id"]
@@ -370,10 +374,14 @@ def remove_from_list(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
+        mastodon.me()
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "Illegal argument"}
     except MastodonInternalServerError:
         return {"statusCode": 500, "body": "Mastodon internal server error"}
+    except MastodonUnauthorizedError:
+        resp = {"status": "not_authorized"}
+        return response(json.dumps(resp), statusCode=403)
 
     lid = event["queryStringParameters"]["list_id"]
     accountid = event["queryStringParameters"]["account_id"]
@@ -395,10 +403,14 @@ def create_list(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
+        mastodon.me()
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "ERROR"}
     except MastodonInternalServerError:
         return {"statusCode": 500, "body": "ERROR"}
+    except MastodonUnauthorizedError:
+        resp = {"status": "not_authorized"}
+        return response(json.dumps(resp), statusCode=403)
 
     lname = event["queryStringParameters"]["list_name"]
 
@@ -420,10 +432,14 @@ def delete_list(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
+        mastodon.me()
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "ERROR"}
     except MastodonInternalServerError:
         return {"statusCode": 500, "body": "ERROR"}
+    except MastodonUnauthorizedError:
+        resp = {"status": "not_authorized"}
+        return response(json.dumps(resp), statusCode=403)
 
     lid = event["queryStringParameters"]["list_id"]
 
