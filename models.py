@@ -51,6 +51,20 @@ class AllowedHost(MyModel):
     host = UnicodeAttribute(hash_key=True)
 
 
+class BlockedHost(MyModel):
+    """
+    A list of blocked hosts
+    """
+
+    class Meta:
+        """Metadata for this table"""
+
+        table_name = os.environ.get("TABLE_ALLOWED", "list-manager-allowedHosts-dev")
+        region = "us-west-2"
+
+    host = UnicodeAttribute(hash_key=True)
+
+
 class HostConfig(MyModel):
     """
     A list of allowed hosts
@@ -94,8 +108,15 @@ class Datastore:
     @classmethod
     def is_allowed(cls, host):
         """Returns true if this host is allowed"""
+
+        # Host is blocked if on the blocklist, unless it is also on the allow
+        # list.
         allow = AllowedHost.lookup(host)
-        return allow is not None
+        if allow is not None:
+            return True
+
+        block = BlockedHost.lookup(host)
+        return block is None
 
     @classmethod
     def get_host_config(cls, host):

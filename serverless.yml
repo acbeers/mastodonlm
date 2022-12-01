@@ -147,6 +147,11 @@ functions:
       - httpApi:
           path: /delete
           method: POST
+  blocklistUpdate:
+    handler: handler.block_update
+    timeout: 300
+    events:
+      - schedule: cron(0 8 * * * *)
 
 package:
   patterns:
