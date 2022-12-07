@@ -12,6 +12,7 @@ from mastodon import (
     MastodonInternalServerError,
     MastodonUnauthorizedError,
 )
+import requests
 
 from models import Datastore
 
@@ -214,6 +215,14 @@ def make_cookie_options(event):
     return "Domain=localhost; "
 
 
+def cleandomain(domain):
+    """Clean up a domain input - all lowercase, no @"""
+    if domain is None:
+        return domain
+
+    return domain.strip().lower().replace("@", "")
+
+
 def auth(event, _):
     """
     Handler for the start of an authentication flow.
@@ -222,7 +231,7 @@ def auth(event, _):
     cookie = get_cookie(event)
 
     params = event.get("queryStringParameters", {}) or {}
-    domain = params.get("domain", None)
+    domain = cleandomain(params.get("domain", None))
 
     # Ignore the cookie if it belongs to some other domain
     if cookie is not None:
@@ -448,3 +457,15 @@ def delete_list(event, _):
         return response("OK")
     except MastodonAPIError:
         return response("ERROR", statusCode=500)
+
+
+def block_update(_event, _context):
+    """Pulls a list of hosts to block from github and populates our blocked host
+    table"""
+
+    # NOTE: There doesn't seem to be a Mastodon.py method for this.
+    resp = requests.get(
+        "https://hachyderm.io/api/v1/instance/domain_blocks", timeout=60
+    )
+    js = resp.json()
+    Datastore.batch_block_host(js)

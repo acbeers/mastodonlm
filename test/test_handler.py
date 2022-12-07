@@ -3,9 +3,8 @@
 import json
 from unittest.mock import MagicMock, patch, sentinel, call, Mock
 from unittest import TestCase
-import handler
-
 from mastodon import MastodonAPIError, MastodonUnauthorizedError
+import handler
 
 
 def mock_userdict(username):
