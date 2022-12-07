@@ -1,6 +1,7 @@
 """Models for DynamoDB access"""
 
 import datetime
+import hashlib
 import os
 import time
 
@@ -51,6 +52,21 @@ class AllowedHost(MyModel):
     host = UnicodeAttribute(hash_key=True)
 
 
+class BlockedHost(MyModel):
+    """
+    A list of blocked hosts
+    """
+
+    class Meta:
+        """Metadata for this table"""
+
+        table_name = os.environ.get("TABLE_BLOCKED", "list-manager-blockedHosts-dev")
+        region = "us-west-2"
+
+    hash = UnicodeAttribute(hash_key=True)
+    host = UnicodeAttribute()
+
+
 class HostConfig(MyModel):
     """
     A list of allowed hosts
@@ -94,8 +110,35 @@ class Datastore:
     @classmethod
     def is_allowed(cls, host):
         """Returns true if this host is allowed"""
-        allow = AllowedHost.lookup(host)
-        return allow is not None
+
+        # Host is blocked if on the blocklist, unless it is also on the allow
+        # list.
+        lhost = host.lower().strip()
+        allow = AllowedHost.lookup(lhost)
+        if allow is not None:
+            return True
+
+        # Hosts are stored as a hash
+        m = hashlib.sha256()
+        m.update(lhost.encode("utf-8"))
+        sha = m.hexdigest()
+        block = BlockedHost.lookup(sha)
+        return block is None
+
+    @classmethod
+    def block_host(cls, sha, host):
+        """Adds an entry to the blocked hosts list"""
+        bh = BlockedHost(sha, host=host)
+        bh.save()
+
+    @classmethod
+    def batch_block_host(cls, hosts):
+        """Adds multiple entries to the blocked host list"""
+
+        with BlockedHost.batch_write() as batch:
+            items = [BlockedHost(x["digest"], host=x["domain"]) for x in hosts]
+            for item in items:
+                batch.save(item)
 
     @classmethod
     def get_host_config(cls, host):

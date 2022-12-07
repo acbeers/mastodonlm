@@ -10,6 +10,7 @@ pynamodb = "*"
 pytz = "*"
 requests = "*"
 decorator = "*"
+"mastodon.py" = "*"
 
 [dev-packages]
 pylint = "*"

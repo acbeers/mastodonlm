@@ -10,6 +10,7 @@ provider:
   environment:
     TABLE_AUTH: ${self:custom.authTable}
     TABLE_ALLOWED: ${self:custom.allowedTable}
+    TABLE_BLOCKED: ${self:custom.blockedTable}
     TABLE_HOSTCFG: ${self:custom.hostcfgTable}
   httpApi:
     cors:
@@ -46,6 +47,12 @@ provider:
             - "dynamodb:GetItem"
             - "dynamodb:Query"
           Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/${self:custom.hostcfgTable}"
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:PutItem"
+            - "dynamodb:GetItem"
+            - "dynamodb:Query"
+          Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/${self:custom.blockedTable}"
 
 resources: # CloudFormation template syntax from here on.
   Resources:
@@ -61,8 +68,8 @@ resources: # CloudFormation template syntax from here on.
           - AttributeName: key
             KeyType: HASH
         ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+          ReadCapacityUnits: 10
+          WriteCapacityUnits: 10
         TimeToLiveSpecification:
           Enabled: true
           AttributeName: expires_at
@@ -79,8 +86,23 @@ resources: # CloudFormation template syntax from here on.
           - AttributeName: host
             KeyType: HASH
         ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+          ReadCapacityUnits: 10
+          WriteCapacityUnits: 10
+
+    # Essentially, a list of blocked hosts.
+    blockTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: "${self:custom.blockedTable}"
+        AttributeDefinitions:
+          - AttributeName: hash
+            AttributeType: S
+        KeySchema:
+          - AttributeName: hash
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 10
+          WriteCapacityUnits: 10
 
     # Stores host information (secrets, urls, etc)
     hostsTable:
@@ -94,8 +116,8 @@ resources: # CloudFormation template syntax from here on.
           - AttributeName: host
             KeyType: HASH
         ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+          ReadCapacityUnits: 10
+          WriteCapacityUnits: 10
 
 functions:
   auth:
@@ -147,6 +169,11 @@ functions:
       - httpApi:
           path: /delete
           method: POST
+  blocklistUpdate:
+    handler: handler.block_update
+    timeout: 300
+    events:
+      - schedule: cron(0 8 * * ? *)
 
 package:
   patterns:
@@ -156,6 +183,7 @@ package:
 custom:
   authTable: "${self:service}-auth-${self:provider.stage}"
   allowedTable: "${self:service}-allowedHosts-${self:provider.stage}"
+  blockedTable: "${self:service}-blockedHosts-${self:provider.stage}"
   hostcfgTable: "${self:service}-hostConfig-${self:provider.stage}"
   serverless-offline:
     httpPort: 4000

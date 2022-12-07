@@ -3,9 +3,8 @@
 import json
 from unittest.mock import MagicMock, patch, sentinel, call, Mock
 from unittest import TestCase
-import handler
-
 from mastodon import MastodonAPIError, MastodonUnauthorizedError
+import handler
 
 
 def mock_userdict(username):
@@ -282,7 +281,7 @@ class TestCRUD(TestCase):
 
         # We should return a 403 response with the correct status info
         self.assertEqual(res["statusCode"], 403)
-        self.assertEqual(json.loads(res["body"])["status"], "no_cookie")
+        self.assertEqual(json.loads(res["body"])["status"], "not_authorized")
 
     def test_create_no_cookie(self):
         """Test /create with no cookie"""
