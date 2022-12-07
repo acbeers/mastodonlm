@@ -8,14 +8,25 @@ import LoginForm from "./LoginForm";
 
 function Copyright() {
   return (
-    <Typography variant="body2" color="text.secondary" align="center">
-      {"Copyright © "}
-      <Link color="inherit" href="https://acbeers.github.io/">
-        Andrew Beers
-      </Link>{" "}
-      {new Date().getFullYear()}
-      {"."}
-    </Typography>
+    <div>
+      <Typography variant="body2" color="text.secondary" align="center">
+        {"Copyright © "}
+        <Link color="inherit" href="https://acbeers.github.io/">
+          Andrew Beers
+        </Link>{" "}
+        {new Date().getFullYear()}
+        {". "}
+      </Typography>
+      <Typography variant="body2" color="text.secondary" align="center">
+        <Link color="inherit" href="https://github.com/mastodonlm/LICENSE.md">
+          License
+        </Link>
+        {" | "}
+        <Link color="inherit" href="https://github.com/mastodonlm">
+          Source
+        </Link>
+      </Typography>
+    </div>
   );
 }
 

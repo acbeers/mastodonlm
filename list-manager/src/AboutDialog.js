@@ -29,6 +29,10 @@ function AboutDialog({ open, handleClose }) {
             Maintained by{" "}
             <a href="https://hachyderm.io/@acbeers">@acbeers@hachyderm.io</a>.
           </p>
+          <p>
+            Released under{" "}
+            <a href="https://github.com/mastodonlm/LICENSE.md">MIT license</a>
+          </p>
         </DialogContentText>
       </DialogContent>
       <DialogActions>
