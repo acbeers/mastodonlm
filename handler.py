@@ -11,6 +11,7 @@ from mastodon import (
     MastodonIllegalArgumentError,
     MastodonInternalServerError,
     MastodonUnauthorizedError,
+    MastodonNetworkError
 )
 import requests
 
@@ -112,6 +113,23 @@ def get_cookie(event):
     cookie = headers.get("authorization", None)
     return cookie
 
+def response(body, statusCode=200):
+    """Construct a lambda response object"""
+    # Log a mesasge for error-like things.
+    if statusCode >= 400:
+        print(f"[ERROR] Returning {statusCode} with {body}")
+    return {
+        "statusCode": statusCode,
+        "body": body,
+    }
+
+def err_response(msg):
+    """Construct a lambda error response"""
+    obj = {"status": msg}
+    return response(json.dumps(obj),statusCode=500)
+
+
+
 
 def info(event, _):
     """
@@ -142,14 +160,17 @@ def info(event, _):
     # Find out info about me
     me_id = me["id"]
     # And people I follow
+    print("info: get_all")
     followers = get_all(mastodon.account_following, me_id)
     for f in followers:
         f["lists"] = []
     followermap = {x["id"]: x for x in followers}
 
     # Pull our lists
+    print("info: lists")
     lists = mastodon.lists()
     for l in lists:
+        print("info: list_accounts")
         accts = get_all(mastodon.list_accounts, l["id"])
         for acct in accts:
             aid = acct["id"]
@@ -189,15 +210,6 @@ def info(event, _):
     }
     output = {"lists": outlists, "followers": outpeople, "me": meinfo}
     return response(json.dumps(output))
-
-
-def response(body, statusCode=200):
-    """Construct a lambda response object"""
-    return {
-        "statusCode": statusCode,
-        "body": body,
-    }
-
 
 def make_redirect_url(event, domain):
     """Create a redirect URL based on the origin of the request"""
@@ -267,7 +279,10 @@ def auth(event, _):
     allow = Datastore.is_allowed(domain.lower())
     if not allow:
         res = {"status": "not_allowed"}
+        print(f"auth: domain denied: {domain}")
         return response(json.dumps(res))
+
+    print(f"auth: starting OAuth path for {domain}")
 
     # For now, we'll create the right redirect_url based on the event object.
     redirect_url = make_redirect_url(event, domain)
@@ -276,11 +291,16 @@ def auth(event, _):
 
     if cfg is None:
         # Make an app
-        (client_id, client_secret) = make_app(domain, redirect_url)
+        print(f"auth: making app for {domain}")
+        try:
+            (client_id, client_secret) = make_app(domain, redirect_url)
+            print("auth: Made the app!")
+        except MastodonNetworkError:
+            return response(json.dumps({"status":"bad_host"}),statusCode=500)
+
         cfg = Datastore.set_host_config(
             domain, client_id=client_id, client_secret=client_secret
         )
-
     mastodon = MastodonFactory.from_config(cfg)
     url = mastodon.auth_request_url(
         scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
@@ -308,7 +328,7 @@ def callback(event, _):
     code = params.get("code")
 
     cfg = Datastore.get_host_config(domain)
-    print(domain)
+    print(f"callback for {domain}")
 
     mastodon = Mastodon(
         client_id=cfg.client_id,
@@ -319,11 +339,16 @@ def callback(event, _):
     # For now, we'll create the right redirect_url based on the event object.
     redirect_url = make_redirect_url(event, domain)
 
-    token = mastodon.log_in(
-        code=code,
-        redirect_uri=redirect_url,
-        scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
-    )
+    token = None
+    try:
+        token = mastodon.log_in(
+            code=code,
+            redirect_uri=redirect_url,
+            scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
+        )
+    except MastodonIllegalArgumentError:
+        print(f"[ERROR] MastodonIllegalArgumentError, code = {code}, redirect_uri = {redirect_url}")
+        raise
     cookie = uuid.uuid4().urn
 
     Datastore.set_auth(cookie, token=token, domain=domain)
@@ -348,11 +373,12 @@ def add_to_list(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
+        # FIXME: from_cookie can return None!
         mastodon.me()
     except MastodonIllegalArgumentError:
-        return {"statusCode": 500, "body": "ERROR"}
+        return err_response("ERROR - illegal argument")
     except MastodonInternalServerError:
-        return {"statusCode": 500, "body": "ERROR"}
+        return err_response("ERROR - internal server")
     except MastodonUnauthorizedError:
         resp = {"status": "not_authorized"}
         return response(json.dumps(resp), statusCode=403)
@@ -363,7 +389,7 @@ def add_to_list(event, _):
         mastodon.list_accounts_add(lid, [accountid])
         return response("OK")
     except MastodonAPIError:
-        return response("ERROR", statusCode=500)
+        return err_response("ERROR - API error")
 
 
 def remove_from_list(event, _):
@@ -383,11 +409,12 @@ def remove_from_list(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
+        # FIXME: from_cookie can return None!
         mastodon.me()
     except MastodonIllegalArgumentError:
-        return {"statusCode": 500, "body": "Illegal argument"}
+        return err_response("Illegal argument")
     except MastodonInternalServerError:
-        return {"statusCode": 500, "body": "Mastodon internal server error"}
+        return err_response("Mastodon internal server error")
     except MastodonUnauthorizedError:
         resp = {"status": "not_authorized"}
         return response(json.dumps(resp), statusCode=403)
@@ -398,7 +425,7 @@ def remove_from_list(event, _):
         mastodon.list_accounts_delete(lid, [accountid])
         return response("OK")
     except MastodonAPIError:
-        return response("ERROR", statusCode=500)
+        return err_response("ERROR")
 
 
 def create_list(event, _):
@@ -412,11 +439,12 @@ def create_list(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
+        # FIXME: from_cookie can return None!
         mastodon.me()
     except MastodonIllegalArgumentError:
-        return {"statusCode": 500, "body": "ERROR"}
+        return err_response("Illegal argument")
     except MastodonInternalServerError:
-        return {"statusCode": 500, "body": "ERROR"}
+        return err_response("Mastodon internal server error")
     except MastodonUnauthorizedError:
         resp = {"status": "not_authorized"}
         return response(json.dumps(resp), statusCode=403)
@@ -427,7 +455,7 @@ def create_list(event, _):
         mastodon.list_create(lname)
         return response("OK")
     except MastodonAPIError:
-        return response("ERROR", statusCode=500)
+        return err_response("ERROR")
 
 
 def delete_list(event, _):
@@ -441,6 +469,7 @@ def delete_list(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
+        # FIXME: from_cookie can return None!
         mastodon.me()
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "ERROR"}
@@ -456,7 +485,7 @@ def delete_list(event, _):
         mastodon.list_delete(lid)
         return response("OK")
     except MastodonAPIError:
-        return response("ERROR", statusCode=500)
+        return err_response("ERROR")
 
 
 def block_update(_event, _context):

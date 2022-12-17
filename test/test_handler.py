@@ -368,3 +368,23 @@ class TestCRUD(TestCase):
         mf = factory.from_cookie.return_value.list_accounts_delete
         qs = {"list_id": "listid", "account_id": "acctid"}
         self.helper_func(factory, data_store, qs, handler.remove_from_list, mf)
+
+    def helper_func_error(self, _factory, _data_store, query_params, func, mastofunc):
+        """Test a CRUD function assuming good auth, but an error after"""
+        (event, context) = setupWithCookies()
+        event["queryStringParameters"] = query_params
+
+        res = func(event, context)
+
+        self.assertEqual(res["statusCode"], 500)
+        self.assertTrue(mastofunc.called)
+
+    @patch("handler.Datastore")
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_add_error(self, factory, data_store):
+        """Test /add with errors"""
+        mf = factory.from_cookie.return_value.list_accounts_add
+        mf.side_effect = MastodonAPIError
+        qs = {"list_id": "listid", "account_id": "acctid"}
+        self.helper_func_error(factory, data_store, qs, handler.add_to_list, mf)
+
