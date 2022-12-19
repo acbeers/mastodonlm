@@ -11,7 +11,7 @@ from mastodon import (
     MastodonIllegalArgumentError,
     MastodonInternalServerError,
     MastodonUnauthorizedError,
-    MastodonNetworkError
+    MastodonNetworkError,
 )
 import requests
 
@@ -100,6 +100,7 @@ def get_all(func, *args):
                 *args,
                 max_id=page._pagination_next["max_id"],
             )
+            print(f"page - {len(res)}")
         except AttributeError:
             # It looks like _pagination_next isn't an attribute when there is no
             # further data.
@@ -113,6 +114,7 @@ def get_cookie(event):
     cookie = headers.get("authorization", None)
     return cookie
 
+
 def response(body, statusCode=200):
     """Construct a lambda response object"""
     # Log a mesasge for error-like things.
@@ -123,12 +125,136 @@ def response(body, statusCode=200):
         "body": body,
     }
 
+
 def err_response(msg):
     """Construct a lambda error response"""
     obj = {"status": msg}
-    return response(json.dumps(obj),statusCode=500)
+    return response(json.dumps(obj), statusCode=500)
 
 
+def meta(event, _):
+    """
+    Handler to get metadata which will drive further fetches.
+    """
+
+    cookie = get_cookie(event)
+
+    # If we have no cookie, tell the client to go away
+    if cookie is None:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    try:
+        mastodon = MastodonFactory.from_cookie(cookie)
+        if mastodon is None:
+            resp = {"status": "no_cookie"}
+            return response(json.dumps(resp), statusCode=403)
+        me = mastodon.me()
+    except MastodonIllegalArgumentError:
+        return err_response("ERROR - illegal argument")
+    except MastodonInternalServerError:
+        return err_response("ERROR - internal server error")
+    except MastodonUnauthorizedError:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    ainfo = Datastore.get_auth(cookie)
+    domain = "" if ainfo is None else ainfo.domain
+    meinfo = {
+        "username": me["username"],
+        "acct": f"{me['acct']}@{domain}",
+        "display_name": me["display_name"],
+        "following_count": me["following_count"],
+    }
+
+    # Also fetch lists (sadly, sizes not available!)
+    lists = mastodon.lists()
+
+    output = {"me": meinfo, "lists": lists}
+    return response(json.dumps(output))
+
+
+def following(event, _):
+    """
+    Endpoint which enumerates followers
+    """
+    cookie = get_cookie(event)
+
+    # If we have no cookie, tell the client to go away
+    if cookie is None:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    try:
+        mastodon = MastodonFactory.from_cookie(cookie)
+        if mastodon is None:
+            resp = {"status": "no_cookie"}
+            return response(json.dumps(resp), statusCode=403)
+        me = mastodon.me()
+    except MastodonIllegalArgumentError:
+        return err_response("ERROR - illegal argument")
+    except MastodonInternalServerError:
+        return err_response("ERROR - internal server error")
+    except MastodonUnauthorizedError:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    me_id = me["id"]
+    accts = get_all(mastodon.account_following, me_id)
+    outpeople = [
+        {
+            k: str(x[k]) if k == "id" else x[k]
+            for k in [
+                "id",
+                "display_name",
+                "username",
+                "acct",
+                "note",
+                "avatar",
+            ]
+        }
+        for x in accts
+    ]
+
+    return response(json.dumps(outpeople))
+
+
+def lists(event, _):
+    """
+    Endpoint which returns info about lists
+    """
+
+    cookie = get_cookie(event)
+
+    # If we have no cookie, tell the client to go away
+    if cookie is None:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    try:
+        mastodon = MastodonFactory.from_cookie(cookie)
+        if mastodon is None:
+            resp = {"status": "no_cookie"}
+            return response(json.dumps(resp), statusCode=403)
+        me = mastodon.me()
+    except MastodonIllegalArgumentError:
+        return err_response("ERROR - illegal argument")
+    except MastodonInternalServerError:
+        return err_response("ERROR - internal server error")
+    except MastodonUnauthorizedError:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    # Pull our lists
+    print("info: lists")
+    lists = mastodon.lists()
+    output = {}
+    for l in lists:
+        print("info: list_accounts")
+        accts = get_all(mastodon.list_accounts, l["id"])
+        output[l["id"]] = [str(x["id"]) for x in accts]
+
+    return response(json.dumps(output))
 
 
 def info(event, _):
@@ -210,6 +336,7 @@ def info(event, _):
     }
     output = {"lists": outlists, "followers": outpeople, "me": meinfo}
     return response(json.dumps(output))
+
 
 def make_redirect_url(event, domain):
     """Create a redirect URL based on the origin of the request"""
@@ -296,7 +423,7 @@ def auth(event, _):
             (client_id, client_secret) = make_app(domain, redirect_url)
             print("auth: Made the app!")
         except MastodonNetworkError:
-            return response(json.dumps({"status":"bad_host"}),statusCode=500)
+            return response(json.dumps({"status": "bad_host"}), statusCode=500)
 
         cfg = Datastore.set_host_config(
             domain, client_id=client_id, client_secret=client_secret
@@ -347,7 +474,9 @@ def callback(event, _):
             scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
         )
     except MastodonIllegalArgumentError:
-        print(f"[ERROR] MastodonIllegalArgumentError, code = {code}, redirect_uri = {redirect_url}")
+        print(
+            f"[ERROR] MastodonIllegalArgumentError, code = {code}, redirect_uri = {redirect_url}"
+        )
         raise
     cookie = uuid.uuid4().urn
 

@@ -193,16 +193,36 @@ class TestAuth(TestCase):
 class TestInfo(TestCase):
     """Tests for /info methods"""
 
-    def test_info_nocookie(self):
-        """Test /info when a cookie is not present"""
+    def helper_nocookie(self, method):
+        """Test for several methods when a cookie is not present"""
 
         (event, context) = setupNoCookies()
 
-        res = handler.info(event, context)
+        res = method(event, context)
 
         # We should return a 403 response with the correct status info
         self.assertEqual(res["statusCode"], 403)
         self.assertEqual(json.loads(res["body"])["status"], "no_cookie")
+
+    def test_info_nocookie(self):
+        """Test /info when a cookie is not present"""
+
+        self.helper_nocookie(handler.info)
+
+    def test_meta_nocookie(self):
+        """Test /meta when a cookie is not present"""
+
+        self.helper_nocookie(handler.meta)
+
+    def test_following_nocookie(self):
+        """Test /following when a cookie is not present"""
+
+        self.helper_nocookie(handler.following)
+
+    def test_lists_nocookie(self):
+        """Test /lists when a cookie is not present"""
+
+        self.helper_nocookie(handler.lists)
 
     @patch("handler.MastodonFactory", new_callable=mock_factory)
     def test_info_badcookie(self, factory):
@@ -387,4 +407,3 @@ class TestCRUD(TestCase):
         mf.side_effect = MastodonAPIError
         qs = {"list_id": "listid", "account_id": "acctid"}
         self.helper_func_error(factory, data_store, qs, handler.add_to_list, mf)
-

@@ -142,6 +142,27 @@ functions:
       - httpApi:
           path: /info
           method: GET
+  meta:
+    timeout: 30
+    handler: handler.meta
+    events:
+      - httpApi:
+          path: /meta
+          method: GET
+  following:
+    timeout: 30
+    handler: handler.following
+    events:
+      - httpApi:
+          path: /following
+          method: GET
+  lists:
+    timeout: 30
+    handler: handler.lists
+    events:
+      - httpApi:
+          path: /lists
+          method: GET
   add:
     timeout: 30
     handler: handler.add_to_list

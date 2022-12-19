@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 
+import Alert from "@mui/material/Alert";
 import AppBar from "@mui/material/AppBar";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
@@ -15,6 +16,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Popover from "@mui/material/Popover";
 import Select from "@mui/material/Select";
+import Snackbar from "@mui/material/Snackbar";
 import TextField from "@mui/material/TextField";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
@@ -29,7 +31,7 @@ import AboutDialog from "./AboutDialog";
 import CreateListDialog from "./CreateListDialog";
 import DeleteListDialog from "./DeleteListDialog";
 
-import API from "./api";
+import API, { AuthError, TimeoutError } from "./api";
 
 import "./Manager.css";
 
@@ -101,21 +103,28 @@ function Manager() {
   const [search, setSearch] = useState("");
   // For showing in progress actions
   const [inProgress, setInProgress] = useState(null);
+  // For errors
+  const [error, setError] = useState(null);
 
   const loadData = () => {
-    API.getInfo()
-      .then((resp) => resp.json())
+    API.getNewInfo()
       .then((data) => {
-        if (data.status === "no_cookie") setRedirect("/login");
-        else {
-          data.followers.forEach((f) => {
-            if (f.display_name === "") f.display_name = f.username;
-          });
-          data.followers.sort((a, b) =>
-            a.display_name.localeCompare(b.display_name)
-          );
-          data.lists.sort((a, b) => a.title.localeCompare(b.title));
-          setInfo(data);
+        data.followers.forEach((f) => {
+          if (f.display_name === "") f.display_name = f.username;
+        });
+        data.followers.sort((a, b) =>
+          a.display_name.localeCompare(b.display_name)
+        );
+        data.lists.sort((a, b) => a.title.localeCompare(b.title));
+        setInfo(data);
+      })
+      .catch((err) => {
+        if (err instanceof TimeoutError) {
+          setError("A timeout occurred");
+        } else if (err instanceof AuthError) {
+          setRedirect("/login");
+        } else {
+          setError(`Some other error happened: ${err.message}`);
         }
       });
   };
@@ -422,11 +431,28 @@ function Manager() {
     </Box>
   );
 
+  const snackbar = (
+    <Snackbar
+      open={error !== null}
+      autoHideDuration={6000}
+      onClose={() => setError(null)}
+    >
+      <Alert
+        onClose={() => setError(null)}
+        severity="error"
+        sx={{ width: "100%" }}
+      >
+        {error}
+      </Alert>
+    </Snackbar>
+  );
+
   if (groups.length === 0) {
     return (
       <div className="App">
         {appbar}
         <LinearProgress />
+        {snackbar}
       </div>
     );
   }
@@ -476,6 +502,7 @@ function Manager() {
         handleClose={handleDeleteClose}
         handleDelete={handleDelete}
       />
+      {snackbar}
     </div>
   );
 }
