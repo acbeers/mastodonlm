@@ -30,6 +30,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import AboutDialog from "./AboutDialog";
 import CreateListDialog from "./CreateListDialog";
 import DeleteListDialog from "./DeleteListDialog";
+import TimeoutDialog from "./TimeoutDialog";
 
 import API, { AuthError, TimeoutError } from "./api";
 
@@ -105,6 +106,8 @@ function Manager() {
   const [inProgress, setInProgress] = useState(null);
   // For errors
   const [error, setError] = useState(null);
+  // To show a special timeout message
+  const [showTimeout, setShowTimeout] = useState(false);
 
   const loadData = () => {
     API.getNewInfo()
@@ -120,10 +123,11 @@ function Manager() {
       })
       .catch((err) => {
         if (err instanceof TimeoutError) {
-          setError("A timeout occurred");
+          setShowTimeout(true);
         } else if (err instanceof AuthError) {
           setRedirect("/login");
         } else {
+          console.log(err);
           setError(`Some other error happened: ${err.message}`);
         }
       });
@@ -453,6 +457,10 @@ function Manager() {
         {appbar}
         <LinearProgress />
         {snackbar}
+        <TimeoutDialog
+          open={showTimeout}
+          handleClose={() => setShowTimeout(false)}
+        />
       </div>
     );
   }
@@ -501,6 +509,10 @@ function Manager() {
         list={deleteOpen ? deleteList : ""}
         handleClose={handleDeleteClose}
         handleDelete={handleDelete}
+      />
+      <TimeoutDialog
+        open={showTimeout}
+        handleClose={() => setShowTimeout(false)}
       />
       {snackbar}
     </div>
