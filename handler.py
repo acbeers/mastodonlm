@@ -92,13 +92,14 @@ def get_all(func, *args):
     """Calls a paginated function func, which is assumed to be a method
     on a Mastodon instance, and returns a list of all results"""
     res = []
-    page = func(*args)
+    page = func(*args, limit=80)
     while True:
         res.extend(page)
         try:
             page = func(
                 *args,
                 max_id=page._pagination_next["max_id"],
+                limit=80
             )
             print(f"page - {len(res)}")
         except AttributeError:
