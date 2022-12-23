@@ -123,6 +123,7 @@ class API {
             return {
               followers: following,
               lists: lists,
+              me: meta.me,
             };
           });
       });
