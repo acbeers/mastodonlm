@@ -1,8 +1,12 @@
 """Tests for Mastodon factory"""
 
+import logging
 from unittest.mock import MagicMock, patch, sentinel
 from unittest import TestCase
 from handler import MastodonFactory
+
+# Here, reconfigure the logger to send output to a file during tests.
+logging.basicConfig(level=logging.INFO, filename="debug_log.txt")
 
 
 def mock_hostconfig():

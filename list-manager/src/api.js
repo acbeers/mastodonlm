@@ -129,19 +129,27 @@ class API {
   }
 
   static addToList(list_id, person_id) {
-    return authPOST(`${urlAdd}?list_id=${list_id}&account_id=${person_id}`);
+    return authPOST(
+      `${urlAdd}?list_id=${list_id}&account_id=${person_id}`
+    ).then((resp) => checkJSON(resp));
   }
 
   static removeFromList(list_id, person_id) {
-    return authPOST(`${urlRemove}?list_id=${list_id}&account_id=${person_id}`);
+    return authPOST(
+      `${urlRemove}?list_id=${list_id}&account_id=${person_id}`
+    ).then((resp) => checkJSON(resp));
   }
 
   static createList(list_name) {
-    return authPOST(`${urlCreate}?list_name=${list_name}`);
+    return authPOST(`${urlCreate}?list_name=${list_name}`).then((resp) =>
+      checkJSON(resp)
+    );
   }
 
   static deleteList(list_id) {
-    return authPOST(`${urlDelete}?list_id=${list_id}`);
+    return authPOST(`${urlDelete}?list_id=${list_id}`).then((resp) =>
+      checkJSON(resp)
+    );
   }
 
   static tryAuth() {

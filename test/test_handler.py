@@ -1,10 +1,14 @@
 """Tests for lambda handler"""
 
 import json
-from unittest.mock import MagicMock, patch, sentinel, call, Mock
+import logging
+from unittest.mock import MagicMock, patch, sentinel
 from unittest import TestCase
 from mastodon import MastodonAPIError, MastodonUnauthorizedError
 import handler
+
+# Here, reconfigure the logger to send output to a file during tests.
+logging.basicConfig(level=logging.INFO, filename="debug_log.txt")
 
 
 def mock_userdict(username):
@@ -16,6 +20,7 @@ def mock_userdict(username):
         "acct": f"act-{username}",
         "note": f"note-{username}",
         "avatar": f"avatar-{username}",
+        "following_count": 100,
     }
 
 
@@ -191,7 +196,7 @@ class TestAuth(TestCase):
 
 
 class TestInfo(TestCase):
-    """Tests for /info methods"""
+    """Tests for /meta, /following, /lists methods"""
 
     def helper_nocookie(self, method):
         """Test for several methods when a cookie is not present"""
@@ -203,11 +208,6 @@ class TestInfo(TestCase):
         # We should return a 403 response with the correct status info
         self.assertEqual(res["statusCode"], 403)
         self.assertEqual(json.loads(res["body"])["status"], "no_cookie")
-
-    def test_info_nocookie(self):
-        """Test /info when a cookie is not present"""
-
-        self.helper_nocookie(handler.info)
 
     def test_meta_nocookie(self):
         """Test /meta when a cookie is not present"""
@@ -224,25 +224,42 @@ class TestInfo(TestCase):
 
         self.helper_nocookie(handler.lists)
 
-    @patch("handler.MastodonFactory", new_callable=mock_factory)
-    def test_info_badcookie(self, factory):
-        """Test /info when cookie is present but mastodon API throws an error"""
+    def helper_badcookie(self, factory, func):
+        """Test /meta when cookie is present but mastodon API throws an error"""
 
         (event, context) = setupWithCookies()
 
         # We use Mastodon.me() to ensure someone has logged in.
         factory.from_cookie.return_value.me.side_effect = MastodonUnauthorizedError
 
-        res = handler.info(event, context)
+        res = func(event, context)
 
         # We should return a 403 response with the correct status info
         self.assertEqual(res["statusCode"], 403)
         self.assertEqual(json.loads(res["body"])["status"], "no_cookie")
 
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_meta_badcookie(self, factory):
+        """Test /meta when a bad cookie is present"""
+
+        self.helper_badcookie(factory, handler.meta)
+
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_following_badcookie(self, factory):
+        """Test /following when a bad cookie is present"""
+
+        self.helper_badcookie(factory, handler.following)
+
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_lists_badcookie(self, factory):
+        """Test /lists when a bad cookie is present"""
+
+        self.helper_badcookie(factory, handler.lists)
+
     @patch("handler.Datastore")
     @patch("handler.MastodonFactory", new_callable=mock_factory)
-    def test_info(self, factory, data_store):
-        """Test /info"""
+    def test_following(self, factory, data_store):
+        """Test /following"""
 
         (event, context) = setupWithCookies()
 
@@ -250,31 +267,30 @@ class TestInfo(TestCase):
         auth.domain = "mydomain"
         data_store.get_auth.return_value = auth
         mastomock = factory.from_cookie.return_value
-        mastomock.account_following = sentinel.account_following
-        mastomock.list_accounts = sentinel.list_accounts
+        mastomock.account_following.return_value = sentinel.account_following
 
-        def get_all_mock(func, *_):
-            """Mocks get_all with reasonable return values"""
-            if func == sentinel.account_following:
-                # Return a list of user dicts
-                return [mock_userdict("u1"), mock_userdict("u2")]
-            if func == sentinel.list_accounts:
-                # Return a list of user dicts
-                return [mock_userdict("u1")]
-            return []
+        res = handler.following(event, context)
 
-        with patch("handler.get_all", new=Mock(wraps=get_all_mock)) as gam:
-            res = handler.info(event, context)
-            # We should return a 200 response with the correct output
-            self.assertEqual(res["statusCode"], 200)
-            # Make sure the right methods got called to fill this out.
-            self.assertEqual(
-                [
-                    call(sentinel.account_following, "me"),
-                    call(sentinel.list_accounts, "listid1"),
-                ],
-                gam.mock_calls,
-            )
+        mastomock.fetch_remaining.assert_called_with(sentinel.account_following)
+        self.assertEqual(res["statusCode"], 200)
+
+    @patch("handler.Datastore")
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_lists(self, factory, data_store):
+        """Test /lists"""
+
+        (event, context) = setupWithCookies()
+
+        auth = MagicMock()
+        auth.domain = "mydomain"
+        data_store.get_auth.return_value = auth
+        mastomock = factory.from_cookie.return_value
+        mastomock.list_accounts.return_value = sentinel.list_accounts
+
+        res = handler.lists(event, context)
+
+        mastomock.fetch_remaining.assert_called_with(sentinel.list_accounts)
+        self.assertEqual(res["statusCode"], 200)
 
 
 class TestCRUD(TestCase):

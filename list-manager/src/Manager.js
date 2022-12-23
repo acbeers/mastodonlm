@@ -109,6 +109,17 @@ function Manager() {
   // To show a special timeout message
   const [showTimeout, setShowTimeout] = useState(false);
 
+  // An error handler for API methods that we call.
+  const handleError = (err) => {
+    if (err instanceof TimeoutError) {
+      setShowTimeout(true);
+    } else if (err instanceof AuthError) {
+      setRedirect("/login");
+    } else {
+      setError(`Some other error happened: ${err.message}`);
+    }
+  };
+
   const loadData = () => {
     API.getNewInfo()
       .then((data) => {
@@ -121,16 +132,7 @@ function Manager() {
         data.lists.sort((a, b) => a.title.localeCompare(b.title));
         setInfo(data);
       })
-      .catch((err) => {
-        if (err instanceof TimeoutError) {
-          setShowTimeout(true);
-        } else if (err instanceof AuthError) {
-          setRedirect("/login");
-        } else {
-          console.log(err);
-          setError(`Some other error happened: ${err.message}`);
-        }
-      });
+      .catch((err) => handleError(err));
   };
 
   // Generate the groups
@@ -143,6 +145,7 @@ function Manager() {
   // Fetch the data
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line
   }, []);
 
   // A redirect if we need it
@@ -190,11 +193,13 @@ function Manager() {
     setCreateOpen(false);
   };
   const handleCreateCommit = (name) => {
-    API.createList(name).then(() => {
-      setCreateOpen(false);
-      // We have to do this to get the new ID of the list.
-      loadData();
-    });
+    API.createList(name)
+      .then(() => {
+        setCreateOpen(false);
+        // We have to do this to get the new ID of the list.
+        loadData();
+      })
+      .catch((err) => handleError(err));
   };
 
   // Build the crazy table.
@@ -213,7 +218,8 @@ function Manager() {
   const handleDelete = (list) => {
     API.deleteList(list.id)
       .then(() => loadData())
-      .then(() => setDeleteOpen(false));
+      .then(() => setDeleteOpen(false))
+      .catch((err) => handleError(err));
   };
 
   const remove = (index, lid) => {
@@ -221,14 +227,12 @@ function Manager() {
     const fol = newInfo.followers[index];
     setInProgress({ list: lid, follower: fol.id });
     fol.lists = fol.lists.filter((value) => value !== lid);
-    API.removeFromList(lid, fol.id).then((resp) => {
-      setInProgress(null);
-      if (resp.ok) {
+    API.removeFromList(lid, fol.id)
+      .then((resp) => {
+        setInProgress(null);
         setInfo(newInfo);
-      } else {
-        console.log("An error happened");
-      }
-    });
+      })
+      .catch((err) => handleError(err));
   };
 
   const add = (index, lid) => {
@@ -236,14 +240,15 @@ function Manager() {
     const fol = newInfo.followers[index];
     fol.lists.push(lid);
     setInProgress({ list: lid, follower: fol.id });
-    API.addToList(lid, fol.id).then((resp) => {
-      setInProgress(null);
-      if (resp.ok) {
+    API.addToList(lid, fol.id)
+      .then((data) => {
+        setInProgress(null);
         setInfo(newInfo);
-      } else {
-        console.log("An error happened");
-      }
-    });
+      })
+      .catch((err) => {
+        handleError(err);
+        setInProgress(null);
+      });
   };
 
   const popoverOpen = Boolean(anchorEl);

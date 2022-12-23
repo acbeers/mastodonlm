@@ -2,6 +2,7 @@
 
 import datetime
 import json
+import logging
 import time
 import uuid
 
@@ -18,6 +19,16 @@ import requests
 from models import Datastore
 
 
+class NoAuthInfo(Exception):
+    """Internal exception class for when we don't have auth info"""
+
+
+# AWS doens't set a logging level, so set it here.
+logging.getLogger("root").setLevel(logging.INFO)
+# But don't log much from botocore
+logging.getLogger("botocore").setLevel(logging.ERROR)
+
+
 class MastodonFactory:
     """Factory class for Mastodon instances"""
 
@@ -26,12 +37,12 @@ class MastodonFactory:
         """Construct a mastodon object from the cookie"""
         authinfo = Datastore.get_auth(cookie)
         if authinfo is None:
-            return None
+            raise NoAuthInfo
 
         # Get the configuration that we need
         cfg = Datastore.get_host_config(authinfo.domain)
         if cfg is None:
-            return None
+            raise NoAuthInfo
 
         return MastodonFactory.from_config(cfg, token=authinfo.token)
 
@@ -87,28 +98,6 @@ def get_mastodon_from_config(cfg, domain):
     return mastodon
 
 
-def get_all(func, *args):
-    # pylint: disable=protected-access
-    """Calls a paginated function func, which is assumed to be a method
-    on a Mastodon instance, and returns a list of all results"""
-    res = []
-    page = func(*args, limit=80)
-    while True:
-        res.extend(page)
-        try:
-            page = func(
-                *args,
-                max_id=page._pagination_next["max_id"],
-                limit=80
-            )
-            print(f"page - {len(res)}")
-        except AttributeError:
-            # It looks like _pagination_next isn't an attribute when there is no
-            # further data.
-            break
-    return res
-
-
 def get_cookie(event):
     """Retrieves the auth cookie from the event object"""
     headers = event.get("headers", {})
@@ -120,7 +109,7 @@ def response(body, statusCode=200):
     """Construct a lambda response object"""
     # Log a mesasge for error-like things.
     if statusCode >= 400:
-        print(f"[ERROR] Returning {statusCode} with {body}")
+        logging.error("Returning %s with %s", statusCode, body)
     return {
         "statusCode": statusCode,
         "body": body,
@@ -169,9 +158,9 @@ def meta(event, _):
     }
 
     # Also fetch lists (sadly, sizes not available!)
-    lists = mastodon.lists()
+    lsts = mastodon.lists()
 
-    output = {"me": meinfo, "lists": lists}
+    output = {"me": meinfo, "lists": lsts}
     return response(json.dumps(output))
 
 
@@ -201,7 +190,8 @@ def following(event, _):
         return response(json.dumps(resp), statusCode=403)
 
     me_id = me["id"]
-    accts = get_all(mastodon.account_following, me_id)
+    page1 = mastodon.account_following(me_id)
+    accts = mastodon.fetch_remaining(page1)
     outpeople = [
         {
             k: str(x[k]) if k == "id" else x[k]
@@ -237,7 +227,8 @@ def lists(event, _):
         if mastodon is None:
             resp = {"status": "no_cookie"}
             return response(json.dumps(resp), statusCode=403)
-        me = mastodon.me()
+        # Ensure we are connected
+        mastodon.me()
     except MastodonIllegalArgumentError:
         return err_response("ERROR - illegal argument")
     except MastodonInternalServerError:
@@ -247,95 +238,15 @@ def lists(event, _):
         return response(json.dumps(resp), statusCode=403)
 
     # Pull our lists
-    print("info: lists")
-    lists = mastodon.lists()
+    logging.debug("info: lists")
+    lsts = mastodon.lists()
     output = {}
-    for l in lists:
-        print("info: list_accounts")
-        accts = get_all(mastodon.list_accounts, l["id"])
+    for l in lsts:
+        logging.debug("info: list_accounts")
+        page1 = mastodon.list_accounts(l["id"])
+        accts = mastodon.fetch_remaining(page1)
         output[l["id"]] = [str(x["id"]) for x in accts]
 
-    return response(json.dumps(output))
-
-
-def info(event, _):
-    """
-    Handler to get the lists and follower information that the webapp needs.
-    """
-
-    cookie = get_cookie(event)
-
-    # If we have no cookie, tell the client to go away
-    if cookie is None:
-        resp = {"status": "no_cookie"}
-        return response(json.dumps(resp), statusCode=403)
-
-    try:
-        mastodon = MastodonFactory.from_cookie(cookie)
-        if mastodon is None:
-            resp = {"status": "no_cookie"}
-            return response(json.dumps(resp), statusCode=403)
-        me = mastodon.me()
-    except MastodonIllegalArgumentError:
-        return {"statusCode": 500, "body": "ERROR"}
-    except MastodonInternalServerError:
-        return {"statusCode": 500, "body": "ERROR"}
-    except MastodonUnauthorizedError:
-        resp = {"status": "no_cookie"}
-        return response(json.dumps(resp), statusCode=403)
-
-    # Find out info about me
-    me_id = me["id"]
-    # And people I follow
-    print("info: get_all")
-    followers = get_all(mastodon.account_following, me_id)
-    for f in followers:
-        f["lists"] = []
-    followermap = {x["id"]: x for x in followers}
-
-    # Pull our lists
-    print("info: lists")
-    lists = mastodon.lists()
-    for l in lists:
-        print("info: list_accounts")
-        accts = get_all(mastodon.list_accounts, l["id"])
-        for acct in accts:
-            aid = acct["id"]
-            if aid in followermap:
-                followermap[aid]["lists"].append(l["id"])
-            else:
-                # This is someone I'm not following
-                pass
-
-    # Return:
-    # - lists with ids
-    # - followers with ids, lists they are on.
-    # Also convert IDs to strings, since they are bigints which don't work well in JS.
-    outlists = lists
-    outpeople = [
-        {
-            k: str(x[k]) if k == "id" else x[k]
-            for k in [
-                "id",
-                "lists",
-                "display_name",
-                "username",
-                "acct",
-                "note",
-                "avatar",
-            ]
-        }
-        for x in followers
-    ]
-
-    res = Datastore.get_auth(cookie)
-    domain = "" if res is None else res.domain
-    meinfo = {
-        "username": me["username"],
-        "acct": f"{me['acct']}@{domain}",
-        "display_name": me["display_name"],
-    }
-    output = {"lists": outlists, "followers": outpeople, "me": meinfo}
     return response(json.dumps(output))
 
 
@@ -388,7 +299,7 @@ def auth(event, _):
             if test is None:
                 raise AttributeError
             test.me()
-            print("Already logged in")
+            logging.info("Already logged in")
             return {"statusCode": 200, "body": json.dumps({"status": "OK"})}
         except MastodonAPIError:
             # If here, we aren't logged in, so drop through to start the
@@ -407,10 +318,10 @@ def auth(event, _):
     allow = Datastore.is_allowed(domain.lower())
     if not allow:
         res = {"status": "not_allowed"}
-        print(f"auth: domain denied: {domain}")
+        logging.info("auth: domain denied: %s", domain)
         return response(json.dumps(res))
 
-    print(f"auth: starting OAuth path for {domain}")
+    logging.info("auth: starting OAuth path for %s", domain)
 
     # For now, we'll create the right redirect_url based on the event object.
     redirect_url = make_redirect_url(event, domain)
@@ -419,10 +330,10 @@ def auth(event, _):
 
     if cfg is None:
         # Make an app
-        print(f"auth: making app for {domain}")
+        logging.debug("auth: making app for %s", domain)
         try:
             (client_id, client_secret) = make_app(domain, redirect_url)
-            print("auth: Made the app!")
+            logging.debug("auth: Made the app!")
         except MastodonNetworkError:
             return response(json.dumps({"status": "bad_host"}), statusCode=500)
 
@@ -456,7 +367,7 @@ def callback(event, _):
     code = params.get("code")
 
     cfg = Datastore.get_host_config(domain)
-    print(f"callback for {domain}")
+    logging.debug("callback for %s", domain)
 
     mastodon = Mastodon(
         client_id=cfg.client_id,
@@ -475,8 +386,10 @@ def callback(event, _):
             scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
         )
     except MastodonIllegalArgumentError:
-        print(
-            f"[ERROR] MastodonIllegalArgumentError, code = {code}, redirect_uri = {redirect_url}"
+        logging.error(
+            "MastodonIllegalArgumentError, code = %s, redirect_uri = %s",
+            code,
+            redirect_url,
         )
         raise
     cookie = uuid.uuid4().urn
@@ -503,13 +416,12 @@ def add_to_list(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
-        # FIXME: from_cookie can return None!
         mastodon.me()
     except MastodonIllegalArgumentError:
         return err_response("ERROR - illegal argument")
     except MastodonInternalServerError:
         return err_response("ERROR - internal server")
-    except MastodonUnauthorizedError:
+    except (MastodonUnauthorizedError, NoAuthInfo):
         resp = {"status": "not_authorized"}
         return response(json.dumps(resp), statusCode=403)
 
@@ -517,7 +429,7 @@ def add_to_list(event, _):
     accountid = event["queryStringParameters"]["account_id"]
     try:
         mastodon.list_accounts_add(lid, [accountid])
-        return response("OK")
+        return response(json.dumps({"status": "OK"}))
     except MastodonAPIError:
         return err_response("ERROR - API error")
 
@@ -539,13 +451,12 @@ def remove_from_list(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
-        # FIXME: from_cookie can return None!
         mastodon.me()
     except MastodonIllegalArgumentError:
         return err_response("Illegal argument")
     except MastodonInternalServerError:
         return err_response("Mastodon internal server error")
-    except MastodonUnauthorizedError:
+    except (MastodonUnauthorizedError, NoAuthInfo):
         resp = {"status": "not_authorized"}
         return response(json.dumps(resp), statusCode=403)
 
@@ -553,7 +464,7 @@ def remove_from_list(event, _):
     accountid = event["queryStringParameters"]["account_id"]
     try:
         mastodon.list_accounts_delete(lid, [accountid])
-        return response("OK")
+        return response(json.dumps({"status": "OK"}))
     except MastodonAPIError:
         return err_response("ERROR")
 
@@ -569,13 +480,12 @@ def create_list(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
-        # FIXME: from_cookie can return None!
         mastodon.me()
     except MastodonIllegalArgumentError:
         return err_response("Illegal argument")
     except MastodonInternalServerError:
         return err_response("Mastodon internal server error")
-    except MastodonUnauthorizedError:
+    except (MastodonUnauthorizedError, NoAuthInfo):
         resp = {"status": "not_authorized"}
         return response(json.dumps(resp), statusCode=403)
 
@@ -583,7 +493,7 @@ def create_list(event, _):
 
     try:
         mastodon.list_create(lname)
-        return response("OK")
+        return response(json.dumps({"status": "OK"}))
     except MastodonAPIError:
         return err_response("ERROR")
 
@@ -599,13 +509,12 @@ def delete_list(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
-        # FIXME: from_cookie can return None!
         mastodon.me()
     except MastodonIllegalArgumentError:
         return {"statusCode": 500, "body": "ERROR"}
     except MastodonInternalServerError:
         return {"statusCode": 500, "body": "ERROR"}
-    except MastodonUnauthorizedError:
+    except (MastodonUnauthorizedError, NoAuthInfo):
         resp = {"status": "not_authorized"}
         return response(json.dumps(resp), statusCode=403)
 
@@ -613,7 +522,7 @@ def delete_list(event, _):
 
     try:
         mastodon.list_delete(lid)
-        return response("OK")
+        return response(json.dumps({"status": "OK"}))
     except MastodonAPIError:
         return err_response("ERROR")
 

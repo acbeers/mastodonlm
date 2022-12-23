@@ -136,13 +136,6 @@ functions:
       - httpApi:
           path: /callback
           method: POST
-  info:
-    timeout: 30
-    handler: handler.info
-    events:
-      - httpApi:
-          path: /info
-          method: GET
   meta:
     timeout: 30
     handler: handler.meta
