@@ -7,6 +7,7 @@ provider:
   runtime: python3.9
   stage: ${opt:stage, "dev"}
   region: us-west-2
+  logRetentionInDays: 14
   environment:
     TABLE_AUTH: ${self:custom.authTable}
     TABLE_ALLOWED: ${self:custom.allowedTable}
@@ -69,8 +70,8 @@ resources: # CloudFormation template syntax from here on.
           - AttributeName: key
             KeyType: HASH
         ProvisionedThroughput:
-          ReadCapacityUnits: 10
-          WriteCapacityUnits: 10
+          ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
+          WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
         TimeToLiveSpecification:
           Enabled: true
           AttributeName: expires_at
@@ -87,8 +88,8 @@ resources: # CloudFormation template syntax from here on.
           - AttributeName: host
             KeyType: HASH
         ProvisionedThroughput:
-          ReadCapacityUnits: 10
-          WriteCapacityUnits: 10
+          ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
+          WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
 
     # Essentially, a list of blocked hosts.
     blockTable:
@@ -102,8 +103,8 @@ resources: # CloudFormation template syntax from here on.
           - AttributeName: hash
             KeyType: HASH
         ProvisionedThroughput:
-          ReadCapacityUnits: 10
-          WriteCapacityUnits: 10
+          ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
+          WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
 
     # Stores host information (secrets, urls, etc)
     hostsTable:
@@ -117,8 +118,8 @@ resources: # CloudFormation template syntax from here on.
           - AttributeName: host
             KeyType: HASH
         ProvisionedThroughput:
-          ReadCapacityUnits: 10
-          WriteCapacityUnits: 10
+          ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
+          WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
 
 functions:
   auth:
@@ -135,12 +136,26 @@ functions:
       - httpApi:
           path: /callback
           method: POST
-  info:
+  meta:
     timeout: 30
-    handler: handler.info
+    handler: handler.meta
     events:
       - httpApi:
-          path: /info
+          path: /meta
+          method: GET
+  following:
+    timeout: 30
+    handler: handler.following
+    events:
+      - httpApi:
+          path: /following
+          method: GET
+  lists:
+    timeout: 30
+    handler: handler.lists
+    events:
+      - httpApi:
+          path: /lists
           method: GET
   add:
     timeout: 30
@@ -188,6 +203,12 @@ custom:
   hostcfgTable: "${self:service}-hostConfig-${self:provider.stage}"
   serverless-offline:
     httpPort: 4000
+  readcapacity:
+    dev: 2
+    prod: 5
+  writecapacity:
+    dev: 2
+    prod: 5
   dynamodb:
     ttl:
       - table: ${self:custom.authTable}

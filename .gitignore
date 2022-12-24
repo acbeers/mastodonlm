@@ -2,3 +2,4 @@ node_modules
 cfg.py
 *.secret
 .serverless
+debug_log.txt

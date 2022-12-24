@@ -59,8 +59,9 @@ function MainPage() {
             paragraph
           >
             A dead simple manager for all of your Mastodon Lists, letting you
-            quickly assign people to one or more lists. Search, filter, and
-            organize your follow list to make reasoning about your lists easy.
+            quickly assign people that you are following to one or more lists.
+            Search, filter, and organize your follow list to make reasoning
+            about your lists easy.
           </Typography>
           <LoginForm />
         </Container>

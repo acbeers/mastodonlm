@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 
+import Alert from "@mui/material/Alert";
 import AppBar from "@mui/material/AppBar";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
@@ -15,6 +16,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Popover from "@mui/material/Popover";
 import Select from "@mui/material/Select";
+import Snackbar from "@mui/material/Snackbar";
 import TextField from "@mui/material/TextField";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
@@ -28,8 +30,9 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import AboutDialog from "./AboutDialog";
 import CreateListDialog from "./CreateListDialog";
 import DeleteListDialog from "./DeleteListDialog";
+import TimeoutDialog from "./TimeoutDialog";
 
-import API from "./api";
+import API, { AuthError, TimeoutError } from "./api";
 
 import "./Manager.css";
 
@@ -101,23 +104,35 @@ function Manager() {
   const [search, setSearch] = useState("");
   // For showing in progress actions
   const [inProgress, setInProgress] = useState(null);
+  // For errors
+  const [error, setError] = useState(null);
+  // To show a special timeout message
+  const [showTimeout, setShowTimeout] = useState(false);
+
+  // An error handler for API methods that we call.
+  const handleError = (err) => {
+    if (err instanceof TimeoutError) {
+      setShowTimeout(true);
+    } else if (err instanceof AuthError) {
+      setRedirect("/login");
+    } else {
+      setError(`Some other error happened: ${err.message}`);
+    }
+  };
 
   const loadData = () => {
-    API.getInfo()
-      .then((resp) => resp.json())
+    API.getNewInfo()
       .then((data) => {
-        if (data.status === "no_cookie") setRedirect("/login");
-        else {
-          data.followers.forEach((f) => {
-            if (f.display_name === "") f.display_name = f.username;
-          });
-          data.followers.sort((a, b) =>
-            a.display_name.localeCompare(b.display_name)
-          );
-          data.lists.sort((a, b) => a.title.localeCompare(b.title));
-          setInfo(data);
-        }
-      });
+        data.followers.forEach((f) => {
+          if (f.display_name === "") f.display_name = f.username;
+        });
+        data.followers.sort((a, b) =>
+          a.display_name.localeCompare(b.display_name)
+        );
+        data.lists.sort((a, b) => a.title.localeCompare(b.title));
+        setInfo(data);
+      })
+      .catch((err) => handleError(err));
   };
 
   // Generate the groups
@@ -130,6 +145,7 @@ function Manager() {
   // Fetch the data
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line
   }, []);
 
   // A redirect if we need it
@@ -177,11 +193,13 @@ function Manager() {
     setCreateOpen(false);
   };
   const handleCreateCommit = (name) => {
-    API.createList(name).then(() => {
-      setCreateOpen(false);
-      // We have to do this to get the new ID of the list.
-      loadData();
-    });
+    API.createList(name)
+      .then(() => {
+        setCreateOpen(false);
+        // We have to do this to get the new ID of the list.
+        loadData();
+      })
+      .catch((err) => handleError(err));
   };
 
   // Build the crazy table.
@@ -200,7 +218,8 @@ function Manager() {
   const handleDelete = (list) => {
     API.deleteList(list.id)
       .then(() => loadData())
-      .then(() => setDeleteOpen(false));
+      .then(() => setDeleteOpen(false))
+      .catch((err) => handleError(err));
   };
 
   const remove = (index, lid) => {
@@ -208,14 +227,12 @@ function Manager() {
     const fol = newInfo.followers[index];
     setInProgress({ list: lid, follower: fol.id });
     fol.lists = fol.lists.filter((value) => value !== lid);
-    API.removeFromList(lid, fol.id).then((resp) => {
-      setInProgress(null);
-      if (resp.ok) {
+    API.removeFromList(lid, fol.id)
+      .then((resp) => {
+        setInProgress(null);
         setInfo(newInfo);
-      } else {
-        console.log("An error happened");
-      }
-    });
+      })
+      .catch((err) => handleError(err));
   };
 
   const add = (index, lid) => {
@@ -223,14 +240,15 @@ function Manager() {
     const fol = newInfo.followers[index];
     fol.lists.push(lid);
     setInProgress({ list: lid, follower: fol.id });
-    API.addToList(lid, fol.id).then((resp) => {
-      setInProgress(null);
-      if (resp.ok) {
+    API.addToList(lid, fol.id)
+      .then((data) => {
+        setInProgress(null);
         setInfo(newInfo);
-      } else {
-        console.log("An error happened");
-      }
-    });
+      })
+      .catch((err) => {
+        handleError(err);
+        setInProgress(null);
+      });
   };
 
   const popoverOpen = Boolean(anchorEl);
@@ -422,11 +440,32 @@ function Manager() {
     </Box>
   );
 
+  const snackbar = (
+    <Snackbar
+      open={error !== null}
+      autoHideDuration={6000}
+      onClose={() => setError(null)}
+    >
+      <Alert
+        onClose={() => setError(null)}
+        severity="error"
+        sx={{ width: "100%" }}
+      >
+        {error}
+      </Alert>
+    </Snackbar>
+  );
+
   if (groups.length === 0) {
     return (
       <div className="App">
         {appbar}
         <LinearProgress />
+        {snackbar}
+        <TimeoutDialog
+          open={showTimeout}
+          handleClose={() => setShowTimeout(false)}
+        />
       </div>
     );
   }
@@ -476,6 +515,11 @@ function Manager() {
         handleClose={handleDeleteClose}
         handleDelete={handleDelete}
       />
+      <TimeoutDialog
+        open={showTimeout}
+        handleClose={() => setShowTimeout(false)}
+      />
+      {snackbar}
     </div>
   );
 }
