@@ -147,6 +147,28 @@ class TestAuth(TestCase):
     @patch("handler.Datastore")
     @patch("handler.MastodonFactory", new_callable=mock_factory)
     @patch("handler.make_app")
+    def test_auth_cookie_unknown(self, make_app, factory, data_store):
+        """Test /auth when a cookie present but it is unknown to us"""
+
+        (event, context) = setupWithCookies()
+
+        # Make the me() method throw, which is how we know we aren't logged in.
+        factory.from_cookie.return_value.me.side_effect = handler.NoAuthInfo
+
+        data_store.is_allowed.return_value = True
+
+        res = handler.auth(event, context)
+        # We should return a 200 response with the correct redirect URL.
+        self.assertEqual(res["statusCode"], 200)
+        self.assertEqual(json.loads(res["body"])["url"], "https://mock_redirect")
+        # We should have made a mastodon instance from the stored config
+        self.assertTrue(factory.from_cookie.called_with("mycookie"))
+        # We should not have created a new app
+        self.assertFalse(make_app.called)
+
+    @patch("handler.Datastore")
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    @patch("handler.make_app")
     def test_auth_cookie_invalid(self, make_app, factory, data_store):
         """Test /auth when a cookie present and an invalid session on a Mastodon
         server"""
@@ -224,6 +246,20 @@ class TestInfo(TestCase):
 
         self.helper_nocookie(handler.lists)
 
+    def helper_unknowncookie(self, factory, func):
+        """Test /meta when cookie is present but mastodon API throws an error"""
+
+        (event, context) = setupWithCookies()
+
+        # We use Mastodon.me() to ensure someone has logged in.
+        factory.from_cookie.return_value.me.side_effect = handler.NoAuthInfo
+
+        res = func(event, context)
+
+        # We should return a 403 response with the correct status info
+        self.assertEqual(res["statusCode"], 403)
+        self.assertEqual(json.loads(res["body"])["status"], "no_cookie")
+
     def helper_badcookie(self, factory, func):
         """Test /meta when cookie is present but mastodon API throws an error"""
 
@@ -245,16 +281,34 @@ class TestInfo(TestCase):
         self.helper_badcookie(factory, handler.meta)
 
     @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_meta_unknowncookie(self, factory):
+        """Test /meta when a bad cookie is present"""
+
+        self.helper_unknowncookie(factory, handler.meta)
+
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
     def test_following_badcookie(self, factory):
         """Test /following when a bad cookie is present"""
 
         self.helper_badcookie(factory, handler.following)
 
     @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_following_unknowncookie(self, factory):
+        """Test /following when a bad cookie is present"""
+
+        self.helper_unknowncookie(factory, handler.following)
+
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
     def test_lists_badcookie(self, factory):
         """Test /lists when a bad cookie is present"""
 
         self.helper_badcookie(factory, handler.lists)
+
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_lists_unknowncookie(self, factory):
+        """Test /lists when a bad cookie is present"""
+
+        self.helper_unknowncookie(factory, handler.lists)
 
     @patch("handler.Datastore")
     @patch("handler.MastodonFactory", new_callable=mock_factory)
