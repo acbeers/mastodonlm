@@ -136,15 +136,12 @@ def meta(event, _):
 
     try:
         mastodon = MastodonFactory.from_cookie(cookie)
-        if mastodon is None:
-            resp = {"status": "no_cookie"}
-            return response(json.dumps(resp), statusCode=403)
         me = mastodon.me()
     except MastodonIllegalArgumentError:
         return err_response("ERROR - illegal argument")
     except MastodonInternalServerError:
         return err_response("ERROR - internal server error")
-    except MastodonUnauthorizedError:
+    except (MastodonUnauthorizedError, NoAuthInfo):
         resp = {"status": "no_cookie"}
         return response(json.dumps(resp), statusCode=403)
 
@@ -185,7 +182,7 @@ def following(event, _):
         return err_response("ERROR - illegal argument")
     except MastodonInternalServerError:
         return err_response("ERROR - internal server error")
-    except MastodonUnauthorizedError:
+    except (MastodonUnauthorizedError, NoAuthInfo):
         resp = {"status": "no_cookie"}
         return response(json.dumps(resp), statusCode=403)
 
@@ -206,6 +203,8 @@ def following(event, _):
         }
         for x in accts
     ]
+
+    logging.info("Returning %d followers", len(outpeople))
 
     return response(json.dumps(outpeople))
 
@@ -233,7 +232,7 @@ def lists(event, _):
         return err_response("ERROR - illegal argument")
     except MastodonInternalServerError:
         return err_response("ERROR - internal server error")
-    except MastodonUnauthorizedError:
+    except (MastodonUnauthorizedError, NoAuthInfo):
         resp = {"status": "no_cookie"}
         return response(json.dumps(resp), statusCode=403)
 
@@ -246,6 +245,10 @@ def lists(event, _):
         page1 = mastodon.list_accounts(l["id"])
         accts = mastodon.fetch_remaining(page1)
         output[l["id"]] = [str(x["id"]) for x in accts]
+
+    logging.info(
+        "Returning lists of length %s", str([len(v) for _, v in output.items()])
+    )
 
     return response(json.dumps(output))
 
@@ -296,8 +299,6 @@ def auth(event, _):
     if cookie is not None:
         try:
             test = MastodonFactory.from_cookie(cookie)
-            if test is None:
-                raise AttributeError
             test.me()
             logging.info("Already logged in")
             return {"statusCode": 200, "body": json.dumps({"status": "OK"})}
@@ -305,7 +306,7 @@ def auth(event, _):
             # If here, we aren't logged in, so drop through to start the
             # oAuth flow.
             pass
-        except AttributeError:
+        except NoAuthInfo:
             # If here, we didn't get a mastodon instance back, so start the
             # oAuth flow
             pass
