@@ -31,7 +31,9 @@ function AboutDialog({ open, handleClose }) {
           </p>
           <p>
             Released under{" "}
-            <a href="https://github.com/mastodonlm/LICENSE.md">MIT license</a>
+            <a href="https://github.com/acbeers/mastodonlm/blob/main/LICENSE.md">
+              MIT license
+            </a>
           </p>
         </DialogContentText>
       </DialogContent>
