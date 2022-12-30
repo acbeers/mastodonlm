@@ -26,6 +26,11 @@ function LoginForm() {
           setEnabled(true);
         } else if (data.status === "OK") {
           setRedirect(`/manager`);
+        } else if (data.status === "bad_host") {
+          setError(
+            "Please enter a hostname of a Mastodon server (e.g. mastodon.social)"
+          );
+          setEnabled(true);
         } else if (data.status === "not_allowed") {
           setError("Looks like your domain is not currently supported!");
           setEnabled(true);
