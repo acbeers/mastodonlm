@@ -54,3 +54,9 @@ div.group {
 .followerTable {
   margin-bottom: 12px;
 }
+
+.followerTable thead {
+  position: sticky;
+  top: 0px;
+  background-color: white;
+}
