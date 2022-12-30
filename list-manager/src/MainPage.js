@@ -11,18 +11,21 @@ function Copyright() {
     <div>
       <Typography variant="body2" color="text.secondary" align="center">
         {"Copyright © "}
-        <Link color="inherit" href="https://acbeers.github.io/">
+        <Link color="inherit" href="https://hachyderm.io/@acbeers">
           Andrew Beers
         </Link>{" "}
         {new Date().getFullYear()}
         {". "}
       </Typography>
       <Typography variant="body2" color="text.secondary" align="center">
-        <Link color="inherit" href="https://github.com/mastodonlm/LICENSE.md">
+        <Link
+          color="inherit"
+          href="https://github.com/acbeers/mastodonlm/blob/main/LICENSE.md"
+        >
           License
         </Link>
         {" | "}
-        <Link color="inherit" href="https://github.com/mastodonlm">
+        <Link color="inherit" href="https://github.com/acbeers/mastodonlm">
           Source
         </Link>
       </Typography>
