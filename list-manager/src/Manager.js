@@ -60,7 +60,7 @@ function info2Groups(info, by, search) {
   const getGroupName = (fol) => fol.display_name.toUpperCase()[0];
   const getGroupNone = (fol) => "All";
   const getGroupDomain = (fol) => {
-    const arr = fol.acct.match(/@(.*)/) || ["", "XX"];
+    const arr = fol.acct.match(/@(.*)/) || ["", "(home)"];
     return arr[1];
   };
   const methods = {
@@ -222,28 +222,31 @@ function Manager() {
       .catch((err) => handleError(err));
   };
 
-  const remove = (index, lid) => {
-    const newInfo = { ...info };
-    const fol = newInfo.followers[index];
+  const remove = (groupIndex, index, lid) => {
+    // FIXME: Not working for groups, since groups gets regenrated
+    // every time the followers list changes!
+    const newGroups = groups.slice();
+    const fol = newGroups[groupIndex].followers[index];
     setInProgress({ list: lid, follower: fol.id });
     fol.lists = fol.lists.filter((value) => value !== lid);
     API.removeFromList(lid, fol.id)
       .then((resp) => {
         setInProgress(null);
-        setInfo(newInfo);
+        setGroups(newGroups);
       })
       .catch((err) => handleError(err));
   };
 
-  const add = (index, lid) => {
-    const newInfo = { ...info };
-    const fol = newInfo.followers[index];
+  const add = (groupIndex, index, lid) => {
+    const newGroups = groups.slice();
+    console.log(newGroups[groupIndex]);
+    const fol = newGroups[groupIndex].followers[index];
     fol.lists.push(lid);
     setInProgress({ list: lid, follower: fol.id });
     API.addToList(lid, fol.id)
       .then((data) => {
         setInProgress(null);
-        setInfo(newInfo);
+        setGroups(newGroups);
       })
       .catch((err) => {
         handleError(err);
@@ -278,7 +281,7 @@ function Manager() {
     setGroups(newGroups);
   };
 
-  const makeFollowerTable = (followers) => {
+  const makeFollowerTable = (groupIndex, followers) => {
     const rows = followers.map((fol, index) => {
       const cols = lists.map((l) => {
         const cmp = { list: l.id, follower: fol.id };
@@ -287,7 +290,7 @@ function Manager() {
             <td
               key={l.id + fol.id}
               className="cell"
-              onClick={() => remove(index, l.id)}
+              onClick={() => remove(groupIndex, index, l.id)}
             >
               <CircularProgress size={10} />
             </td>
@@ -297,7 +300,7 @@ function Manager() {
             <td
               key={l.id + fol.id}
               className="cell"
-              onClick={() => remove(index, l.id)}
+              onClick={() => remove(groupIndex, index, l.id)}
             >
               X
             </td>
@@ -307,7 +310,7 @@ function Manager() {
             <td
               key={l.id + fol.id}
               className="cell"
-              onClick={() => add(index, l.id)}
+              onClick={() => add(groupIndex, index, l.id)}
             >
               &nbsp;
             </td>
@@ -346,8 +349,8 @@ function Manager() {
     return table;
   };
 
-  const tables = groups.map((group) => {
-    const table = group.open ? makeFollowerTable(group.followers) : "";
+  const tables = groups.map((group, gindex) => {
+    const table = group.open ? makeFollowerTable(gindex, group.followers) : "";
     const icon = group.open ? (
       <KeyboardArrowDownIcon />
     ) : (
