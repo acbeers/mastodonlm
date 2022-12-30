@@ -9,6 +9,7 @@ import uuid
 from mastodon import (
     Mastodon,
     MastodonAPIError,
+    MastodonNotFoundError,
     MastodonIllegalArgumentError,
     MastodonInternalServerError,
     MastodonUnauthorizedError,
@@ -336,6 +337,7 @@ def auth(event, _):
             (client_id, client_secret) = make_app(domain, redirect_url)
             logging.debug("auth: Made the app!")
         except MastodonNetworkError:
+            logging.error("Bad host: %s", domain)
             return response(json.dumps({"status": "bad_host"}), statusCode=500)
 
         cfg = Datastore.set_host_config(
@@ -431,7 +433,14 @@ def add_to_list(event, _):
     try:
         mastodon.list_accounts_add(lid, [accountid])
         return response(json.dumps({"status": "OK"}))
-    except MastodonAPIError:
+    except MastodonNotFoundError as e:
+        logging.error("ERROR - not found: %s", str(e))
+        return err_response("ERROR - not found")
+    except MastodonUnauthorizedError as e:
+        logging.error("ERROR - unauthorized: %s", str(e))
+        return err_response("ERROR - unauthorized")
+    except MastodonAPIError as e:
+        logging.error("ERROR - other API error: %s", str(e))
         return err_response("ERROR - API error")
 
 
@@ -466,8 +475,15 @@ def remove_from_list(event, _):
     try:
         mastodon.list_accounts_delete(lid, [accountid])
         return response(json.dumps({"status": "OK"}))
-    except MastodonAPIError:
-        return err_response("ERROR")
+    except MastodonNotFoundError as e:
+        logging.error("ERROR - not found: %s", str(e))
+        return err_response("ERROR - not found")
+    except MastodonUnauthorizedError as e:
+        logging.error("ERROR - unauthorized: %s", str(e))
+        return err_response("ERROR - unauthorized")
+    except MastodonAPIError as e:
+        logging.error("ERROR - other API error: %s", str(e))
+        return err_response("ERROR - API error")
 
 
 def create_list(event, _):
@@ -495,8 +511,15 @@ def create_list(event, _):
     try:
         mastodon.list_create(lname)
         return response(json.dumps({"status": "OK"}))
-    except MastodonAPIError:
-        return err_response("ERROR")
+    except MastodonNotFoundError as e:
+        logging.error("ERROR - not found: %s", str(e))
+        return err_response("ERROR - not found")
+    except MastodonUnauthorizedError as e:
+        logging.error("ERROR - unauthorized: %s", str(e))
+        return err_response("ERROR - unauthorized")
+    except MastodonAPIError as e:
+        logging.error("ERROR - other API error: %s", str(e))
+        return err_response("ERROR - API error")
 
 
 def delete_list(event, _):
@@ -524,8 +547,15 @@ def delete_list(event, _):
     try:
         mastodon.list_delete(lid)
         return response(json.dumps({"status": "OK"}))
-    except MastodonAPIError:
-        return err_response("ERROR")
+    except MastodonNotFoundError as e:
+        logging.error("ERROR - not found: %s", str(e))
+        return err_response("ERROR - not found")
+    except MastodonUnauthorizedError as e:
+        logging.error("ERROR - unauthorized: %s", str(e))
+        return err_response("ERROR - unauthorized")
+    except MastodonAPIError as e:
+        logging.error("ERROR - other API error: %s", str(e))
+        return err_response("ERROR - API error")
 
 
 def block_update(_event, _context):
