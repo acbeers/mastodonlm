@@ -493,12 +493,19 @@ function Manager() {
     </div>
   );
 
+  const reload = (
+    <Typography>
+      Hmm. Something seems to have gone wrong. A reload might help!
+    </Typography>
+  );
+
   return (
     <div className="App">
       {appbar}
       {loading ? <LinearProgress /> : ""}
       {select}
       {tables}
+      {tables.length === 0 && !loading ? reload : ""}
       {popover}
       <AboutDialog open={aboutOpen} handleClose={handleAboutClose} />
       <CreateListDialog
