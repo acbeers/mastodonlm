@@ -109,8 +109,10 @@ def get_cookie(event):
 def response(body, statusCode=200):
     """Construct a lambda response object"""
     # Log a mesasge for error-like things.
-    if statusCode >= 400:
+    if statusCode >= 404:
         logging.error("Returning %s with %s", statusCode, body)
+    elif statusCode >= 400:
+        logging.info("Returning %s with %s", statusCode, body)
     return {
         "statusCode": statusCode,
         "body": body,
@@ -188,6 +190,12 @@ def following(event, _):
         return response(json.dumps(resp), statusCode=403)
 
     me_id = me["id"]
+    logging.info(
+        "Getting %d accounts from %s for %s",
+        me["following_count"],
+        mastodon.api_base_url,
+        me["acct"],
+    )
     page1 = mastodon.account_following(me_id)
     accts = mastodon.fetch_remaining(page1)
     outpeople = [
@@ -313,8 +321,8 @@ def auth(event, _):
             pass
 
     # If we don't have a domain here, then we have to bail
-    if domain is None:
-        return response(json.dumps({"status": "no_login"}), statusCode=401)
+    if domain is None or domain == "":
+        return response(json.dumps({"status": "bad_host"}), statusCode=401)
 
     # See if this domain is allowed
     allow = Datastore.is_allowed(domain.lower())
@@ -362,11 +370,9 @@ def get_expire():
 def callback(event, _):
     """The callback method of the oAuth dance"""
 
-    # The challenge here - I don't know what server that this code is associated with.
-    # I need to ensure that "domain" comes back here.
-    # The web app also doesn't necessarily know this.
+    # Need to know the domain to complete the oauth handshake.
     params = event.get("queryStringParameters", {}) or {}
-    domain = params.get("domain", "hachyderm.io")
+    domain = params.get("domain", "UNKNOWN")
     code = params.get("code")
 
     cfg = Datastore.get_host_config(domain)
@@ -390,9 +396,10 @@ def callback(event, _):
         )
     except MastodonIllegalArgumentError:
         logging.error(
-            "MastodonIllegalArgumentError, code = %s, redirect_uri = %s",
+            "MastodonIllegalArgumentError, code = %s, redirect_uri = %s, domain = %s",
             code,
             redirect_url,
+            domain,
         )
         raise
     cookie = uuid.uuid4().urn

@@ -100,6 +100,8 @@ function Manager() {
   const [groups, setGroups] = useState([]);
   // How we want things grouped
   const [groupBy, setGroupBy] = useState("none");
+  // Whether or not to display the loading indicator
+  const [loading, setLoading] = useState(false);
   // For searching
   const [search, setSearch] = useState("");
   // For showing in progress actions
@@ -121,6 +123,7 @@ function Manager() {
   };
 
   const loadData = () => {
+    setLoading(true);
     API.getNewInfo()
       .then((data) => {
         data.followers.forEach((f) => {
@@ -131,8 +134,12 @@ function Manager() {
         );
         data.lists.sort((a, b) => a.title.localeCompare(b.title));
         setInfo(data);
+        setLoading(false);
       })
-      .catch((err) => handleError(err));
+      .catch((err) => {
+        handleError(err);
+        setLoading(false);
+      });
   };
 
   // Generate the groups
@@ -459,20 +466,6 @@ function Manager() {
     </Snackbar>
   );
 
-  if (groups.length === 0) {
-    return (
-      <div className="App">
-        {appbar}
-        <LinearProgress />
-        {snackbar}
-        <TimeoutDialog
-          open={showTimeout}
-          handleClose={() => setShowTimeout(false)}
-        />
-      </div>
-    );
-  }
-
   const select = (
     <div>
       <FormControl sx={{ marginTop: "12px", width: 200, marginBottom: "12px" }}>
@@ -500,11 +493,19 @@ function Manager() {
     </div>
   );
 
+  const reload = (
+    <Typography>
+      Hmm. Something seems to have gone wrong. A reload might help!
+    </Typography>
+  );
+
   return (
     <div className="App">
       {appbar}
+      {loading ? <LinearProgress /> : ""}
       {select}
       {tables}
+      {tables.length === 0 && !loading ? reload : ""}
       {popover}
       <AboutDialog open={aboutOpen} handleClose={handleAboutClose} />
       <CreateListDialog
