@@ -1,3 +1,10 @@
+.Manager {
+  margin-left: 8px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
 th {
   display: table-cell;
   vertical-align: bottom;
@@ -53,4 +60,15 @@ div.group {
 
 .followerTable {
   margin-bottom: 12px;
+}
+
+.followerTable thead {
+  position: sticky;
+  top: 0px;
+  background-color: white;
+}
+
+#alltables {
+  flex-grow: 1;
+  overflow: scroll;
 }
