@@ -565,6 +565,25 @@ def delete_list(event, _):
         return err_response("ERROR - API error")
 
 
+def logout(event, _):
+    """Logs out"""
+
+    cookie = get_cookie(event)
+
+    # Log out of the mastodon server
+    try:
+        mastodon = MastodonFactory.from_cookie(cookie)
+        mastodon.revoke_access_token()
+
+        # Dump the cookie
+        Datastore.drop_auth(cookie)
+    except MastodonAPIError as e:
+        logging.error("ERROR - other API error: %s", str(e))
+        return err_response("ERROR - API error")
+
+    return response(json.dumps({"status": "OK"}))
+
+
 def block_update(_event, _context):
     """Pulls a list of hosts to block from github and populates our blocked host
     table"""

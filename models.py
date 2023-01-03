@@ -108,6 +108,13 @@ class Datastore:
         authinfo.save()
 
     @classmethod
+    def drop_auth(cls, cookie):
+        """Drop the token associated with the cookie"""
+        authinfo = cls.get_auth(cookie)
+        if authinfo is not None:
+            authinfo.delete()
+
+    @classmethod
     def is_allowed(cls, host):
         """Returns true if this host is allowed"""
 

@@ -78,7 +78,7 @@ class TestAuth(TestCase):
         res = handler.auth(event, context)
         # We should return a 401 response
         self.assertEqual(res["statusCode"], 401)
-        self.assertEqual(json.loads(res["body"])["status"], "no_login")
+        self.assertEqual(json.loads(res["body"])["status"], "bad_host")
 
     @patch("handler.Datastore")
     @patch("handler.MastodonFactory", new_callable=mock_factory)
@@ -215,6 +215,24 @@ class TestAuth(TestCase):
         self.assertTrue(factory.from_cookie.called_with("mycookie"))
         # We should not have created a new app
         self.assertFalse(make_app.called)
+
+    @patch("handler.Datastore")
+    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    def test_logout(self, factory, data_store):
+        """Test /logout"""
+
+        (event, context) = setupWithCookies()
+
+        mastomock = factory.from_cookie.return_value
+
+        handler.logout(event,context)
+        # We should have made a mastodon instance from the stored config
+        self.assertTrue(factory.from_cookie.called_with("mycookie"))
+        # We should drop the access token
+        self.assertTrue(mastomock.revoke_access_token.called)
+        # We should drop the auth from dynamodb
+        self.assertTrue(data_store.drop_auth.called_with("mycookie"))
+
 
 
 class TestInfo(TestCase):

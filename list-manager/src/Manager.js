@@ -187,6 +187,9 @@ function Manager() {
     setCreateOpen(true);
     handleMenuClose();
   };
+  const handleLogout = () => {
+    API.logout().then(() => setRedirect("/main"));
+  };
 
   // About dialog handlers
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -442,6 +445,7 @@ function Manager() {
           >
             <MenuItem onClick={handleMenuNewList}>New List</MenuItem>
             <MenuItem onClick={handleMenuAbout}>About</MenuItem>
+            <MenuItem onClick={handleLogout}>Logout</MenuItem>
           </Menu>{" "}
           <Typography>Mastodon List Manager</Typography>&nbsp;
           <Typography align="right">(@{acct})</Typography>

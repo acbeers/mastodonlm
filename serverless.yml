@@ -34,6 +34,7 @@ provider:
           Action:
             - "dynamodb:PutItem"
             - "dynamodb:GetItem"
+            - "dynamodb:DeleteItem"
             - "dynamodb:Query"
           Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/${self:custom.authTable}"
         - Effect: "Allow"
@@ -184,6 +185,13 @@ functions:
     events:
       - httpApi:
           path: /delete
+          method: POST
+  logout:
+    timeout: 30
+    handler: handler.logout
+    events:
+      - httpApi:
+          path: /logout
           method: POST
   blocklistUpdate:
     handler: handler.block_update

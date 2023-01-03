@@ -46,6 +46,7 @@ const urlCreate = process.env.REACT_APP_BACKEND_URL + "/create";
 const urlDelete = process.env.REACT_APP_BACKEND_URL + "/delete";
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
 const urlCallback = process.env.REACT_APP_BACKEND_URL + "/callback";
+const urlLogout = process.env.REACT_APP_BACKEND_URL + "/logout";
 
 // Error classes
 
@@ -163,6 +164,10 @@ class API {
       method: "POST",
       data: { code: code, domain: domain },
     });
+  }
+
+  static logout() {
+    return authPOST(urlLogout);
   }
 }
 
