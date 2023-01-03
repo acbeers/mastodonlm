@@ -504,30 +504,34 @@ function Manager() {
   );
 
   return (
-    <div className="App">
-      {appbar}
-      {loading ? <LinearProgress /> : ""}
-      {select}
-      {tables}
-      {tables.length === 0 && !loading ? reload : ""}
-      {popover}
-      <AboutDialog open={aboutOpen} handleClose={handleAboutClose} />
-      <CreateListDialog
-        open={createOpen}
-        handleClose={handleCreateClose}
-        handleCreate={handleCreateCommit}
-      />
-      <DeleteListDialog
-        open={deleteOpen}
-        list={deleteOpen ? deleteList : ""}
-        handleClose={handleDeleteClose}
-        handleDelete={handleDelete}
-      />
-      <TimeoutDialog
-        open={showTimeout}
-        handleClose={() => setShowTimeout(false)}
-      />
-      {snackbar}
+    <div className="Manager">
+      <div id="topbars">
+        {appbar}
+        {loading ? <LinearProgress /> : ""}
+        {select}
+      </div>
+      <div id="alltables">
+        {tables}
+        {tables.length === 0 && !loading ? reload : ""}
+        {popover}
+        <AboutDialog open={aboutOpen} handleClose={handleAboutClose} />
+        <CreateListDialog
+          open={createOpen}
+          handleClose={handleCreateClose}
+          handleCreate={handleCreateCommit}
+        />
+        <DeleteListDialog
+          open={deleteOpen}
+          list={deleteOpen ? deleteList : ""}
+          handleClose={handleDeleteClose}
+          handleDelete={handleDelete}
+        />
+        <TimeoutDialog
+          open={showTimeout}
+          handleClose={() => setShowTimeout(false)}
+        />
+        {snackbar}
+      </div>
     </div>
   );
 }
