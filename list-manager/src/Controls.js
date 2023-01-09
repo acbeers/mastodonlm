@@ -14,10 +14,18 @@ export default function Controls({
   return (
     <div>
       <FormControl sx={{ marginTop: "12px", width: 200, marginBottom: "12px" }}>
-        <InputLabel id="demo-simple-select-label">Group By</InputLabel>
+        <InputLabel
+          htmlFor="controls-groupby-select"
+          id="demo-simple-select-label"
+        >
+          Group By
+        </InputLabel>
         <Select
           labelid="demo-simple-select-label"
-          id="demo-simple-select"
+          id="controls-groupby-select"
+          name="controls-groupby-select"
+          data-testid="controls-groupby-select"
+          inputProps={{ "data-testid": "controls-groupby-input" }}
           value={groupBy}
           label="Group By"
           onChange={(event) => handleGroupByChange(event.target.value)}
@@ -29,8 +37,9 @@ export default function Controls({
       </FormControl>
       <FormControl sx={{ marginTop: "12px", width: 400, marginBottom: "12px" }}>
         <TextField
-          labelid="demo-simple-search-label"
+          labelid="controls-search-label"
           label="Search"
+          data-testid="controls-search-textfield"
           value={search}
           onChange={(event) => handleSearchChange(event.target.value)}
         />

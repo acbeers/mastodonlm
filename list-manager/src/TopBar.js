@@ -48,6 +48,7 @@ export default function TopBar({
             edge="start"
             color="inherit"
             aria-label="menu"
+            data-testid="topbar-menu"
             sx={{ mr: 2 }}
             onClick={handleMenuClick}
           >

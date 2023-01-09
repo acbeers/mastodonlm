@@ -41,7 +41,6 @@ export default function FollowingTable({
   add,
   handleDeleteClick,
   defaultOpen,
-  toggleOpen,
 }) {
   // Popover anchor and handlers
   const [anchorEl, setAnchorEl] = useState(null);
@@ -121,6 +120,7 @@ export default function FollowingTable({
           <td
             key={l.id + fol.id}
             className="cell"
+            data-testid={l.id + fol.id}
             onClick={() => remove(groupIndex, index, l.id)}
           >
             <CircularProgress size={10} />
@@ -131,6 +131,7 @@ export default function FollowingTable({
           <td
             key={l.id + fol.id}
             className="cell"
+            data-testid={l.id + fol.id}
             onClick={() => remove(groupIndex, index, l.id)}
           >
             X
@@ -141,6 +142,7 @@ export default function FollowingTable({
           <td
             key={l.id + fol.id}
             className="cell"
+            data-testid={l.id + fol.id}
             onClick={() => add(groupIndex, index, l.id)}
           >
             &nbsp;
@@ -149,7 +151,7 @@ export default function FollowingTable({
       }
     });
     return (
-      <tr key={fol.id}>
+      <tr className="following-row" key={fol.id}>
         <td align="right" className="usercell">
           <Typography
             variant="body2"
@@ -182,7 +184,11 @@ export default function FollowingTable({
 
   return (
     <div key={group.key}>
-      <div className="group" onClick={() => setOpen(!open)}>
+      <div
+        data-testid="ft-expando"
+        className="group"
+        onClick={() => setOpen(!open)}
+      >
         {icon} {group.key} ({group.followers.length})
       </div>
       {open ? table : ""}
