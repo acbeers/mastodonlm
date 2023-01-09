@@ -232,6 +232,15 @@ function Manager() {
     />
   );
 
+  const controls = (
+    <Controls
+      groupBy={groupBy}
+      handleGroupByChange={setGroupBy}
+      search={search}
+      handleSearchChange={setSearch}
+    />
+  );
+
   const snackbar = (
     <Snackbar
       open={error !== null}
@@ -254,38 +263,39 @@ function Manager() {
     </Typography>
   );
 
+  const dialogs = (
+    <div>
+      <AboutDialog open={aboutOpen} handleClose={handleAboutClose} />
+      <CreateListDialog
+        open={createOpen}
+        handleClose={handleCreateClose}
+        handleCreate={handleCreateCommit}
+      />
+      <DeleteListDialog
+        open={deleteOpen}
+        list={deleteOpen ? deleteList : ""}
+        handleClose={handleDeleteClose}
+        handleDelete={handleDelete}
+      />
+      <TimeoutDialog
+        open={showTimeout}
+        handleClose={() => setShowTimeout(false)}
+      />
+    </div>
+  );
+
   return (
     <div className="Manager">
       <div id="topbars">
         {appbar}
         {loading ? <LinearProgress /> : ""}
-        <Controls
-          groupBy={groupBy}
-          handleGroupByChange={setGroupBy}
-          search={search}
-          handleSearchChange={setSearch}
-        />
+        {controls}
       </div>
       <div id="alltables">
         {tables}
         {tables.length === 0 && !loading ? reload : ""}
-        <AboutDialog open={aboutOpen} handleClose={handleAboutClose} />
-        <CreateListDialog
-          open={createOpen}
-          handleClose={handleCreateClose}
-          handleCreate={handleCreateCommit}
-        />
-        <DeleteListDialog
-          open={deleteOpen}
-          list={deleteOpen ? deleteList : ""}
-          handleClose={handleDeleteClose}
-          handleDelete={handleDelete}
-        />
-        <TimeoutDialog
-          open={showTimeout}
-          handleClose={() => setShowTimeout(false)}
-        />
         {snackbar}
+        {dialogs}
       </div>
     </div>
   );

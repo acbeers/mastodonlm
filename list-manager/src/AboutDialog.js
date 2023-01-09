@@ -18,23 +18,24 @@ function AboutDialog({ open, handleClose }) {
         About Mastodon List Manager
       </DialogTitle>
       <DialogContent>
-        <DialogContentText id="alert-dialog-description">
-          <p>
-            This is an app that lets you manage membership of your follows in
-            Lists on Mastodon, in the style of Twitter List Manager. Click on a
-            cell in the table to add/remove the user in that row to the list in
-            that column.
-          </p>
-          <p>
-            Maintained by{" "}
-            <a href="https://hachyderm.io/@acbeers">@acbeers@hachyderm.io</a>.
-          </p>
-          <p>
-            Released under{" "}
-            <a href="https://github.com/acbeers/mastodonlm/blob/main/LICENSE.md">
-              MIT license
-            </a>
-          </p>
+        <DialogContentText
+          style={{ marginBottom: "10px" }}
+          id="alert-dialog-description"
+        >
+          This is an app that lets you manage membership of your follows in
+          Lists on Mastodon, in the style of Twitter List Manager. Click on a
+          cell in the table to add/remove the user in that row to the list in
+          that column.
+        </DialogContentText>
+        <DialogContentText style={{ marginBottom: "10px" }}>
+          Maintained by{" "}
+          <a href="https://hachyderm.io/@acbeers">@acbeers@hachyderm.io</a>.
+        </DialogContentText>
+        <DialogContentText style={{ marginBottom: "10px" }}>
+          Released under{" "}
+          <a href="https://github.com/acbeers/mastodonlm/blob/main/LICENSE.md">
+            MIT license
+          </a>
         </DialogContentText>
       </DialogContent>
       <DialogActions>
