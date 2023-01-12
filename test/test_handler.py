@@ -225,14 +225,13 @@ class TestAuth(TestCase):
 
         mastomock = factory.from_cookie.return_value
 
-        handler.logout(event,context)
+        handler.logout(event, context)
         # We should have made a mastodon instance from the stored config
         self.assertTrue(factory.from_cookie.called_with("mycookie"))
         # We should drop the access token
         self.assertTrue(mastomock.revoke_access_token.called)
         # We should drop the auth from dynamodb
         self.assertTrue(data_store.drop_auth.called_with("mycookie"))
-
 
 
 class TestInfo(TestCase):

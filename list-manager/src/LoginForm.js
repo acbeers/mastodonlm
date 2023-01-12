@@ -31,6 +31,9 @@ function LoginForm() {
             "Please enter a hostname of a Mastodon server (e.g. mastodon.social)"
           );
           setEnabled(true);
+        } else if (data.status === "blocked") {
+          setError("That host does not supoport this app.");
+          setEnabled(true);
         } else if (data.status === "not_allowed") {
           setError("Looks like your domain is not currently supported!");
           setEnabled(true);

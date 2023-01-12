@@ -19,9 +19,16 @@ import requests
 
 from models import Datastore
 
+# Our User Agent
+USER_AGENT = "mastodonlistmanager"
+
 
 class NoAuthInfo(Exception):
     """Internal exception class for when we don't have auth info"""
+
+
+class NotMastodon(Exception):
+    """Internal exception for when we think we don't have a Mastodon connection"""
 
 
 # AWS doens't set a logging level, so set it here.
@@ -54,8 +61,14 @@ class MastodonFactory:
             client_id=cfg.client_id,
             client_secret=cfg.client_secret,
             access_token=token,
+            user_agent=USER_AGENT,
             api_base_url=f"https://{cfg.host}",
         )
+        # If the version check failed, then most likely this is an unusable
+        # instance.  This can happen when e.g. we are blocked by CloudFlare
+        if not mastodon.version_check_worked:
+            raise NotMastodon
+
         return mastodon
 
 
@@ -78,25 +91,6 @@ def make_app(domain, redirect_url):
         api_base_url=f"https://{domain}",
     )
     return (client_id, client_secret)
-
-
-def get_mastodon(cookie):
-    """Construct a Mastodon objecct for the given cookie"""
-    # Get cookie
-    # Lookup domain info from cookie.domain
-    # If no domain info, then register app with domain.
-    return MastodonFactory.from_cookie(cookie)
-
-
-def get_mastodon_from_config(cfg, domain):
-    """Create a Mastodon interface from a HostConfig object"""
-    mastodon = Mastodon(
-        client_id=cfg.client_id,
-        client_secret=cfg.client_secret,
-        # access_token=authinfo.token,
-        api_base_url=f"https://{domain}",
-    )
-    return mastodon
 
 
 def get_cookie(event):
@@ -125,6 +119,11 @@ def err_response(msg):
     return response(json.dumps(obj), statusCode=500)
 
 
+def blocked_response():
+    """Returns a 'blocked' response"""
+    return err_response("blocked")
+
+
 def meta(event, _):
     """
     Handler to get metadata which will drive further fetches.
@@ -147,6 +146,8 @@ def meta(event, _):
     except (MastodonUnauthorizedError, NoAuthInfo):
         resp = {"status": "no_cookie"}
         return response(json.dumps(resp), statusCode=403)
+    except NotMastodon:
+        return blocked_response()
 
     ainfo = Datastore.get_auth(cookie)
     domain = "" if ainfo is None else ainfo.domain
@@ -351,7 +352,15 @@ def auth(event, _):
         cfg = Datastore.set_host_config(
             domain, client_id=client_id, client_secret=client_secret
         )
-    mastodon = MastodonFactory.from_config(cfg)
+
+    logging.debug("creating from config")
+    try:
+        mastodon = MastodonFactory.from_config(cfg)
+    except NotMastodon:
+        return blocked_response()
+
+    logging.debug("created from config")
+
     url = mastodon.auth_request_url(
         scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
         redirect_uris=redirect_url,
@@ -381,6 +390,7 @@ def callback(event, _):
     mastodon = Mastodon(
         client_id=cfg.client_id,
         client_secret=cfg.client_secret,
+        user_agent=USER_AGENT,
         api_base_url=f"https://{domain}",
     )
 
@@ -401,7 +411,8 @@ def callback(event, _):
             redirect_url,
             domain,
         )
-        raise
+        return err_response("ERROR - illegal argument")
+
     cookie = uuid.uuid4().urn
 
     Datastore.set_auth(cookie, token=token, domain=domain)
@@ -434,6 +445,8 @@ def add_to_list(event, _):
     except (MastodonUnauthorizedError, NoAuthInfo):
         resp = {"status": "not_authorized"}
         return response(json.dumps(resp), statusCode=403)
+    except NotMastodon:
+        return blocked_response()
 
     lid = event["queryStringParameters"]["list_id"]
     accountid = event["queryStringParameters"]["account_id"]
@@ -476,6 +489,8 @@ def remove_from_list(event, _):
     except (MastodonUnauthorizedError, NoAuthInfo):
         resp = {"status": "not_authorized"}
         return response(json.dumps(resp), statusCode=403)
+    except NotMastodon:
+        return blocked_response()
 
     lid = event["queryStringParameters"]["list_id"]
     accountid = event["queryStringParameters"]["account_id"]
@@ -512,6 +527,8 @@ def create_list(event, _):
     except (MastodonUnauthorizedError, NoAuthInfo):
         resp = {"status": "not_authorized"}
         return response(json.dumps(resp), statusCode=403)
+    except NotMastodon:
+        return blocked_response()
 
     lname = event["queryStringParameters"]["list_name"]
 
@@ -548,6 +565,8 @@ def delete_list(event, _):
     except (MastodonUnauthorizedError, NoAuthInfo):
         resp = {"status": "not_authorized"}
         return response(json.dumps(resp), statusCode=403)
+    except NotMastodon:
+        return blocked_response()
 
     lid = event["queryStringParameters"]["list_id"]
 
