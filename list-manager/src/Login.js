@@ -10,7 +10,6 @@ function Login(params) {
     API.tryAuth()
       .then((resp) => resp.json())
       .then((data) => {
-        console.log(data);
         if (data.status === "OK") {
           // This means we are already logged in
           setRedirect(`/manager`);

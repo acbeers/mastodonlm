@@ -37,9 +37,6 @@ function info2Groups(info, by, filter, search) {
   const lwrSearch = search.toLowerCase();
 
   // Returns true if the filter keeps a person
-  console.log(filter.slice(0, 4));
-  console.log(filter);
-  console.log(filter.slice(4));
   let filterFunc = null;
   if (filter === "nolists") filterFunc = (x) => x.lists.length === 0;
   else if (filter.slice(0, 4) === "not:")
@@ -278,7 +275,7 @@ function Manager() {
 
   const reload = (
     <Typography>
-      Hmm. Something seems to have gone wrong. A reload might help!
+      Hmm. There's no data here. Create a new list, or try reloading!
     </Typography>
   );
 

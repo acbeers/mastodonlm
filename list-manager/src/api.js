@@ -8,7 +8,7 @@ const createFetch = () => {
   return (url, options) => {
     // Check to see if its not in the cache otherwise fetch it
     if (!fetchMap[url]) {
-      fetchMap[url] = fetch(url, options).then((res) => res.json());
+      fetchMap[url] = fetch(url, options).then((resp) => checkJSON(resp));
     }
     // Return the cached promise
     return fetchMap[url];
@@ -72,13 +72,18 @@ const checkJSON = (resp) => {
   if (resp.status === 401 || resp.status === 403) throw new AuthError();
   if (!resp.ok) throw Error("An error occurred");
 
-  return resp.json().then((data) => {
-    if (data.errorType === "LambdaTimeoutError")
-      throw new TimeoutError("Backend timeout");
-    if (data.message === "Service Unavailable")
-      throw new TimeoutError("Backend timeout (likely)");
-    return data;
-  });
+  return resp
+    .json()
+    .then((data) => {
+      if (data.errorType === "LambdaTimeoutError")
+        throw new TimeoutError("Backend timeout");
+      if (data.message === "Service Unavailable")
+        throw new TimeoutError("Backend timeout (likely)");
+      return data;
+    })
+    .catch((err) => {
+      throw new Error(`An error occurred: ${err}`);
+    });
 };
 
 // An API class that enforces some consistency

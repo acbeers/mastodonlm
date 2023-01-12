@@ -3,7 +3,7 @@
 import logging
 from unittest.mock import MagicMock, patch, sentinel
 from unittest import TestCase
-from handler import MastodonFactory
+from handler import MastodonFactory, USER_AGENT
 
 # Here, reconfigure the logger to send output to a file during tests.
 logging.basicConfig(level=logging.INFO, filename="debug_log.txt")
@@ -32,6 +32,7 @@ class TestFactory(TestCase):
             client_id=sentinel.client_id,
             client_secret=sentinel.client_secret,
             access_token=None,
+            user_agent=USER_AGENT,
             api_base_url=f"https://{sentinel.host}",
         )
 
@@ -46,6 +47,7 @@ class TestFactory(TestCase):
             client_id=sentinel.client_id,
             client_secret=sentinel.client_secret,
             access_token=sentinel.token,
+            user_agent=USER_AGENT,
             api_base_url=f"https://{sentinel.host}",
         )
 
