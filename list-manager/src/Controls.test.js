@@ -50,3 +50,41 @@ test("fires the groupby method", (done) => {
   const selectElement = screen.getByTestId("controls-groupby-input");
   fireEvent.change(selectElement, { target: { value: "name" } });
 });
+
+test("renders the filter element - everything", () => {
+  render(<Controls filter="everything" />);
+  const searchElement = screen.getByTestId("controls-filter-select");
+  expect(searchElement).toBeInTheDocument();
+  const selectedElement = screen.getByText("Everything");
+  expect(selectedElement).toBeInTheDocument();
+});
+
+test("renders the filter element - nolists", () => {
+  render(<Controls filter="nolists" />);
+  const searchElement = screen.getByTestId("controls-filter-select");
+  expect(searchElement).toBeInTheDocument();
+  const selectedElement = screen.getByText("Not on any list");
+  expect(selectedElement).toBeInTheDocument();
+});
+
+test("renders the filter element - lists", () => {
+  const lists = [
+    { id: 1, title: "List A" },
+    { id: 2, title: "List B" },
+  ];
+  render(<Controls filter="not:2" lists={lists} />);
+  const searchElement = screen.getByTestId("controls-filter-select");
+  expect(searchElement).toBeInTheDocument();
+  const selectedElement = screen.getByText("Not on List B");
+  expect(selectedElement).toBeInTheDocument();
+});
+
+test("fires the filter method", (done) => {
+  const handler = (val) => {
+    expect(val).toEqual("nolists");
+    done();
+  };
+  render(<Controls filter="everything" handleFilterChange={handler} />);
+  const selectElement = screen.getByTestId("controls-filter-input");
+  fireEvent.change(selectElement, { target: { value: "nolists" } });
+});

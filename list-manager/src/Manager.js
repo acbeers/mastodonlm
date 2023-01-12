@@ -18,7 +18,7 @@ import TopBar from "./TopBar";
 
 import "./Manager.css";
 
-function info2Groups(info, by, search) {
+function info2Groups(info, by, filter, search) {
   // First, compute the groups
   const getGroupName = (fol) => fol.display_name.toUpperCase()[0];
   const getGroupNone = (fol) => "All";
@@ -36,8 +36,21 @@ function info2Groups(info, by, search) {
 
   const lwrSearch = search.toLowerCase();
 
+  // Returns true if the filter keeps a person
+  console.log(filter.slice(0, 4));
+  console.log(filter);
+  console.log(filter.slice(4));
+  let filterFunc = null;
+  if (filter === "nolists") filterFunc = (x) => x.lists.length === 0;
+  else if (filter.slice(0, 4) === "not:")
+    filterFunc = (x) => !x.lists.includes(parseInt(filter.slice(4)));
+  else filterFunc = (x) => true;
+
   info.followers.forEach((fol) => {
-    // First, see if it passes the search
+    // First, see if it passes the filter
+    if (!filterFunc(fol)) return;
+
+    // Next, see if it passes the search
     const dnidx = fol.display_name.toLowerCase().indexOf(lwrSearch);
     const unidx = fol.username.toLowerCase().indexOf(lwrSearch);
     const noidx = fol.note.toLowerCase().indexOf(lwrSearch);
@@ -65,6 +78,9 @@ function Manager() {
   const [groupBy, setGroupBy] = useState("none");
   // Whether or not to display the loading indicator
   const [loading, setLoading] = useState(false);
+  // The currently active filter
+  // Values: "everything", "nolists", "not:list-id"
+  const [filter, setFilter] = useState("everything");
   // For searching
   const [search, setSearch] = useState("");
   // For showing in progress actions
@@ -107,9 +123,9 @@ function Manager() {
 
   // Generate the groups
   useEffect(() => {
-    const groups = info2Groups(info, groupBy, search);
+    const groups = info2Groups(info, groupBy, filter, search);
     setGroups(groups);
-  }, [info, groupBy, search]);
+  }, [info, groupBy, search, filter]);
 
   // Fetch the data
   useEffect(() => {
@@ -236,6 +252,9 @@ function Manager() {
     <Controls
       groupBy={groupBy}
       handleGroupByChange={setGroupBy}
+      lists={lists}
+      filter={filter}
+      handleFilterChange={setFilter}
       search={search}
       handleSearchChange={setSearch}
     />
