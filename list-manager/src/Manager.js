@@ -41,6 +41,8 @@ function info2Groups(info, by, filter, search) {
   if (filter === "nolists") filterFunc = (x) => x.lists.length === 0;
   else if (filter.slice(0, 4) === "not:")
     filterFunc = (x) => !x.lists.includes(parseInt(filter.slice(4)));
+  else if (filter.slice(0, 3) === "on:")
+    filterFunc = (x) => x.lists.includes(parseInt(filter.slice(3)));
   else filterFunc = (x) => true;
 
   info.followers.forEach((fol) => {

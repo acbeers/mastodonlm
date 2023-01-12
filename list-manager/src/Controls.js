@@ -14,9 +14,14 @@ export default function Controls({
   search,
   handleSearchChange,
 }) {
-  const filterItems = (lists || []).map((list) => (
+  const notOnfilterItems = (lists || []).map((list) => (
     <MenuItem key={list.id} value={"not:" + list.id}>
       Not on {list.title}
+    </MenuItem>
+  ));
+  const onfilterItems = (lists || []).map((list) => (
+    <MenuItem key={list.id} value={"on:" + list.id}>
+      On {list.title}
     </MenuItem>
   ));
   return (
@@ -61,7 +66,8 @@ export default function Controls({
         >
           <MenuItem value={"everything"}>Everything</MenuItem>
           <MenuItem value={"nolists"}>Not on any list</MenuItem>
-          {filterItems}
+          {notOnfilterItems}
+          {onfilterItems}
         </Select>
       </FormControl>
       <FormControl sx={{ marginTop: "12px", width: 400, marginBottom: "12px" }}>
