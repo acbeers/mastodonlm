@@ -5,8 +5,21 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
+import { List } from "./types";
 
-function DeleteListDialog({ open, list, handleClose, handleDelete }) {
+type DeleteListDialogProps = {
+  open: boolean;
+  list: List;
+  handleClose: () => void;
+  handleDelete: (list: List) => void;
+};
+
+function DeleteListDialog({
+  open,
+  list,
+  handleClose,
+  handleDelete,
+}: DeleteListDialogProps) {
   return (
     <Dialog
       open={open}

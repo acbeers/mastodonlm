@@ -3,8 +3,8 @@ import { Navigate } from "react-router-dom";
 
 import API from "./api";
 
-function Login(params) {
-  const [redirect, setRedirect] = useState(null);
+function Login() {
+  const [redirect, setRedirect] = useState<string | null>(null);
 
   useEffect(() => {
     API.tryAuth()
@@ -25,7 +25,7 @@ function Login(params) {
   if (redirect) {
     return <Navigate to={redirect} />;
   }
-  return "";
+  return <span />;
 }
 
 export default Login;

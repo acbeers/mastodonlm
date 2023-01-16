@@ -1,11 +1,13 @@
 // API methods for List Manager
 
+import { User, List } from "./types";
+
 // This fancy function prevents multiple fetches in useEffect
 // in development mode.
 const createFetch = () => {
   // Create a cache of fetches by URL
-  const fetchMap = {};
-  return (url, options) => {
+  const fetchMap: Record<string, Promise<any>> = {};
+  return (url: string, options: object) => {
     // Check to see if its not in the cache otherwise fetch it
     if (!fetchMap[url]) {
       fetchMap[url] = fetch(url, options).then((resp) => checkJSON(resp));
@@ -17,21 +19,23 @@ const createFetch = () => {
 const onlyOneFetch = createFetch();
 
 // A version of fetch that passes our authentication
-function authenticatedFetch(url, options) {
+function authenticatedFetch(url: string, options: RequestInit) {
+  const requestHeaders: HeadersInit = new Headers();
+  const val = sessionStorage.getItem("list-manager-cookie");
+  if (val) requestHeaders.set("authorization", val);
+
   return fetch(url, {
     credentials: "include",
     method: options.method || "GET",
-    headers: {
-      authorization: sessionStorage.getItem("list-manager-cookie"),
-    },
+    headers: requestHeaders,
   });
 }
 
-function authGET(url) {
+function authGET(url: string) {
   return authenticatedFetch(url, { method: "GET" });
 }
 
-function authPOST(url) {
+function authPOST(url: string) {
   return authenticatedFetch(url, { method: "POST" });
 }
 
@@ -51,15 +55,16 @@ const urlLogout = process.env.REACT_APP_BACKEND_URL + "/logout";
 // Error classes
 
 export class TimeoutError extends Error {
-  constructor(params) {
-    super(params);
+  constructor(msg: string) {
+    super();
     this.name = "TimeoutError";
+    this.message = msg;
   }
 }
 
 export class AuthError extends Error {
-  constructor(params) {
-    super(params);
+  constructor() {
+    super();
     this.name = "AuthError";
     this.message = "Not authenticated";
   }
@@ -68,7 +73,7 @@ export class AuthError extends Error {
 // Given a fetch response, check it for errors and throw
 // reasonable exceptions if so.  Otherwise, return the response
 // converted to JSON.
-const checkJSON = (resp) => {
+const checkJSON = (resp: Response) => {
   if (resp.status === 401 || resp.status === 403) throw new AuthError();
   if (!resp.ok) throw Error("An error occurred");
 
@@ -100,7 +105,7 @@ class API {
         // e.g. this may be a status: response that will kick off authentication.
         if (!meta.me) return meta;
 
-        let following = [];
+        let following: User[] = [];
         let lists = meta.lists;
 
         // Get followers
@@ -116,12 +121,12 @@ class API {
             // Build up lists for each follower
             following.forEach((x) => (x.lists = []));
             // A map for easy lookup
-            const followerMap = {};
+            const followerMap: Record<number, User> = {};
             following.forEach((x) => (followerMap[x.id] = x));
             // And, for each list
-            lists.forEach((list) => {
+            lists.forEach((list: List) => {
               const accts = listaccts[list.id];
-              accts.forEach((acct) => {
+              accts.forEach((acct: number) => {
                 const fol = followerMap[acct];
                 if (fol) fol.lists.push(list.id);
               });
@@ -135,25 +140,25 @@ class API {
       });
   }
 
-  static addToList(list_id, person_id) {
+  static addToList(list_id: number, person_id: number) {
     return authPOST(
       `${urlAdd}?list_id=${list_id}&account_id=${person_id}`
     ).then((resp) => checkJSON(resp));
   }
 
-  static removeFromList(list_id, person_id) {
+  static removeFromList(list_id: number, person_id: number) {
     return authPOST(
       `${urlRemove}?list_id=${list_id}&account_id=${person_id}`
     ).then((resp) => checkJSON(resp));
   }
 
-  static createList(list_name) {
+  static createList(list_name: string) {
     return authPOST(`${urlCreate}?list_name=${list_name}`).then((resp) =>
       checkJSON(resp)
     );
   }
 
-  static deleteList(list_id) {
+  static deleteList(list_id: number) {
     return authPOST(`${urlDelete}?list_id=${list_id}`).then((resp) =>
       checkJSON(resp)
     );
@@ -163,7 +168,7 @@ class API {
     return authGET(urlAuth);
   }
 
-  static authCallback(code, domain) {
+  static authCallback(code: string, domain: string) {
     return onlyOneFetch(`${urlCallback}?code=${code}&domain=${domain}`, {
       credentials: "include",
       method: "POST",

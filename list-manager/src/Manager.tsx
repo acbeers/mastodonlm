@@ -16,36 +16,43 @@ import FollowingTable from "./FollowingTable";
 import Controls from "./Controls";
 import TopBar from "./TopBar";
 
+import { User, APIData, Group, List, InProgress } from "./types";
+
 import "./Manager.css";
 
-function info2Groups(info, by, filter, search) {
+function info2Groups(
+  info: APIData,
+  by: string,
+  filter: string,
+  search: string
+) {
   // First, compute the groups
-  const getGroupName = (fol) => fol.display_name.toUpperCase()[0];
-  const getGroupNone = (fol) => "All";
-  const getGroupDomain = (fol) => {
+  const getGroupName = (fol: User) => fol.display_name.toUpperCase()[0];
+  const getGroupNone = (fol: User) => "All";
+  const getGroupDomain = (fol: User) => {
     const arr = fol.acct.match(/@(.*)/) || ["", "(home)"];
     return arr[1];
   };
-  const methods = {
+  const methods: Record<string, (a: User) => string> = {
     none: getGroupNone,
     name: getGroupName,
     domain: getGroupDomain,
   };
   const method = methods[by];
-  const groups = {};
+  const groups: Record<string, User[]> = {};
 
   const lwrSearch = search.toLowerCase();
 
   // Returns true if the filter keeps a person
-  let filterFunc = null;
-  if (filter === "nolists") filterFunc = (x) => x.lists.length === 0;
-  else if (filter.slice(0, 4) === "not:")
-    filterFunc = (x) => !x.lists.includes(parseInt(filter.slice(4)));
-  else if (filter.slice(0, 3) === "on:")
-    filterFunc = (x) => x.lists.includes(parseInt(filter.slice(3)));
-  else filterFunc = (x) => true;
+  const key = filter.split(":")[0];
+  const filterFuncs: Record<string, (x: User) => boolean> = {
+    nolists: (x) => x.lists.length === 0,
+    not: (x) => !x.lists.includes(parseInt(filter.slice(4))),
+    on: (x) => x.lists.includes(parseInt(filter.slice(3))),
+  };
+  const filterFunc = filterFuncs[key] || ((x: User) => true);
 
-  info.followers.forEach((fol) => {
+  info.followers.forEach((fol: User) => {
     // First, see if it passes the filter
     if (!filterFunc(fol)) return;
 
@@ -65,14 +72,18 @@ function info2Groups(info, by, filter, search) {
   // Now, order the groups and produce an array
   const keys = Object.keys(groups);
   keys.sort();
-  return keys.map((k) => ({ key: k, open: false, followers: groups[k] }));
+  return keys.map((k) => ({ key: k, followers: groups[k] }));
 }
 
 function Manager() {
   // The data
-  const [info, setInfo] = useState({ lists: [], followers: [] });
+  const [info, setInfo] = useState<APIData>({
+    lists: [],
+    followers: [],
+    me: null,
+  });
   // The grouped data - as an array of info objects.
-  const [groups, setGroups] = useState([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   // How we want things grouped
   const [groupBy, setGroupBy] = useState("none");
   // Whether or not to display the loading indicator
@@ -83,14 +94,14 @@ function Manager() {
   // For searching
   const [search, setSearch] = useState("");
   // For showing in progress actions
-  const [inProgress, setInProgress] = useState(null);
+  const [inProgress, setInProgress] = useState<InProgress | null>(null);
   // For errors
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   // To show a special timeout message
   const [showTimeout, setShowTimeout] = useState(false);
 
   // An error handler for API methods that we call.
-  const handleError = (err) => {
+  const handleError = (err: Error) => {
     if (err instanceof TimeoutError) {
       setShowTimeout(true);
     } else if (err instanceof AuthError) {
@@ -103,7 +114,7 @@ function Manager() {
   const loadData = () => {
     setLoading(true);
     API.getNewInfo()
-      .then((data) => {
+      .then((data: APIData) => {
         data.followers.forEach((f) => {
           if (f.display_name === "") f.display_name = f.username;
         });
@@ -133,7 +144,7 @@ function Manager() {
   }, []);
 
   // A redirect if we need it
-  const [redirect, setRedirect] = useState(null);
+  const [redirect, setRedirect] = useState<string | null>(null);
 
   // Menu anchor and handlers
   const handleMenuAbout = () => {
@@ -157,7 +168,7 @@ function Manager() {
   const handleCreateClose = () => {
     setCreateOpen(false);
   };
-  const handleCreateCommit = (name) => {
+  const handleCreateCommit = (name: string) => {
     API.createList(name)
       .then(() => {
         setCreateOpen(false);
@@ -172,22 +183,22 @@ function Manager() {
 
   // Delete list dialog
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteList, setDeleteList] = useState(null);
+  const [deleteList, setDeleteList] = useState<List | null>(null);
   const handleDeleteClose = () => {
     setDeleteOpen(false);
   };
-  const handleDeleteClick = (list) => {
+  const handleDeleteClick = (list: List) => {
     setDeleteList(list);
     setDeleteOpen(true);
   };
-  const handleDelete = (list) => {
+  const handleDelete = (list: List) => {
     API.deleteList(list.id)
       .then(() => loadData())
       .then(() => setDeleteOpen(false))
       .catch((err) => handleError(err));
   };
 
-  const remove = (groupIndex, index, lid) => {
+  const remove = (groupIndex: number, index: number, lid: number) => {
     const newGroups = groups.slice();
     const fol = newGroups[groupIndex].followers[index];
     setInProgress({ list: lid, follower: fol.id });
@@ -200,7 +211,7 @@ function Manager() {
       .catch((err) => handleError(err));
   };
 
-  const add = (groupIndex, index, lid) => {
+  const add = (groupIndex: number, index: number, lid: number) => {
     const newGroups = groups.slice();
     const fol = newGroups[groupIndex].followers[index];
     fol.lists.push(lid);
@@ -289,12 +300,16 @@ function Manager() {
         handleClose={handleCreateClose}
         handleCreate={handleCreateCommit}
       />
-      <DeleteListDialog
-        open={deleteOpen}
-        list={deleteOpen ? deleteList : ""}
-        handleClose={handleDeleteClose}
-        handleDelete={handleDelete}
-      />
+      {deleteList ? (
+        <DeleteListDialog
+          open={deleteOpen}
+          list={deleteList}
+          handleClose={handleDeleteClose}
+          handleDelete={handleDelete}
+        />
+      ) : (
+        <span />
+      )}
       <TimeoutDialog
         open={showTimeout}
         handleClose={() => setShowTimeout(false)}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { MouseEvent } from "react";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Menu from "@mui/material/Menu";
@@ -9,15 +9,24 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 
+type TopBarProps = {
+  acct: string;
+  handleMenuNewList: () => void;
+  handleMenuAbout: () => void;
+  handleMenuLogout: () => void;
+};
+
 export default function TopBar({
   acct,
   handleMenuNewList,
   handleMenuAbout,
   handleMenuLogout,
-}) {
+}: TopBarProps) {
   // Menu anchor and handlers
-  const [anchorMenuEl, setAnchorMenuEl] = React.useState(null);
-  const handleMenuClick = (event) => {
+  const [anchorMenuEl, setAnchorMenuEl] = React.useState<HTMLElement | null>(
+    null
+  );
+  const handleMenuClick = (event: MouseEvent<HTMLElement>) => {
     setAnchorMenuEl(event.currentTarget);
   };
   const handleMenuClose = () => {

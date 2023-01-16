@@ -1,6 +1,6 @@
 // A following/list mapping table
 
-import React, { useState } from "react";
+import React, { useState, MouseEvent } from "react";
 import Avatar from "@mui/material/Avatar";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -12,6 +12,8 @@ import Typography from "@mui/material/Typography";
 import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+
+import { List, User, Group, InProgress } from "./types";
 
 const style = {
   card: {
@@ -32,6 +34,17 @@ const style = {
   },
 };
 
+type FollowingTableProps = {
+  groupIndex: number;
+  group: Group;
+  lists: List[];
+  inProgress: InProgress | null;
+  remove: (groupIndex: number, index: number, listid: number) => void;
+  add: (groupIndex: number, index: number, listid: number) => void;
+  handleDeleteClick: (list: List) => void;
+  defaultOpen: boolean;
+};
+
 export default function FollowingTable({
   groupIndex,
   group,
@@ -41,14 +54,14 @@ export default function FollowingTable({
   add,
   handleDeleteClick,
   defaultOpen,
-}) {
+}: FollowingTableProps) {
   // Popover anchor and handlers
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [follower, setFollower] = useState(null);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [follower, setFollower] = useState<User | null>(null);
   // Whether or not we are open
   const [open, setOpen] = useState(defaultOpen);
 
-  const handlePopoverOpen = (event, fol) => {
+  const handlePopoverOpen = (event: MouseEvent<HTMLElement>, fol: User) => {
     setFollower(fol);
     setAnchorEl(event.currentTarget);
   };

@@ -6,7 +6,17 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import TextField from "@mui/material/TextField";
 
-function CreateListDialog({ open, handleCreate, handleClose }) {
+type CreateListDialogProps = {
+  open: boolean;
+  handleCreate: (title: string) => void;
+  handleClose: () => void;
+};
+
+function CreateListDialog({
+  open,
+  handleCreate,
+  handleClose,
+}: CreateListDialogProps) {
   const [value, setValue] = useState("");
 
   return (

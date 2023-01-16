@@ -6,7 +6,12 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 
-function TimeoutDialog({ open, handleClose }) {
+type TimeoutDialogProps = {
+  open: boolean;
+  handleClose: () => void;
+};
+
+function TimeoutDialog({ open, handleClose }: TimeoutDialogProps) {
   return (
     <Dialog
       open={open}

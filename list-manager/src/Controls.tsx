@@ -4,6 +4,17 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
+import { List } from "./types";
+
+type ControlsProps = {
+  groupBy: string;
+  handleGroupByChange: (g: string) => void;
+  lists: List[];
+  filter: string;
+  handleFilterChange: (g: string) => void;
+  search: string;
+  handleSearchChange: (g: string) => void;
+};
 
 export default function Controls({
   groupBy,
@@ -13,7 +24,7 @@ export default function Controls({
   handleFilterChange,
   search,
   handleSearchChange,
-}) {
+}: ControlsProps) {
   const notOnfilterItems = (lists || []).map((list) => (
     <MenuItem key={list.id} value={"not:" + list.id}>
       Not on {list.title}
@@ -35,7 +46,6 @@ export default function Controls({
         </InputLabel>
         <Select
           key="groupby"
-          labelid="demo-simple-select-label"
           id="controls-groupby-select"
           name="controls-groupby-select"
           data-testid="controls-groupby-select"
@@ -55,7 +65,6 @@ export default function Controls({
         </InputLabel>
         <Select
           key="filter"
-          labelid="controls-groupby-label"
           id="controls-filter-select"
           name="controls-filter-select"
           data-testid="controls-filter-select"
@@ -72,7 +81,6 @@ export default function Controls({
       </FormControl>
       <FormControl sx={{ marginTop: "12px", width: 400, marginBottom: "12px" }}>
         <TextField
-          labelid="controls-search-label"
           label="Search"
           data-testid="controls-search-textfield"
           value={search}
