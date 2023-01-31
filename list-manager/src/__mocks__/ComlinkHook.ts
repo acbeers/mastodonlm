@@ -7,5 +7,7 @@ class mockClientAPI {
     return false;
   }
 }
-const comlinkHook = () => () => ({ proxy: mockClientAPI });
-export default comlinkHook;
+const clientComlinkHook = () => () => ({ proxy: mockClientAPI });
+const serverComlinkHook = () => () => ({ proxy: mockClientAPI });
+
+export { clientComlinkHook, serverComlinkHook };

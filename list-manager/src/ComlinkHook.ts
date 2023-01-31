@@ -1,8 +1,14 @@
 import { createComlink } from "react-use-comlink";
-import APIWorker from "./worker";
+import APIWorker from "./clientworker";
 
-export default function comlinkHook() {
+export function clientComlinkHook() {
   return createComlink<typeof APIWorker>(
-    () => new Worker(new URL("./worker.ts", import.meta.url))
+    () => new Worker(new URL("./clientworker.ts", import.meta.url))
+  );
+}
+
+export function serverComlinkHook() {
+  return createComlink<typeof APIWorker>(
+    () => new Worker(new URL("./serverworker.ts", import.meta.url))
   );
 }

@@ -20,7 +20,7 @@ import TopBar from "./TopBar";
 import { User, APIData, Group, List, InProgress } from "./types";
 
 // For our API work
-import type APIWorker from "./worker";
+import type APIWorker from "./clientworker";
 import * as Comlink from "comlink";
 
 import "./Manager.css";
@@ -142,8 +142,6 @@ function Manager({ api }: ManagerProps) {
     remote
       .info(Comlink.proxy(progress))
       .then((data: APIData) => {
-        console.log("GOT DATA");
-        console.log(data);
         data.followers.forEach((f) => {
           if (f.display_name === "") f.display_name = f.username;
         });
@@ -257,7 +255,6 @@ function Manager({ api }: ManagerProps) {
     await use
       .removeFromList(lid, fol.id)
       .then((resp) => {
-        console.log("RR");
         setInProgress(null);
         setGroups(newGroups);
       })
@@ -273,7 +270,6 @@ function Manager({ api }: ManagerProps) {
     await use
       .addToList(lid, fol.id)
       .then((data) => {
-        console.log("AA");
         setInProgress(null);
         setGroups(newGroups);
       })

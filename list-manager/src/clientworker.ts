@@ -4,8 +4,6 @@ import { User, List, APIData } from "./types";
 import * as Comlink from "comlink";
 import { login } from "masto";
 
-console.log("WORKER LOAD");
-
 // Endpoints
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
 const urlCallback = process.env.REACT_APP_BACKEND_URL + "/clientcallback";
@@ -77,10 +75,6 @@ export default class APIWorker {
     });
   }
 
-  test(): boolean {
-    return true;
-  }
-
   async ready(): Promise<boolean> {
     return this.token !== null;
   }
@@ -120,7 +114,6 @@ export default class APIWorker {
     })
       .then((resp) => checkJSON(resp))
       .then((data) => {
-        console.log(data.token);
         self.token = data.token;
         self.domain = domain;
       });
@@ -197,7 +190,6 @@ export default class APIWorker {
               users.forEach((user) => {
                 const fol = followerMap[user.id];
                 if (fol) {
-                  console.log("pushing");
                   fol.lists.push(list.id);
                 }
               });
@@ -207,7 +199,6 @@ export default class APIWorker {
               );
             }
           });
-          console.log("finished");
           return { followers: res, lists: data.lists, me: data.me };
         })
         .then((data) => data);
@@ -232,8 +223,6 @@ export default class APIWorker {
   async addToList(list_id: string, follower_id: string): Promise<void> {
     if (!this.ready()) throw Error("API not ready");
     if (!this.token) throw Error("API not ready");
-
-    console.log("add");
 
     return login({
       url: `https://${this.domain}`,

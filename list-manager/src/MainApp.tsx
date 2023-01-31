@@ -2,8 +2,8 @@
 // get the web worker started and authorized.
 //
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
-import APIWorker from "./worker";
+import React, { useState, useEffect, useCallback } from "react";
+import APIWorker from "./clientworker";
 import Manager from "./Manager";
 import { windowLocation } from "./windowutils";
 import { Remote } from "comlink";
@@ -29,6 +29,16 @@ export default function MainApp({ api }: MainAppProps) {
   const [ready, setReady] = useState(false);
   // A redirect when we need it
   const [redirect, setRedirect] = useState<string | null>(null);
+  // A timer
+  const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setRedirect("/main");
+    }, 10000);
+    setTimer(timer);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Method to transform a code into a login token (which we'll never see,
   // but our worker will)
@@ -63,6 +73,8 @@ export default function MainApp({ api }: MainAppProps) {
     // Dump the code and domain
     localStorage.removeItem("code");
     localStorage.removeItem("domain");
+    // If we have made it here, cancel the timer.
+    if (timer) clearTimeout(timer);
     return <Manager api={api} />;
   }
 

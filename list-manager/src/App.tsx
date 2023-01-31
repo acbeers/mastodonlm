@@ -1,20 +1,31 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./Login";
 import MainPage from "./MainPage";
 import MainApp from "./MainApp";
 import Callback from "./Callback";
-import comlinkHook from "./ComlinkHook";
+import { clientComlinkHook, serverComlinkHook } from "./ComlinkHook";
 import "./App.css";
 
 /* 
   /manager is where the manager is stored.
-  /login checks to see if you are logged in, sends to you /manager or /loginform
-  /loginform displays a form to specify a domain
+  /main shows the welcome interface, asks for a domain
   /callback is an endpoint for the last step in oauth authorization
 */
 
-const useAPIWorker = comlinkHook();
+function getQueryVariable(variable: string): string | null {
+  var query = window.location.search.substring(1);
+  var vars = query.split("&");
+  for (var i = 0; i < vars.length; i++) {
+    var pair = vars[i].split("=");
+    if (decodeURIComponent(pair[0]) == variable) {
+      return decodeURIComponent(pair[1]);
+    }
+  }
+  return null;
+}
+
+const useClientAPIWorker = clientComlinkHook();
+const useServerAPIWorker = serverComlinkHook();
 
 function App() {
   // Here, create our worker.
@@ -25,19 +36,29 @@ function App() {
 
   // Doing this here allows my worker communication to
   // work in the development server.
-  const apiClass = useAPIWorker();
+  const clientApiClass = useClientAPIWorker();
+  const serverApiClass = useServerAPIWorker();
+
+  // Which client should we use?
+  // Set this in client-side storage so we remember it.
+  const mode = getQueryVariable("mode");
+  if (mode) {
+    localStorage.setItem("mastodonlm-mode", mode);
+  }
 
   // our API instance
   const api = useMemo(() => {
+    const mode = localStorage.getItem("mastodonlm-mode") || "client";
+    console.log(`MODE = ${mode}`);
+    const apiClass = mode === "server" ? serverApiClass : clientApiClass;
     const res = new apiClass.proxy();
     return res;
-  }, [apiClass]);
+  }, [clientApiClass, serverApiClass]);
 
   return (
     <React.StrictMode>
       <BrowserRouter basename={process.env.REACT_APP_BASE_PATH}>
         <Routes>
-          <Route path="/login" element={<Login />} />
           <Route path="/main" element={<MainPage />} />
           <Route path="/callback" element={<Callback />} />
           <Route path="/manager" element={<MainApp api={api} />} />
