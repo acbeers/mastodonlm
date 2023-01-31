@@ -12,12 +12,19 @@ import DeleteListDialog from "./DeleteListDialog";
 import TimeoutDialog from "./TimeoutDialog";
 
 // FIXME: these errors need to change!
-import { AuthError, TimeoutError } from "./api";
 import FollowingTable from "./FollowingTable";
 import Controls from "./Controls";
 import TopBar from "./TopBar";
 
-import { User, APIData, Group, List, InProgress } from "./types";
+import {
+  User,
+  APIData,
+  Group,
+  List,
+  InProgress,
+  AuthError,
+  TimeoutError,
+} from "./types";
 
 // For our API work
 import type APIWorker from "./clientworker";

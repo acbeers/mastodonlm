@@ -1,6 +1,6 @@
 // Web Worker
 
-import { User, List, APIData } from "./types";
+import { User, List, APIData, TimeoutError, AuthError } from "./types";
 import * as Comlink from "comlink";
 import { login } from "masto";
 
@@ -15,24 +15,6 @@ async function asyncForEach(
 ) {
   for (let index = 0; index < array.length; index++) {
     await callback(array[index], index, array);
-  }
-}
-
-// Error classes
-
-export class TimeoutError extends Error {
-  constructor(msg: string) {
-    super();
-    this.name = "TimeoutError";
-    this.message = msg;
-  }
-}
-
-export class AuthError extends Error {
-  constructor() {
-    super();
-    this.name = "AuthError";
-    this.message = "Not authenticated";
   }
 }
 

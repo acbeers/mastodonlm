@@ -1,23 +1,7 @@
 // API methods for List Manager
 
-import { User, List, APIData } from "./types";
+import { User, List, APIData, TimeoutError, AuthError } from "./types";
 import * as Comlink from "comlink";
-
-// This fancy function prevents multiple fetches in useEffect
-// in development mode.
-const createFetch = () => {
-  // Create a cache of fetches by URL
-  const fetchMap: Record<string, Promise<any>> = {};
-  return (url: string, options: object) => {
-    // Check to see if its not in the cache otherwise fetch it
-    if (!fetchMap[url]) {
-      fetchMap[url] = fetch(url, options).then((resp) => checkJSON(resp));
-    }
-    // Return the cached promise
-    return fetchMap[url];
-  };
-};
-const onlyOneFetch = createFetch();
 
 // Our endpoints
 const urlFollowing = process.env.REACT_APP_BACKEND_URL + "/following";
@@ -30,24 +14,6 @@ const urlDelete = process.env.REACT_APP_BACKEND_URL + "/delete";
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
 const urlCallback = process.env.REACT_APP_BACKEND_URL + "/callback";
 const urlLogout = process.env.REACT_APP_BACKEND_URL + "/logout";
-
-// Error classes
-
-export class TimeoutError extends Error {
-  constructor(msg: string) {
-    super();
-    this.name = "TimeoutError";
-    this.message = msg;
-  }
-}
-
-export class AuthError extends Error {
-  constructor() {
-    super();
-    this.name = "AuthError";
-    this.message = "Not authenticated";
-  }
-}
 
 // Given a fetch response, check it for errors and throw
 // reasonable exceptions if so.  Otherwise, return the response

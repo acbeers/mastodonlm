@@ -36,3 +36,19 @@ export type InProgress = {
   list: string;
   follower: string;
 };
+
+export class TimeoutError extends Error {
+  constructor(msg: string) {
+    super();
+    this.name = "TimeoutError";
+    this.message = msg;
+  }
+}
+
+export class AuthError extends Error {
+  constructor() {
+    super();
+    this.name = "AuthError";
+    this.message = "Not authenticated";
+  }
+}

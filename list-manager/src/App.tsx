@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainPage from "./MainPage";
 import MainApp from "./MainApp";
@@ -17,7 +17,7 @@ function getQueryVariable(variable: string): string | null {
   var vars = query.split("&");
   for (var i = 0; i < vars.length; i++) {
     var pair = vars[i].split("=");
-    if (decodeURIComponent(pair[0]) == variable) {
+    if (decodeURIComponent(pair[0]) === variable) {
       return decodeURIComponent(pair[1]);
     }
   }
