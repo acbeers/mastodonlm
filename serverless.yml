@@ -17,6 +17,7 @@ provider:
     cors:
       allowedOrigins:
         - https://acbeers.github.io
+        - https://www.mastodonlistmanager.org
         - http://localhost:3000
       allowedHeaders:
         - Content-Type
@@ -228,9 +229,11 @@ custom:
   readcapacity:
     dev: 2
     prod: 5
+    newprod: 5
   writecapacity:
     dev: 2
     prod: 5
+    newprod: 5
   dynamodb:
     ttl:
       - table: ${self:custom.authTable}

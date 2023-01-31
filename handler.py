@@ -87,7 +87,7 @@ def make_app(domain, redirect_url):
     # TODO: If I change the URL, I'm going to have to conditionally create this,
     # replacing the existing entries.
     (client_id, client_secret) = Mastodon.create_app(
-        "Mastondon List Manager",
+        "Mastodon List Manager",
         scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
         redirect_uris=redirect_url,
         api_base_url=f"https://{domain}",
