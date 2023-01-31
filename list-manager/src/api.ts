@@ -121,7 +121,7 @@ class API {
             // Build up lists for each follower
             following.forEach((x) => (x.lists = []));
             // A map for easy lookup
-            const followerMap: Record<number, User> = {};
+            const followerMap: Record<string, User> = {};
             following.forEach((x) => (followerMap[x.id] = x));
             // And, for each list
             lists.forEach((list: List) => {

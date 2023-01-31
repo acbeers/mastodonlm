@@ -137,6 +137,13 @@ functions:
       - httpApi:
           path: /callback
           method: POST
+  clientcallback:
+    handler: handler.clientcallback
+    timeout: 30
+    events:
+      - httpApi:
+          path: /clientcallback
+          method: POST
   meta:
     timeout: 30
     handler: handler.meta
@@ -192,6 +199,13 @@ functions:
     events:
       - httpApi:
           path: /logout
+          method: POST
+  clientlogout:
+    timeout: 30
+    handler: handler.clientlogout
+    events:
+      - httpApi:
+          path: /clientlogout
           method: POST
   blocklistUpdate:
     handler: handler.block_update

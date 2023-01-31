@@ -36,23 +36,24 @@ cd list-manager
 npm run start
 ```
 
-To use, go to `http://localhost:3000/login`, which will redirect you to
-`hachyderm.io` to authorize your account (support for other servers coming
-soon).
+To use, go to `http://localhost:3000/main`, which will allow you to enter your
+server name to start the login process.
 
 ## Architectural notes
 
-Right now, this is a pretty simple app, but some things to know:
+The app is mostly a Single Page Application, with all of the traffic to and from
+the Mastodon server being handled by a Web Worker (via the very fine
+[Comlink](https://github.com/GoogleChromeLabs/comlink) library) to keep secrets
+from prying eyes.
 
-- The app reqeusts hopefully a minimal set of scopes from Mastodon:
-  `read:lists`, `read:follows`, `read:accounts`, `write:lists`
+Authentication still happens mostly via a backend process, deployed to AWS
+Lambda. This allows me to minimize the "applications" that are registered on a
+given Mastodon server, and protect the client IDs and secrets associated with
+those applications. After authentication happens, the token is disclosed to the
+client and further API calls are made directly by the Javascript app. The token
+is discarded when the page is closed (it is not persisted to local storage or
+stored as a cookie).
 
-- The app stores oAuth tokens in a DynamoDB table for one day. This token is
-  never disclosed to the client, only a randomly generated cookie is.
-
-- The backend retains no state except for the auth token.
-
-- Right now, it always gets your full list of follows and presents them in an
-  alphabetized list, so it probably isn't yet good for accounts following a
-  large number of accounts. Eventually, I'll make the list hierarchical like
-  Twitter List Manager does.
+The app reqeusts hopefully a minimal set of scopes from Mastodon: `read:lists`,
+`read:follows`, `read:accounts`, `write:lists`, to minimize the things it can
+change about the account.
