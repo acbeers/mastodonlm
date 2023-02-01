@@ -252,7 +252,20 @@ custom:
     ttl:
       - table: ${self:custom.authTable}
         field: expires_at
+  customDomain:
+    domainName: backend.mastodonlistmanager.org
+    stage: newprod
+    basePath: ""
+    certificateName: "*.mastodonlistmanager.org"
+    createRoute53Record: true
+    createRoute53IPv6Record: true
+    endpointType: "regional"
+    securityPolicy: tls_1_2
+    apiType: http
+    autoDomain: false
+    region: us-west-2
 
 plugins:
   - serverless-python-requirements
   - serverless-offline
+  - serverless-domain-manager
