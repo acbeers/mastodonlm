@@ -208,6 +208,20 @@ functions:
       - httpApi:
           path: /clientlogout
           method: POST
+  telemetry:
+    timeout: 30
+    handler: telemetry.telemetry
+    events:
+      - httpApi:
+          path: /telemetry
+          method: POST
+  error:
+    timeout: 30
+    handler: telemetry.error
+    events:
+      - httpApi:
+          path: /error
+          method: POST
   blocklistUpdate:
     handler: handler.block_update
     timeout: 300

@@ -142,6 +142,26 @@ function Manager({ api }: ManagerProps) {
     setLoadProgress(value);
   };
 
+  const telemetryCB = useCallback(
+    async (data: Record<string, any>) => {
+      const remote = await api;
+      remote.telemetry(data);
+    },
+    [api]
+  );
+
+  const errorCB = useCallback(
+    async (error: Error) => {
+      const data = {
+        stack: error.stack,
+        message: error.message,
+      };
+      const remote = await api;
+      remote.error(data);
+    },
+    [api]
+  );
+
   const loadDataCB = useCallback(async () => {
     setLoading(true);
     setLoadProgress(0);
@@ -158,12 +178,22 @@ function Manager({ api }: ManagerProps) {
         data.lists.sort((a, b) => a.title.localeCompare(b.title));
         setInfo(data);
         setLoading(false);
+        return data;
+      })
+      .then((data) => {
+        const telem = {
+          action: "info",
+          num_following: data.followers.length,
+          num_lists: data.lists.length,
+        };
+        telemetryCB(telem);
       })
       .catch((err) => {
         handleError(err);
         setLoading(false);
+        errorCB(err);
       });
-  }, [api]);
+  }, [api, telemetryCB, errorCB]);
 
   const logoutCB = useCallback(async () => {
     const remote = await api;
@@ -190,7 +220,15 @@ function Manager({ api }: ManagerProps) {
   useEffect(() => {
     const groups = info2Groups(info, groupBy, filter, search);
     setGroups(groups);
-  }, [info, groupBy, search, filter]);
+    const gtotal = groups
+      .map((x) => x.followers.length)
+      .reduce((a, b) => a + b, 0);
+    const total = info.followers.length;
+    const perc = Math.round((100 * gtotal) / total);
+    if (perc !== 100) {
+      telemetryCB({ action: "filter_result", value: perc });
+    }
+  }, [info, groupBy, search, filter, telemetryCB]);
 
   // Fetch the data
   useEffect(() => {
@@ -229,6 +267,7 @@ function Manager({ api }: ManagerProps) {
         setCreateOpen(false);
         // We have to do this to get the new ID of the list.
         loadDataCB();
+        telemetryCB({ action: "create_list" });
       })
       .catch((err) => handleError(err));
   };
@@ -250,6 +289,7 @@ function Manager({ api }: ManagerProps) {
     deleteListCB(list.id)
       .then(() => loadDataCB())
       .then(() => setDeleteOpen(false))
+      .then(() => telemetryCB({ action: "delete_list" }))
       .catch((err) => handleError(err));
   };
 
@@ -264,6 +304,7 @@ function Manager({ api }: ManagerProps) {
       .then((resp) => {
         setInProgress(null);
         setGroups(newGroups);
+        telemetryCB({ action: "remove" });
       })
       .catch((err) => handleError(err));
   };
@@ -279,6 +320,7 @@ function Manager({ api }: ManagerProps) {
       .then((data) => {
         setInProgress(null);
         setGroups(newGroups);
+        telemetryCB({ action: "add" });
       })
       .catch((err) => {
         handleError(err);
@@ -317,13 +359,23 @@ function Manager({ api }: ManagerProps) {
     />
   );
 
+  const handleGroupBy = (groupby: string) => {
+    setGroupBy(groupBy);
+    telemetryCB({ action: "groupby", groupby: groupby });
+  };
+
+  const handleFilter = (filter: string) => {
+    setFilter(filter);
+    telemetryCB({ action: "filter", filter: filter });
+  };
+
   const controls = (
     <Controls
       groupBy={groupBy}
-      handleGroupByChange={setGroupBy}
+      handleGroupByChange={handleGroupBy}
       lists={lists}
       filter={filter}
-      handleFilterChange={setFilter}
+      handleFilterChange={handleFilter}
       search={search}
       handleSearchChange={setSearch}
       refresh={loadDataCB}

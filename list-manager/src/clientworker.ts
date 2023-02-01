@@ -8,6 +8,8 @@ import { login } from "masto";
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
 const urlCallback = process.env.REACT_APP_BACKEND_URL + "/clientcallback";
 const urlLogout = process.env.REACT_APP_BACKEND_URL + "/clientlogout";
+const urlTelemetry = process.env.REACT_APP_BACKEND_URL + "/telemetry";
+const urlError = process.env.REACT_APP_BACKEND_URL + "/error";
 
 async function asyncForEach(
   array: any[],
@@ -40,8 +42,9 @@ const checkJSON = (resp: Response) => {
 };
 
 export default class APIWorker {
-  private token: string | null = null; //"38P6_X-r5yUyaFTPnh7ZCpbKmrOkjcnKgoHDuB5bHe0";
-  private domain: string | null = "hachyderm.io";
+  private token: string | null = null;
+  private domain: string | null = null;
+  private me: User | null = null;
   private debug: number = 0;
 
   constructor() {
@@ -115,19 +118,21 @@ export default class APIWorker {
       return masto.v1.accounts
         .verifyCredentials()
         .then((me) => {
+          const meuser = {
+            id: me.id,
+            display_name: me.displayName,
+            username: me.username,
+            avatar: me.avatar,
+            acct: me.acct + "@" + self.domain,
+            note: me.note,
+            lists: [],
+            following_count: me.followingCount,
+          };
+          self.me = meuser;
           return {
             followers: [],
             lists: [],
-            me: {
-              id: me.id,
-              display_name: me.displayName,
-              username: me.username,
-              avatar: me.avatar,
-              acct: me.acct + "@" + self.domain,
-              note: me.note,
-              lists: [],
-              following_count: me.followingCount,
-            },
+            me: meuser,
           };
         })
         .then(async (data: APIData) => {
@@ -230,6 +235,34 @@ export default class APIWorker {
       return masto.v1.lists
         .removeAccount(list_id, { accountIds: [follower_id] })
         .then(() => console.log("removed"));
+    });
+  }
+
+  // Logs a telemetry event
+  async telemetry(info: Record<string, any>): Promise<void> {
+    const data = { ...info };
+    if (this.me) data.acct = this.me.acct;
+
+    return fetch(urlTelemetry, {
+      credentials: "include",
+      method: "POST",
+      body: JSON.stringify(data),
+    }).then(() => {
+      return;
+    });
+  }
+
+  // Logs an error event
+  async error(info: Record<string, any>): Promise<void> {
+    const data = { ...info };
+    if (this.me) data.acct = this.me.acct;
+
+    return fetch(urlError, {
+      credentials: "include",
+      method: "POST",
+      body: JSON.stringify(data),
+    }).then(() => {
+      return;
     });
   }
 }
