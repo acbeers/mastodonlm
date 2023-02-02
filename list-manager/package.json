@@ -39,7 +39,6 @@
       "react-app/jest"
     ]
   },
-  "homepage": "https://acbeers.github.io/mastodonlm",
   "browserslist": {
     "production": [
       ">0.2%",

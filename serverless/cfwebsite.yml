@@ -1,0 +1,69 @@
+CloudFrontDistribution:
+  Type: AWS::CloudFront::Distribution
+  Properties:
+    DistributionConfig:
+      Enabled: true
+      Aliases:
+        - ${self:custom.domainComponents.withWWW}
+        - ${self:custom.domainComponents.withoutWWW}
+      CustomErrorResponses:
+        - ErrorCode: 404
+          ResponseCode: 200
+          ResponsePagePath: /index.html
+      DefaultCacheBehavior:
+        LambdaFunctionAssociations:
+          - EventType: viewer-request
+            LambdaFunctionARN: ${websiteDomain(edgeLambdaArn)}
+        TargetOriginId: ${self:custom.cloudfrontOriginId}
+        ForwardedValues:
+          QueryString: "false"
+          Cookies:
+            Forward: none
+        ViewerProtocolPolicy: redirect-to-https
+      Origins:
+        - DomainName: ${self:custom.websiteBucket}.s3.amazonaws.com
+          CustomOriginConfig:
+            HTTPPort: 80
+            HTTPSPort: 443
+            OriginProtocolPolicy: https-only
+          Id: ${self:custom.cloudfrontOriginId}
+      DefaultRootObject: index.html
+      HttpVersion: "http2"
+      ViewerCertificate:
+        AcmCertificateArn: "arn:aws:acm:us-east-1:879669037085:certificate/7a8a12d8-1087-4886-a33c-657fbb3a2231"
+        SslSupportMethod: "sni-only"
+
+AssetsBucket:
+  Type: AWS::S3::Bucket
+  Properties:
+    BucketName: ${self:custom.websiteBucket}
+    AccessControl: PublicRead
+    WebsiteConfiguration:
+      IndexDocument: index.html
+      ErrorDocument: index.html
+
+# Custom domain for the backend
+customDomain:
+  domainName: backend.mastodonlistmanager.org
+  stage: newprod
+  basePath: ""
+  certificateName: "*.mastodonlistmanager.org"
+  createRoute53Record: true
+  createRoute53IPv6Record: true
+  endpointType: "regional"
+  securityPolicy: tls_1_2
+  apiType: http
+  autoDomain: false
+  region: us-west-2
+# Configuration for frontend (website) domain
+domainComponents:
+  withWWW: www.${self:custom.domainComponents.withoutWWW}
+  withoutWWW: mastodonlistmanager.org
+websiteDomain:
+  cloudfrontOutputKey: "myCloudfrontDomain"
+  domain: ${self:custom.domainComponents.withWWW}
+  region: us-west-2
+  edgeLambda:
+    redirect:
+      from: ${self:custom.domainComponents.withoutWWW}
+      to: https://${self:custom.domainComponents.withWWW}

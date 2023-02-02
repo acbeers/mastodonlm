@@ -1,0 +1,75 @@
+# Stores auth tokens for users and other info
+usersTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: "${self:custom.authTable}"
+    AttributeDefinitions:
+      - AttributeName: key
+        AttributeType: S
+    KeySchema:
+      - AttributeName: key
+        KeyType: HASH
+    ProvisionedThroughput:
+      ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
+      WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
+    TimeToLiveSpecification:
+      Enabled: true
+      AttributeName: expires_at
+
+# Essentially, a list of allowed hosts.
+allowTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: "${self:custom.allowedTable}"
+    AttributeDefinitions:
+      - AttributeName: host
+        AttributeType: S
+    KeySchema:
+      - AttributeName: host
+        KeyType: HASH
+    ProvisionedThroughput:
+      ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
+      WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
+
+# Essentially, a list of blocked hosts.
+blockTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: "${self:custom.blockedTable}"
+    AttributeDefinitions:
+      - AttributeName: hash
+        AttributeType: S
+    KeySchema:
+      - AttributeName: hash
+        KeyType: HASH
+    ProvisionedThroughput:
+      ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
+      WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
+
+# Stores host information (secrets, urls, etc)
+hostsTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: "${self:custom.hostcfgTable}"
+    AttributeDefinitions:
+      - AttributeName: host
+        AttributeType: S
+    KeySchema:
+      - AttributeName: host
+        KeyType: HASH
+    ProvisionedThroughput:
+      ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
+      WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
+
+readcapacity:
+  dev: 2
+  prod: 5
+  newprod: 5
+writecapacity:
+  dev: 2
+  prod: 5
+  newprod: 5
+dynamodb:
+  ttl:
+    - table: ${self:custom.authTable}
+      field: expires_at

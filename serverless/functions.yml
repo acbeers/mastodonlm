@@ -1,0 +1,103 @@
+auth:
+  handler: handler.auth
+  timeout: 30
+  events:
+    - httpApi:
+        path: /auth
+        method: GET
+callback:
+  handler: handler.callback
+  timeout: 30
+  events:
+    - httpApi:
+        path: /callback
+        method: POST
+clientcallback:
+  handler: handler.clientcallback
+  timeout: 30
+  events:
+    - httpApi:
+        path: /clientcallback
+        method: POST
+meta:
+  timeout: 30
+  handler: handler.meta
+  events:
+    - httpApi:
+        path: /meta
+        method: GET
+following:
+  timeout: 30
+  handler: handler.following
+  events:
+    - httpApi:
+        path: /following
+        method: GET
+lists:
+  timeout: 30
+  handler: handler.lists
+  events:
+    - httpApi:
+        path: /lists
+        method: GET
+add:
+  timeout: 30
+  handler: handler.add_to_list
+  events:
+    - httpApi:
+        path: /add
+        method: POST
+remove:
+  timeout: 30
+  handler: handler.remove_from_list
+  events:
+    - httpApi:
+        path: /remove
+        method: POST
+create:
+  timeout: 30
+  handler: handler.create_list
+  events:
+    - httpApi:
+        path: /create
+        method: POST
+delete:
+  timeout: 30
+  handler: handler.delete_list
+  events:
+    - httpApi:
+        path: /delete
+        method: POST
+logout:
+  timeout: 30
+  handler: handler.logout
+  events:
+    - httpApi:
+        path: /logout
+        method: POST
+clientlogout:
+  timeout: 30
+  handler: handler.clientlogout
+  events:
+    - httpApi:
+        path: /clientlogout
+        method: POST
+telemetry:
+  timeout: 30
+  handler: telemetry.telemetry
+  events:
+    - httpApi:
+        path: /telemetry
+        method: POST
+error:
+  timeout: 30
+  handler: telemetry.error
+  events:
+    - httpApi:
+        path: /error
+        method: POST
+blocklistUpdate:
+  handler: handler.block_update
+  timeout: 300
+  events:
+    - schedule: cron(0 8 * * ? *)

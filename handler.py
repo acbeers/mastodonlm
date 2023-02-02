@@ -270,7 +270,7 @@ def make_redirect_url(event, domain):
     origin = event["headers"]["origin"]
     if origin == "http://localhost:3000":
         return f"http://localhost:3000/callback?domain={domain}"
-    return f"https://acbeers.github.io/mastodonlm/callback?domain={domain}"
+    return f"https://www.mastodonlistmanager.org/callback?domain={domain}"
 
 
 def make_cookie_options(event):

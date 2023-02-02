@@ -2,6 +2,8 @@ service: list-manager
 
 frameworkVersion: "3"
 
+variablesResolutionMode: 20210326
+
 provider:
   name: aws
   runtime: python3.9
@@ -59,174 +61,33 @@ provider:
           Resource: "arn:aws:dynamodb:us-west-2:879669037085:table/${self:custom.blockedTable}"
 
 resources: # CloudFormation template syntax from here on.
+  Outputs:
+    myCloudfrontDomain:
+      Value:
+        "Fn::GetAtt": [CloudFrontDistribution, DomainName]
+
+    CDNDistributionId:
+      Description: CDN distribution id.
+      Value:
+        Ref: CloudFrontDistribution
+      Export:
+        Name: CDNDistributionId
+
   Resources:
     # Stores auth tokens for users and other info
-    usersTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: "${self:custom.authTable}"
-        AttributeDefinitions:
-          - AttributeName: key
-            AttributeType: S
-        KeySchema:
-          - AttributeName: key
-            KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
-          WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
-        TimeToLiveSpecification:
-          Enabled: true
-          AttributeName: expires_at
-
+    usersTable: ${file(serverless/tables.yml):usersTable}
     # Essentially, a list of allowed hosts.
-    allowTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: "${self:custom.allowedTable}"
-        AttributeDefinitions:
-          - AttributeName: host
-            AttributeType: S
-        KeySchema:
-          - AttributeName: host
-            KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
-          WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
-
+    allowTable: ${file(serverless/tables.yml):allowTable}
     # Essentially, a list of blocked hosts.
-    blockTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: "${self:custom.blockedTable}"
-        AttributeDefinitions:
-          - AttributeName: hash
-            AttributeType: S
-        KeySchema:
-          - AttributeName: hash
-            KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
-          WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
-
+    blockTable: ${file(serverless/tables.yml):blockTable}
     # Stores host information (secrets, urls, etc)
-    hostsTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: "${self:custom.hostcfgTable}"
-        AttributeDefinitions:
-          - AttributeName: host
-            AttributeType: S
-        KeySchema:
-          - AttributeName: host
-            KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
-          WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
+    hostsTable: ${file(serverless/tables.yml):hostsTable}
+    # Cloudfront configuration for domain handling
+    CloudFrontDistribution: ${file(serverless/cfwebsite.yml):CloudFrontDistribution}
+    AssetsBucket: ${file(serverless/cfwebsite.yml):AssetsBucket}
+    BucketPolicy: ${file(serverless/s3policy.yml)}
 
-functions:
-  auth:
-    handler: handler.auth
-    timeout: 30
-    events:
-      - httpApi:
-          path: /auth
-          method: GET
-  callback:
-    handler: handler.callback
-    timeout: 30
-    events:
-      - httpApi:
-          path: /callback
-          method: POST
-  clientcallback:
-    handler: handler.clientcallback
-    timeout: 30
-    events:
-      - httpApi:
-          path: /clientcallback
-          method: POST
-  meta:
-    timeout: 30
-    handler: handler.meta
-    events:
-      - httpApi:
-          path: /meta
-          method: GET
-  following:
-    timeout: 30
-    handler: handler.following
-    events:
-      - httpApi:
-          path: /following
-          method: GET
-  lists:
-    timeout: 30
-    handler: handler.lists
-    events:
-      - httpApi:
-          path: /lists
-          method: GET
-  add:
-    timeout: 30
-    handler: handler.add_to_list
-    events:
-      - httpApi:
-          path: /add
-          method: POST
-  remove:
-    timeout: 30
-    handler: handler.remove_from_list
-    events:
-      - httpApi:
-          path: /remove
-          method: POST
-  create:
-    timeout: 30
-    handler: handler.create_list
-    events:
-      - httpApi:
-          path: /create
-          method: POST
-  delete:
-    timeout: 30
-    handler: handler.delete_list
-    events:
-      - httpApi:
-          path: /delete
-          method: POST
-  logout:
-    timeout: 30
-    handler: handler.logout
-    events:
-      - httpApi:
-          path: /logout
-          method: POST
-  clientlogout:
-    timeout: 30
-    handler: handler.clientlogout
-    events:
-      - httpApi:
-          path: /clientlogout
-          method: POST
-  telemetry:
-    timeout: 30
-    handler: telemetry.telemetry
-    events:
-      - httpApi:
-          path: /telemetry
-          method: POST
-  error:
-    timeout: 30
-    handler: telemetry.error
-    events:
-      - httpApi:
-          path: /error
-          method: POST
-  blocklistUpdate:
-    handler: handler.block_update
-    timeout: 300
-    events:
-      - schedule: cron(0 8 * * ? *)
+functions: ${file(serverless/functions.yml)}
 
 package:
   patterns:
@@ -234,38 +95,47 @@ package:
     - "!list-manager"
 
 custom:
+  # Table names
   authTable: "${self:service}-auth-${self:provider.stage}"
   allowedTable: "${self:service}-allowedHosts-${self:provider.stage}"
   blockedTable: "${self:service}-blockedHosts-${self:provider.stage}"
   hostcfgTable: "${self:service}-hostConfig-${self:provider.stage}"
+  # Offline configuration
   serverless-offline:
     httpPort: 4000
-  readcapacity:
-    dev: 2
-    prod: 5
-    newprod: 5
-  writecapacity:
-    dev: 2
-    prod: 5
-    newprod: 5
-  dynamodb:
-    ttl:
-      - table: ${self:custom.authTable}
-        field: expires_at
-  customDomain:
-    domainName: backend.mastodonlistmanager.org
-    stage: newprod
-    basePath: ""
-    certificateName: "*.mastodonlistmanager.org"
-    createRoute53Record: true
-    createRoute53IPv6Record: true
-    endpointType: "regional"
-    securityPolicy: tls_1_2
-    apiType: http
-    autoDomain: false
-    region: us-west-2
+  # Database stuff
+  readcapacity: ${file(serverless/tables.yml):readcapacity}
+  writecapacity: ${file(serverless/tables.yml):writecapacity}
+  dynamodb: ${file(serverless/tables.yml):dynamodb}
+
+  # Domain name support
+  websiteBucket: ${self:custom.name}
+  name: ${self:service}-${self:provider.stage}
+  cloudfrontOriginId: ${self:custom.name}-cloud-front
+  # Configuration for backend domain
+  customDomain: ${file(serverless/cfwebsite.yml):customDomain}
+  # Configuration for frontend (website) domain
+  domainComponents: ${file(serverless/cfwebsite.yml):domainComponents}
+  websiteDomain: ${file(serverless/cfwebsite.yml):websiteDomain}
+
+  # For publishing our website
+  s3Sync: ${file(serverless/s3sync.yml)}
+  cloudfrontInvalidate:
+    - distributionIdKey: "CDNDistributionId" # conditional, distributionId or distributionIdKey is required.
+      autoInvalidate: true # Can be set to false to avoid automatic invalidation after the deployment. Useful if you want to manually trigger the invalidation later. Defaults to true.
+      items: # one or more paths required
+        - "/index.html"
+        - "/static/js/*"
+        - "/static/css/*"
 
 plugins:
   - serverless-python-requirements
   - serverless-offline
+  # For putting lambda functions behind a custom domain
   - serverless-domain-manager
+  # For putting a static website behind a custom domain
+  - serverless-website-domain
+  # For syncing a built website to S3.
+  - serverless-s3-sync
+  # For invalidating things in Cloudfront on publish
+  - serverless-cloudfront-invalidate
