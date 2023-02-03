@@ -360,7 +360,7 @@ function Manager({ api }: ManagerProps) {
   );
 
   const handleGroupBy = (groupby: string) => {
-    setGroupBy(groupBy);
+    setGroupBy(groupby);
     telemetryCB({ action: "groupby", groupby: groupby });
   };
 
