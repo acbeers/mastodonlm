@@ -39,8 +39,8 @@ type FollowingTableProps = {
   group: Group;
   lists: List[];
   inProgress: InProgress | null;
-  remove: (groupIndex: number, index: number, listid: number) => void;
-  add: (groupIndex: number, index: number, listid: number) => void;
+  remove: (groupIndex: number, index: number, listid: string) => void;
+  add: (groupIndex: number, index: number, listid: string) => void;
   handleDeleteClick: (list: List) => void;
   defaultOpen: boolean;
 };

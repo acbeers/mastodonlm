@@ -84,8 +84,10 @@ def parse_cookies(cookies):
 
 def make_app(domain, redirect_url):
     """Creates a Mastodon app on a given host"""
+    # TODO: If I change the URL, I'm going to have to conditionally create this,
+    # replacing the existing entries.
     (client_id, client_secret) = Mastodon.create_app(
-        "Mastondon List Manager",
+        "Mastodon List Manager",
         scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
         redirect_uris=redirect_url,
         api_base_url=f"https://{domain}",
@@ -268,7 +270,7 @@ def make_redirect_url(event, domain):
     origin = event["headers"]["origin"]
     if origin == "http://localhost:3000":
         return f"http://localhost:3000/callback?domain={domain}"
-    return f"https://acbeers.github.io/mastodonlm/callback?domain={domain}"
+    return f"https://www.mastodonlistmanager.org/callback?domain={domain}"
 
 
 def make_cookie_options(event):
@@ -376,7 +378,7 @@ def get_expire():
     return unix
 
 
-def callback(event, _):
+def callback_helper(event,_,finish):
     """The callback method of the oAuth dance"""
 
     # Need to know the domain to complete the oauth handshake.
@@ -413,11 +415,30 @@ def callback(event, _):
         )
         return err_response("ERROR - illegal argument")
 
-    cookie = uuid.uuid4().urn
+    return finish(token)
 
-    Datastore.set_auth(cookie, token=token, domain=domain)
+def callback(event,context):
+    """oAuth callback for the server-side version of the API"""
+    def finish(token):
+        params = event.get("queryStringParameters", {}) or {}
+        domain = params.get("domain", "UNKNOWN")
 
-    return {"statusCode": 200, "body": json.dumps({"status": "OK", "auth": cookie})}
+        cookie = uuid.uuid4().urn
+
+        Datastore.set_auth(cookie, token=token, domain=domain)
+
+        return {"statusCode": 200, "body": json.dumps({"status": "OK", "auth": cookie})}
+
+    return callback_helper(event,context,finish)
+
+def clientcallback(event, context):
+    """oAuth callback for the client-side version of the API"""
+
+    def finish(token):
+        return response(json.dumps({"status":"OK","token":token}))
+
+    return callback_helper(event,context,finish)
+
 
 
 def add_to_list(event, _):
@@ -599,6 +620,30 @@ def logout(event, _):
     except MastodonAPIError as e:
         logging.error("ERROR - other API error: %s", str(e))
         return err_response("ERROR - API error")
+
+    return response(json.dumps({"status": "OK"}))
+
+def clientlogout(event, _):
+    """Logs out, given an oauth token and a domain"""
+
+    body = json.loads(event["body"])
+    token = body.get("token",None)
+    domain = body.get("domain",None)
+
+    # Log out of the mastodon server
+    try:
+        cfg = Datastore.get_host_config(domain)
+        if cfg is None:
+            raise NoAuthInfo
+
+        mastodon = MastodonFactory.from_config(cfg,token=token)
+        mastodon.revoke_access_token()
+
+    except MastodonAPIError as e:
+        logging.error("ERROR - other API error: %s", str(e))
+        return err_response("ERROR - API error")
+    except NoAuthInfo:
+        return err_response(f"ERROR no host config found for {domain}")
 
     return response(json.dumps({"status": "OK"}))
 

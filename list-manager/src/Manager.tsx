@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Navigate } from "react-router-dom";
 
 import Alert from "@mui/material/Alert";
@@ -11,12 +11,24 @@ import CreateListDialog from "./CreateListDialog";
 import DeleteListDialog from "./DeleteListDialog";
 import TimeoutDialog from "./TimeoutDialog";
 
-import API, { AuthError, TimeoutError } from "./api";
+// FIXME: these errors need to change!
 import FollowingTable from "./FollowingTable";
 import Controls from "./Controls";
 import TopBar from "./TopBar";
 
-import { User, APIData, Group, List, InProgress } from "./types";
+import {
+  User,
+  APIData,
+  Group,
+  List,
+  InProgress,
+  AuthError,
+  TimeoutError,
+} from "./types";
+
+// For our API work
+import type APIWorker from "./clientworker";
+import * as Comlink from "comlink";
 
 import "./Manager.css";
 
@@ -47,8 +59,8 @@ function info2Groups(
   const key = filter.split(":")[0];
   const filterFuncs: Record<string, (x: User) => boolean> = {
     nolists: (x) => x.lists.length === 0,
-    not: (x) => !x.lists.includes(parseInt(filter.slice(4))),
-    on: (x) => x.lists.includes(parseInt(filter.slice(3))),
+    not: (x) => !x.lists.includes(filter.slice(4)),
+    on: (x) => x.lists.includes(filter.slice(3)),
   };
   const filterFunc = filterFuncs[key] || ((x: User) => true);
 
@@ -75,12 +87,25 @@ function info2Groups(
   return keys.map((k) => ({ key: k, followers: groups[k] }));
 }
 
-function Manager() {
+type ManagerProps = {
+  api: Promise<Comlink.Remote<APIWorker>>;
+};
+
+function Manager({ api }: ManagerProps) {
   // The data
   const [info, setInfo] = useState<APIData>({
     lists: [],
     followers: [],
-    me: null,
+    me: {
+      id: "",
+      display_name: "",
+      username: "",
+      avatar: "",
+      acct: "",
+      note: "",
+      following_count: 0,
+      lists: [],
+    },
   });
   // The grouped data - as an array of info objects.
   const [groups, setGroups] = useState<Group[]>([]);
@@ -99,6 +124,8 @@ function Manager() {
   const [error, setError] = useState<string | null>(null);
   // To show a special timeout message
   const [showTimeout, setShowTimeout] = useState(false);
+  //
+  const [loadProgress, setLoadProgress] = useState(0);
 
   // An error handler for API methods that we call.
   const handleError = (err: Error) => {
@@ -111,9 +138,36 @@ function Manager() {
     }
   };
 
-  const loadData = () => {
+  const progress = (value: number) => {
+    setLoadProgress(value);
+  };
+
+  const telemetryCB = useCallback(
+    async (data: Record<string, any>) => {
+      const remote = await api;
+      remote.telemetry(data);
+    },
+    [api]
+  );
+
+  const errorCB = useCallback(
+    async (error: Error) => {
+      const data = {
+        stack: error.stack,
+        message: error.message,
+      };
+      const remote = await api;
+      remote.error(data);
+    },
+    [api]
+  );
+
+  const loadDataCB = useCallback(async () => {
     setLoading(true);
-    API.getNewInfo()
+    setLoadProgress(0);
+    const remote = await api;
+    remote
+      .info(Comlink.proxy(progress))
       .then((data: APIData) => {
         data.followers.forEach((f) => {
           if (f.display_name === "") f.display_name = f.username;
@@ -124,22 +178,61 @@ function Manager() {
         data.lists.sort((a, b) => a.title.localeCompare(b.title));
         setInfo(data);
         setLoading(false);
+        return data;
+      })
+      .then((data) => {
+        const telem = {
+          action: "info",
+          num_following: data.followers.length,
+          num_lists: data.lists.length,
+        };
+        telemetryCB(telem);
       })
       .catch((err) => {
         handleError(err);
         setLoading(false);
+        errorCB(err);
       });
-  };
+  }, [api, telemetryCB, errorCB]);
+
+  const logoutCB = useCallback(async () => {
+    const remote = await api;
+    return remote.logout();
+  }, [api]);
+
+  const createListCB = useCallback(
+    async (name: string) => {
+      const remote = await api;
+      return remote.createList(name);
+    },
+    [api]
+  );
+
+  const deleteListCB = useCallback(
+    async (list_id: string) => {
+      const remote = await api;
+      return remote.deleteList(list_id);
+    },
+    [api]
+  );
 
   // Generate the groups
   useEffect(() => {
     const groups = info2Groups(info, groupBy, filter, search);
     setGroups(groups);
-  }, [info, groupBy, search, filter]);
+    const gtotal = groups
+      .map((x) => x.followers.length)
+      .reduce((a, b) => a + b, 0);
+    const total = info.followers.length;
+    const perc = Math.round((100 * gtotal) / total);
+    if (perc !== 100) {
+      telemetryCB({ action: "filter_result", value: perc });
+    }
+  }, [info, groupBy, search, filter, telemetryCB]);
 
   // Fetch the data
   useEffect(() => {
-    loadData();
+    loadDataCB();
     // eslint-disable-next-line
   }, []);
 
@@ -154,7 +247,7 @@ function Manager() {
     setCreateOpen(true);
   };
   const handleLogout = () => {
-    API.logout().then(() => setRedirect("/main"));
+    logoutCB().then(() => setRedirect("/main"));
   };
 
   // About dialog handlers
@@ -169,11 +262,12 @@ function Manager() {
     setCreateOpen(false);
   };
   const handleCreateCommit = (name: string) => {
-    API.createList(name)
+    createListCB(name)
       .then(() => {
         setCreateOpen(false);
         // We have to do this to get the new ID of the list.
-        loadData();
+        loadDataCB();
+        telemetryCB({ action: "create_list" });
       })
       .catch((err) => handleError(err));
   };
@@ -192,34 +286,41 @@ function Manager() {
     setDeleteOpen(true);
   };
   const handleDelete = (list: List) => {
-    API.deleteList(list.id)
-      .then(() => loadData())
+    deleteListCB(list.id)
+      .then(() => loadDataCB())
       .then(() => setDeleteOpen(false))
+      .then(() => telemetryCB({ action: "delete_list" }))
       .catch((err) => handleError(err));
   };
 
-  const remove = (groupIndex: number, index: number, lid: number) => {
+  const remove = async (groupIndex: number, index: number, lid: string) => {
     const newGroups = groups.slice();
     const fol = newGroups[groupIndex].followers[index];
+    const use = await api;
     setInProgress({ list: lid, follower: fol.id });
     fol.lists = fol.lists.filter((value) => value !== lid);
-    API.removeFromList(lid, fol.id)
+    await use
+      .removeFromList(lid, fol.id)
       .then((resp) => {
         setInProgress(null);
         setGroups(newGroups);
+        telemetryCB({ action: "remove" });
       })
       .catch((err) => handleError(err));
   };
 
-  const add = (groupIndex: number, index: number, lid: number) => {
+  const add = async (groupIndex: number, index: number, lid: string) => {
     const newGroups = groups.slice();
     const fol = newGroups[groupIndex].followers[index];
     fol.lists.push(lid);
+    const use = await api;
     setInProgress({ list: lid, follower: fol.id });
-    API.addToList(lid, fol.id)
+    await use
+      .addToList(lid, fol.id)
       .then((data) => {
         setInProgress(null);
         setGroups(newGroups);
+        telemetryCB({ action: "add" });
       })
       .catch((err) => {
         handleError(err);
@@ -258,15 +359,26 @@ function Manager() {
     />
   );
 
+  const handleGroupBy = (groupby: string) => {
+    setGroupBy(groupby);
+    telemetryCB({ action: "groupby", groupby: groupby });
+  };
+
+  const handleFilter = (filter: string) => {
+    setFilter(filter);
+    telemetryCB({ action: "filter", filter: filter });
+  };
+
   const controls = (
     <Controls
       groupBy={groupBy}
-      handleGroupByChange={setGroupBy}
+      handleGroupByChange={handleGroupBy}
       lists={lists}
       filter={filter}
-      handleFilterChange={setFilter}
+      handleFilterChange={handleFilter}
       search={search}
       handleSearchChange={setSearch}
+      refresh={loadDataCB}
     />
   );
 
@@ -321,7 +433,11 @@ function Manager() {
     <div className="Manager">
       <div id="topbars">
         {appbar}
-        {loading ? <LinearProgress /> : ""}
+        {loading ? (
+          <LinearProgress variant="determinate" value={loadProgress} />
+        ) : (
+          ""
+        )}
         {controls}
       </div>
       <div id="alltables">

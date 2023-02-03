@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import App from "./App";
 
-test("renders without exception", () => {
+jest.mock("./ComlinkHook");
+
+test("renders without exception", async () => {
   render(<App />);
 });

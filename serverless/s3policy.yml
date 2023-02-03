@@ -1,0 +1,12 @@
+Type: AWS::S3::BucketPolicy
+Properties:
+  Bucket:
+    Ref: AssetsBucket
+  PolicyDocument:
+    Statement:
+      - Sid: PublicReadGetObject
+        Action:
+          - s3:GetObject
+        Effect: Allow
+        Principal: "*"
+        Resource: arn:aws:s3:::${self:custom.websiteBucket}/*

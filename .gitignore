@@ -3,3 +3,9 @@ cfg.py
 *.secret
 .serverless
 debug_log.txt
+
+# A local place for archived items
+archive
+
+# Local notes
+TODO.md

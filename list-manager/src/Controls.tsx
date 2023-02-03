@@ -1,4 +1,5 @@
 import React from "react";
+import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
@@ -14,6 +15,7 @@ type ControlsProps = {
   handleFilterChange: (g: string) => void;
   search: string;
   handleSearchChange: (g: string) => void;
+  refresh: () => Promise<void>;
 };
 
 export default function Controls({
@@ -24,6 +26,7 @@ export default function Controls({
   handleFilterChange,
   search,
   handleSearchChange,
+  refresh,
 }: ControlsProps) {
   const notOnfilterItems = (lists || []).map((list) => (
     <MenuItem key={list.id} value={"not:" + list.id}>
@@ -37,6 +40,18 @@ export default function Controls({
   ));
   return (
     <div>
+      <Button
+        sx={{
+          marginTop: "12px",
+          height: 56,
+          marginBottom: "12px",
+          marginRight: "5px",
+        }}
+        variant="outlined"
+        onClick={() => refresh()}
+      >
+        Refresh
+      </Button>
       <FormControl sx={{ marginTop: "12px", width: 200, marginBottom: "12px" }}>
         <InputLabel
           htmlFor="controls-groupby-select"
