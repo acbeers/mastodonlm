@@ -41,8 +41,8 @@ function MainPage() {
       <Box
         sx={{
           bgcolor: "background.paper",
-          pt: 8,
-          pb: 6,
+          pt: 4,
+          pb: 4,
         }}
       >
         <Container maxWidth="sm">
@@ -61,7 +61,7 @@ function MainPage() {
             color="text.secondary"
             paragraph
           >
-            A dead simple manager for all of your Mastodon Lists, letting you
+            A really simple manager for all of your Mastodon Lists, letting you
             quickly assign people that you are following to one or more lists.
             Search, filter, and organize your follow list to make reasoning
             about your lists easy.
@@ -69,8 +69,36 @@ function MainPage() {
           <LoginForm />
         </Container>
       </Box>
+      <Box sx={{ bgcolor: "background.paper" }}>
+        <Container maxWidth="sm">
+          <Typography color="text.secondary">
+            Other stuff you should know:
+          </Typography>
+          <Typography variant="body2" color="text.secondary" component="div">
+            <ul>
+              <li>
+                This works well if you are following up to a few thousand
+                accounts. After that, it may become slow or cumbersome.
+              </li>
+              <li>
+                I collect some telemetry about usage that's tied to your account
+                name that I store for two weeks, to aid in support.
+              </li>
+              <li>
+                So far everything is free, and you are limited only by the API
+                limits on your Mastodon instance. However, if you'd like to
+                support, please feel free to{" "}
+                <a href="https://ko-fi.com/acbeers">buy me a coffee!</a>
+              </li>
+            </ul>
+          </Typography>
+        </Container>
+      </Box>
       {/* Footer */}
-      <Box sx={{ bgcolor: "background.paper", p: 6 }} component="footer">
+      <Box
+        sx={{ bgcolor: "background.paper", pt: 2, pb: 6 }}
+        component="footer"
+      >
         <Copyright />
       </Box>
       {/* End footer */}
