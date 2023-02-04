@@ -1,0 +1,60 @@
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  frontend_test:
+    name: Run frontend tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 19
+
+      - name: npm install, build, test
+        run: |
+          cd list-manager
+          npm install
+          npm run build
+          npm test
+
+  backend_test:
+    name: Run backend tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+      - name: Install and test
+        run: |
+          pip3 install pipenv
+          pipenv install
+          pipenv run test
+
+  check:
+    runs-on: ubuntu-latest
+    # the jobs need to pass
+    needs: [frontend_test, backend_test]
+    # use always() so if previous jobs fail, this job will still run
+    if: always()
+    steps:
+      - uses: maxisam/create-summary-check-status@v1.1.0
+        with:
+          jobResults: |
+            ${{ needs.frontend_test.result }}
+            ${{ needs.backend_test.result }}
+          authToken: ${{secrets.GITHUB_TOKEN}}
+          # name showing on the check
+          checkName: CI PASSED
+          # if any result in job1,job2 is [failure,cacelled], the check will be failure, otherwise the check will be success
+          failureStates: |
+            failure
+            cancelled
+          # for PR or Push
+          sha: ${{ github.event.pull_request.head.sha || github.sha }}
