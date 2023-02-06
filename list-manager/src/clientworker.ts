@@ -3,13 +3,12 @@
 import { User, List, APIData, TimeoutError, AuthError } from "./types";
 import * as Comlink from "comlink";
 import { login } from "masto";
+import { WorkerBase } from "./workerbase";
 
 // Endpoints
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
 const urlCallback = process.env.REACT_APP_BACKEND_URL + "/clientcallback";
 const urlLogout = process.env.REACT_APP_BACKEND_URL + "/clientlogout";
-const urlTelemetry = process.env.REACT_APP_BACKEND_URL + "/telemetry";
-const urlError = process.env.REACT_APP_BACKEND_URL + "/error";
 
 async function asyncForEach(
   array: any[],
@@ -41,13 +40,13 @@ const checkJSON = (resp: Response) => {
     });
 };
 
-export default class APIWorker {
+export default class APIWorker extends WorkerBase {
   private token: string | null = null;
   private domain: string | null = null;
-  private me: User | null = null;
   private debug: number = 0;
 
   constructor() {
+    super();
     this.debug = Date.now();
   }
 
@@ -226,8 +225,6 @@ export default class APIWorker {
     if (!this.ready()) throw Error("API not ready");
     if (!this.token) throw Error("API not ready");
 
-    console.log("remove");
-
     return login({
       url: `https://${this.domain}`,
       accessToken: this.token,
@@ -235,34 +232,6 @@ export default class APIWorker {
       return masto.v1.lists
         .removeAccount(list_id, { accountIds: [follower_id] })
         .then(() => console.log("removed"));
-    });
-  }
-
-  // Logs a telemetry event
-  async telemetry(info: Record<string, any>): Promise<void> {
-    const data = { ...info };
-    if (this.me) data.acct = this.me.acct;
-
-    return fetch(urlTelemetry, {
-      credentials: "include",
-      method: "POST",
-      body: JSON.stringify(data),
-    }).then(() => {
-      return;
-    });
-  }
-
-  // Logs an error event
-  async error(info: Record<string, any>): Promise<void> {
-    const data = { ...info };
-    if (this.me) data.acct = this.me.acct;
-
-    return fetch(urlError, {
-      credentials: "include",
-      method: "POST",
-      body: JSON.stringify(data),
-    }).then(() => {
-      return;
     });
   }
 }

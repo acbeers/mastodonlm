@@ -3,7 +3,7 @@
 import logging
 from unittest.mock import MagicMock, patch, sentinel
 from unittest import TestCase
-from handler import MastodonFactory, USER_AGENT
+from factory import MastodonFactory, USER_AGENT
 
 # Here, reconfigure the logger to send output to a file during tests.
 logging.basicConfig(level=logging.INFO, filename="debug_log.txt")
@@ -21,7 +21,7 @@ def mock_hostconfig():
 class TestFactory(TestCase):
     """Tests for MastodonFactory methods"""
 
-    @patch("handler.Mastodon")
+    @patch("factory.Mastodon")
     def test_fromconfig_notoken(self, mastomock):
         """Test for MastodonFactory.from_config without a token"""
 
@@ -36,7 +36,7 @@ class TestFactory(TestCase):
             api_base_url=f"https://{sentinel.host}",
         )
 
-    @patch("handler.Mastodon")
+    @patch("factory.Mastodon")
     def test_fromconfig_withtoken(self, mastomock):
         """Test for MastodonFactory.from_config with a token"""
 
@@ -51,8 +51,8 @@ class TestFactory(TestCase):
             api_base_url=f"https://{sentinel.host}",
         )
 
-    @patch("handler.Datastore")
-    @patch("handler.MastodonFactory.from_config")
+    @patch("factory.Datastore")
+    @patch("factory.MastodonFactory.from_config")
     def test_fromcookie(self, from_config, data_store):
         """Test for MastodonFactory.from_config with a token"""
 

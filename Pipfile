@@ -16,8 +16,8 @@ decorator = "*"
 pylint = "*"
 
 [scripts]
-format = "black handler.py models.py test"
-lint = "pylint handler.py models.py test"
+format = "black handler.py models.py client.py shared.py other.py utils.py  test"
+lint = "pylint handler.py models.py client.py shared.py other.py utils.py test"
 test = "python -m unittest discover test"
 
 [requires]

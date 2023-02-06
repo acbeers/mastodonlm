@@ -1,23 +1,17 @@
 auth:
-  handler: handler.auth
+  handler: shared.auth
   timeout: 30
   events:
     - httpApi:
         path: /auth
         method: GET
+
 callback:
   handler: handler.callback
   timeout: 30
   events:
     - httpApi:
         path: /callback
-        method: POST
-clientcallback:
-  handler: handler.clientcallback
-  timeout: 30
-  events:
-    - httpApi:
-        path: /clientcallback
         method: POST
 meta:
   timeout: 30
@@ -75,13 +69,22 @@ logout:
     - httpApi:
         path: /logout
         method: POST
+
+clientcallback:
+  handler: client.clientcallback
+  timeout: 30
+  events:
+    - httpApi:
+        path: /clientcallback
+        method: POST
 clientlogout:
   timeout: 30
-  handler: handler.clientlogout
+  handler: client.clientlogout
   events:
     - httpApi:
         path: /clientlogout
         method: POST
+
 telemetry:
   timeout: 30
   handler: telemetry.telemetry
@@ -96,8 +99,9 @@ error:
     - httpApi:
         path: /error
         method: POST
+
 blocklistUpdate:
-  handler: handler.block_update
+  handler: other.block_update
   timeout: 300
   events:
     - schedule: cron(0 8 * * ? *)

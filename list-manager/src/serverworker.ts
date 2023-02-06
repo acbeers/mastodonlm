@@ -2,6 +2,7 @@
 
 import { User, List, APIData, TimeoutError, AuthError } from "./types";
 import * as Comlink from "comlink";
+import { WorkerBase } from "./workerbase";
 
 // Our endpoints
 const urlFollowing = process.env.REACT_APP_BACKEND_URL + "/following";
@@ -14,8 +15,6 @@ const urlDelete = process.env.REACT_APP_BACKEND_URL + "/delete";
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
 const urlCallback = process.env.REACT_APP_BACKEND_URL + "/callback";
 const urlLogout = process.env.REACT_APP_BACKEND_URL + "/logout";
-const urlTelemetry = process.env.REACT_APP_BACKEND_URL + "/telemetry";
-const urlError = process.env.REACT_APP_BACKEND_URL + "/error";
 
 // Given a fetch response, check it for errors and throw
 // reasonable exceptions if so.  Otherwise, return the response
@@ -45,9 +44,8 @@ const checkJSON = (resp: Response) => {
 // API then the user of it needs to know, since it won't be accessible via comlink.
 // I could make Comlink proxy to something that is in this thread, though.
 //
-export default class ServerAPIWorker {
+export default class ServerAPIWorker extends WorkerBase {
   private cookie: string = "";
-  private me: User | null = null;
 
   // A version of fetch that passes our authentication
   private authenticatedFetch(url: string, options: RequestInit) {
@@ -179,34 +177,6 @@ export default class ServerAPIWorker {
     return this.authPOST(
       `${urlRemove}?list_id=${list_id}&account_id=${follower_id}`
     ).then((resp) => checkJSON(resp));
-  }
-
-  // Logs a telemetry event
-  async telemetry(info: Record<string, any>): Promise<void> {
-    const data = { ...info };
-    if (this.me) data.acct = this.me.acct;
-
-    return fetch(urlTelemetry, {
-      credentials: "include",
-      method: "POST",
-      body: JSON.stringify(data),
-    }).then(() => {
-      return;
-    });
-  }
-
-  // Logs an error event
-  async error(info: Record<string, any>): Promise<void> {
-    const data = { ...info };
-    if (this.me) data.acct = this.me.acct;
-
-    return fetch(urlError, {
-      credentials: "include",
-      method: "POST",
-      body: JSON.stringify(data),
-    }).then(() => {
-      return;
-    });
   }
 }
 
