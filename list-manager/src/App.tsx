@@ -49,7 +49,6 @@ function App() {
   // our API instance
   const api = useMemo(() => {
     const mode = localStorage.getItem("mastodonlm-mode") || "client";
-    console.log(`MODE = ${mode}`);
     const apiClass = mode === "server" ? serverApiClass : clientApiClass;
     const res = new apiClass.proxy();
     return res;
