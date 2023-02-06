@@ -1,7 +1,7 @@
 {
   "scripts": {
     "predeploy": "cd list-manager && npm run build",
-    "deploy": "cd list-manager && gh-pages -d build"
+    "deploy": "sls deploy --aws-profile slsdeploy deploy --stage newprod"
   },
   "dependencies": {
     "serverless-cloudfront-invalidate": "^1.12.2",
