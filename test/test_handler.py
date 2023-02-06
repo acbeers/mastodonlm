@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch, sentinel
 from unittest import TestCase
 from mastodon import MastodonAPIError, MastodonUnauthorizedError
 import handler
+import shared
 
 # Here, reconfigure the logger to send output to a file during tests.
 logging.basicConfig(level=logging.INFO, filename="debug_log.txt")
@@ -75,14 +76,14 @@ class TestAuth(TestCase):
         """Test /auth with no domain parameter - there's little we can do!"""
         (event, context) = setupNoCookies()
 
-        res = handler.auth(event, context)
+        res = shared.auth(event, context)
         # We should return a 401 response
         self.assertEqual(res["statusCode"], 401)
         self.assertEqual(json.loads(res["body"])["status"], "bad_host")
 
-    @patch("handler.Datastore")
-    @patch("handler.MastodonFactory", new_callable=mock_factory)
-    @patch("handler.make_app")
+    @patch("shared.Datastore")
+    @patch("shared.MastodonFactory", new_callable=mock_factory)
+    @patch("shared.make_app")
     def test_auth_nocookie_newhost(self, make_app, _factory, dataStore):
         """Test /auth when we haven't seen this host before"""
 
@@ -93,7 +94,7 @@ class TestAuth(TestCase):
         dataStore.get_host_config.return_value = None
         make_app.return_value = ("id", "secret")
 
-        res = handler.auth(event, context)
+        res = shared.auth(event, context)
         # We should return a 200 response with the correct redirect URL.
         # And, we should call make_app
         self.assertEqual(res["statusCode"], 200)
@@ -101,9 +102,9 @@ class TestAuth(TestCase):
         # We should have created a new mastodon app
         self.assertTrue(make_app.called)
 
-    @patch("handler.Datastore")
-    @patch("handler.MastodonFactory", new_callable=mock_factory)
-    @patch("handler.make_app")
+    @patch("shared.Datastore")
+    @patch("shared.MastodonFactory", new_callable=mock_factory)
+    @patch("shared.make_app")
     def test_auth_nocookie_knownhost(self, make_app, factory, dataStore):
         """Test /auth when no cookie is present"""
 
@@ -113,7 +114,7 @@ class TestAuth(TestCase):
         dataStore.is_allowed.return_value = True
         dataStore.get_host_config.return_value = sentinel.host_cfg
 
-        res = handler.auth(event, context)
+        res = shared.auth(event, context)
         # We should return a 200 response with the correct redirect URL.
         self.assertEqual(res["statusCode"], 200)
         self.assertEqual(json.loads(res["body"])["url"], "https://mock_redirect")
@@ -122,9 +123,9 @@ class TestAuth(TestCase):
         # We should not have created a new app
         self.assertFalse(make_app.called)
 
-    @patch("handler.Datastore")
-    @patch("handler.MastodonFactory", new_callable=mock_factory)
-    @patch("handler.make_app")
+    @patch("shared.Datastore")
+    @patch("shared.MastodonFactory", new_callable=mock_factory)
+    @patch("shared.make_app")
     def test_auth_cookie_valid(self, make_app, factory, data_store):
         """Test /auth when a cookie present and a valid session on a Mastodon server"""
 
@@ -135,7 +136,7 @@ class TestAuth(TestCase):
         auth.domain = "mydomain"
         data_store.get_auth.return_value = auth
 
-        res = handler.auth(event, context)
+        res = shared.auth(event, context)
         # We should return a 200 response
         self.assertEqual(res["statusCode"], 200)
         self.assertEqual(json.loads(res["body"])["status"], "OK")
@@ -144,9 +145,9 @@ class TestAuth(TestCase):
         # We should not have created a new app
         self.assertFalse(make_app.called)
 
-    @patch("handler.Datastore")
-    @patch("handler.MastodonFactory", new_callable=mock_factory)
-    @patch("handler.make_app")
+    @patch("shared.Datastore")
+    @patch("shared.MastodonFactory", new_callable=mock_factory)
+    @patch("shared.make_app")
     def test_auth_cookie_unknown(self, make_app, factory, data_store):
         """Test /auth when a cookie present but it is unknown to us"""
 
@@ -157,7 +158,7 @@ class TestAuth(TestCase):
 
         data_store.is_allowed.return_value = True
 
-        res = handler.auth(event, context)
+        res = shared.auth(event, context)
         # We should return a 200 response with the correct redirect URL.
         self.assertEqual(res["statusCode"], 200)
         self.assertEqual(json.loads(res["body"])["url"], "https://mock_redirect")
@@ -166,9 +167,9 @@ class TestAuth(TestCase):
         # We should not have created a new app
         self.assertFalse(make_app.called)
 
-    @patch("handler.Datastore")
-    @patch("handler.MastodonFactory", new_callable=mock_factory)
-    @patch("handler.make_app")
+    @patch("shared.Datastore")
+    @patch("shared.MastodonFactory", new_callable=mock_factory)
+    @patch("shared.make_app")
     def test_auth_cookie_invalid(self, make_app, factory, data_store):
         """Test /auth when a cookie present and an invalid session on a Mastodon
         server"""
@@ -183,7 +184,7 @@ class TestAuth(TestCase):
         auth.domain = "mydomain"
         data_store.get_auth.return_value = auth
 
-        res = handler.auth(event, context)
+        res = shared.auth(event, context)
         # We should return a 200 response with the correct redirect URL.
         self.assertEqual(res["statusCode"], 200)
         self.assertEqual(json.loads(res["body"])["url"], "https://mock_redirect")
@@ -192,9 +193,9 @@ class TestAuth(TestCase):
         # We should not have created a new app
         self.assertFalse(make_app.called)
 
-    @patch("handler.Datastore")
-    @patch("handler.MastodonFactory", new_callable=mock_factory)
-    @patch("handler.make_app")
+    @patch("shared.Datastore")
+    @patch("shared.MastodonFactory", new_callable=mock_factory)
+    @patch("shared.make_app")
     def test_auth_cookie_valid_no_hostmatch(self, make_app, factory, data_store):
         """Test /auth when a cookie present but the domain doesn't match the one
         in the cookie"""
@@ -207,7 +208,7 @@ class TestAuth(TestCase):
         auth.domain = "mydomain"
         data_store.get_auth.return_value = auth
 
-        res = handler.auth(event, context)
+        res = shared.auth(event, context)
         # We should return a 200 response with the correct redirect URL.
         self.assertEqual(res["statusCode"], 200)
         self.assertEqual(json.loads(res["body"])["url"], "https://mock_redirect")

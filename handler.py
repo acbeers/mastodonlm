@@ -7,69 +7,22 @@ import time
 import uuid
 
 from mastodon import (
-    Mastodon,
     MastodonAPIError,
     MastodonNotFoundError,
     MastodonIllegalArgumentError,
     MastodonInternalServerError,
     MastodonUnauthorizedError,
-    MastodonNetworkError,
 )
-import requests
 
+from factory import MastodonFactory, NoAuthInfo, NotMastodon
 from models import Datastore
-
-# Our User Agent
-USER_AGENT = "mastodonlistmanager"
-
-
-class NoAuthInfo(Exception):
-    """Internal exception class for when we don't have auth info"""
-
-
-class NotMastodon(Exception):
-    """Internal exception for when we think we don't have a Mastodon connection"""
-
+from shared import callback_helper
+from utils import response, err_response, blocked_response
 
 # AWS doens't set a logging level, so set it here.
 logging.getLogger("root").setLevel(logging.INFO)
 # But don't log much from botocore
 logging.getLogger("botocore").setLevel(logging.ERROR)
-
-
-class MastodonFactory:
-    """Factory class for Mastodon instances"""
-
-    @classmethod
-    def from_cookie(cls, cookie):
-        """Construct a mastodon object from the cookie"""
-        authinfo = Datastore.get_auth(cookie)
-        if authinfo is None:
-            raise NoAuthInfo
-
-        # Get the configuration that we need
-        cfg = Datastore.get_host_config(authinfo.domain)
-        if cfg is None:
-            raise NoAuthInfo
-
-        return MastodonFactory.from_config(cfg, token=authinfo.token)
-
-    @classmethod
-    def from_config(cls, cfg, token=None):
-        """Create a Mastodon interface from a HostConfig object"""
-        mastodon = Mastodon(
-            client_id=cfg.client_id,
-            client_secret=cfg.client_secret,
-            access_token=token,
-            user_agent=USER_AGENT,
-            api_base_url=f"https://{cfg.host}",
-        )
-        # If the version check failed, then most likely this is an unusable
-        # instance.  This can happen when e.g. we are blocked by CloudFlare
-        if not mastodon.version_check_worked:
-            raise NotMastodon
-
-        return mastodon
 
 
 def parse_cookies(cookies):
@@ -82,48 +35,11 @@ def parse_cookies(cookies):
     return res
 
 
-def make_app(domain, redirect_url):
-    """Creates a Mastodon app on a given host"""
-    # TODO: If I change the URL, I'm going to have to conditionally create this,
-    # replacing the existing entries.
-    (client_id, client_secret) = Mastodon.create_app(
-        "Mastodon List Manager",
-        scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
-        redirect_uris=redirect_url,
-        api_base_url=f"https://{domain}",
-    )
-    return (client_id, client_secret)
-
-
 def get_cookie(event):
     """Retrieves the auth cookie from the event object"""
     headers = event.get("headers", {})
     cookie = headers.get("authorization", None)
     return cookie
-
-
-def response(body, statusCode=200):
-    """Construct a lambda response object"""
-    # Log a mesasge for error-like things.
-    if statusCode >= 404:
-        logging.error("Returning %s with %s", statusCode, body)
-    elif statusCode >= 400:
-        logging.info("Returning %s with %s", statusCode, body)
-    return {
-        "statusCode": statusCode,
-        "body": body,
-    }
-
-
-def err_response(msg):
-    """Construct a lambda error response"""
-    obj = {"status": msg}
-    return response(json.dumps(obj), statusCode=500)
-
-
-def blocked_response():
-    """Returns a 'blocked' response"""
-    return err_response("blocked")
 
 
 def meta(event, _):
@@ -265,14 +181,6 @@ def lists(event, _):
     return response(json.dumps(output))
 
 
-def make_redirect_url(event, domain):
-    """Create a redirect URL based on the origin of the request"""
-    origin = event["headers"]["origin"]
-    if origin == "http://localhost:3000":
-        return f"http://localhost:3000/callback?domain={domain}"
-    return f"https://www.mastodonlistmanager.org/callback?domain={domain}"
-
-
 def make_cookie_options(event):
     """Create a cookie options based on the request"""
     host = event["headers"]["host"]
@@ -289,87 +197,6 @@ def cleandomain(domain):
     return domain.strip().lower().replace("@", "")
 
 
-def auth(event, _):
-    """
-    Handler for the start of an authentication flow.
-    """
-    # First, see if we have an active session
-    cookie = get_cookie(event)
-
-    params = event.get("queryStringParameters", {}) or {}
-    domain = cleandomain(params.get("domain", None))
-
-    # Ignore the cookie if it belongs to some other domain
-    if cookie is not None:
-        authinfo = Datastore.get_auth(cookie)
-        if authinfo is not None:
-            if domain is None:
-                domain = authinfo.domain
-            elif authinfo.domain != domain:
-                cookie = None
-
-    if cookie is not None:
-        try:
-            test = MastodonFactory.from_cookie(cookie)
-            test.me()
-            logging.info("Already logged in")
-            return {"statusCode": 200, "body": json.dumps({"status": "OK"})}
-        except MastodonAPIError:
-            # If here, we aren't logged in, so drop through to start the
-            # oAuth flow.
-            pass
-        except NoAuthInfo:
-            # If here, we didn't get a mastodon instance back, so start the
-            # oAuth flow
-            pass
-
-    # If we don't have a domain here, then we have to bail
-    if domain is None or domain == "":
-        return response(json.dumps({"status": "bad_host"}), statusCode=401)
-
-    # See if this domain is allowed
-    allow = Datastore.is_allowed(domain.lower())
-    if not allow:
-        res = {"status": "not_allowed"}
-        logging.info("auth: domain denied: %s", domain)
-        return response(json.dumps(res))
-
-    logging.info("auth: starting OAuth path for %s", domain)
-
-    # For now, we'll create the right redirect_url based on the event object.
-    redirect_url = make_redirect_url(event, domain)
-
-    cfg = Datastore.get_host_config(domain)
-
-    if cfg is None:
-        # Make an app
-        logging.debug("auth: making app for %s", domain)
-        try:
-            (client_id, client_secret) = make_app(domain, redirect_url)
-            logging.debug("auth: Made the app!")
-        except MastodonNetworkError:
-            logging.error("Bad host: %s", domain)
-            return response(json.dumps({"status": "bad_host"}), statusCode=500)
-
-        cfg = Datastore.set_host_config(
-            domain, client_id=client_id, client_secret=client_secret
-        )
-
-    logging.debug("creating from config")
-    try:
-        mastodon = MastodonFactory.from_config(cfg)
-    except NotMastodon:
-        return blocked_response()
-
-    logging.debug("created from config")
-
-    url = mastodon.auth_request_url(
-        scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
-        redirect_uris=redirect_url,
-    )
-    return response(json.dumps({"url": url}))
-
-
 def get_expire():
     """Compute a 1-day expire time"""
     now = datetime.datetime.now()
@@ -378,47 +205,9 @@ def get_expire():
     return unix
 
 
-def callback_helper(event,_,finish):
-    """The callback method of the oAuth dance"""
-
-    # Need to know the domain to complete the oauth handshake.
-    params = event.get("queryStringParameters", {}) or {}
-    domain = params.get("domain", "UNKNOWN")
-    code = params.get("code")
-
-    cfg = Datastore.get_host_config(domain)
-    logging.debug("callback for %s", domain)
-
-    mastodon = Mastodon(
-        client_id=cfg.client_id,
-        client_secret=cfg.client_secret,
-        user_agent=USER_AGENT,
-        api_base_url=f"https://{domain}",
-    )
-
-    # For now, we'll create the right redirect_url based on the event object.
-    redirect_url = make_redirect_url(event, domain)
-
-    token = None
-    try:
-        token = mastodon.log_in(
-            code=code,
-            redirect_uri=redirect_url,
-            scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
-        )
-    except MastodonIllegalArgumentError:
-        logging.error(
-            "MastodonIllegalArgumentError, code = %s, redirect_uri = %s, domain = %s",
-            code,
-            redirect_url,
-            domain,
-        )
-        return err_response("ERROR - illegal argument")
-
-    return finish(token)
-
-def callback(event,context):
+def callback(event, context):
     """oAuth callback for the server-side version of the API"""
+
     def finish(token):
         params = event.get("queryStringParameters", {}) or {}
         domain = params.get("domain", "UNKNOWN")
@@ -429,16 +218,7 @@ def callback(event,context):
 
         return {"statusCode": 200, "body": json.dumps({"status": "OK", "auth": cookie})}
 
-    return callback_helper(event,context,finish)
-
-def clientcallback(event, context):
-    """oAuth callback for the client-side version of the API"""
-
-    def finish(token):
-        return response(json.dumps({"status":"OK","token":token}))
-
-    return callback_helper(event,context,finish)
-
+    return callback_helper(event, context, finish)
 
 
 def add_to_list(event, _):
@@ -622,39 +402,3 @@ def logout(event, _):
         return err_response("ERROR - API error")
 
     return response(json.dumps({"status": "OK"}))
-
-def clientlogout(event, _):
-    """Logs out, given an oauth token and a domain"""
-
-    body = json.loads(event["body"])
-    token = body.get("token",None)
-    domain = body.get("domain",None)
-
-    # Log out of the mastodon server
-    try:
-        cfg = Datastore.get_host_config(domain)
-        if cfg is None:
-            raise NoAuthInfo
-
-        mastodon = MastodonFactory.from_config(cfg,token=token)
-        mastodon.revoke_access_token()
-
-    except MastodonAPIError as e:
-        logging.error("ERROR - other API error: %s", str(e))
-        return err_response("ERROR - API error")
-    except NoAuthInfo:
-        return err_response(f"ERROR no host config found for {domain}")
-
-    return response(json.dumps({"status": "OK"}))
-
-
-def block_update(_event, _context):
-    """Pulls a list of hosts to block from github and populates our blocked host
-    table"""
-
-    # NOTE: There doesn't seem to be a Mastodon.py method for this.
-    resp = requests.get(
-        "https://hachyderm.io/api/v1/instance/domain_blocks", timeout=60
-    )
-    js = resp.json()
-    Datastore.batch_block_host(js)

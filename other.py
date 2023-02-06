@@ -1,8 +1,8 @@
 """Lambda routines that don't directly process requests"""
 
-import boto3
 import requests
 from models import Datastore
+
 
 def block_update(_event, _context):
     """Pulls a list of hosts to block from github and populates our blocked host
@@ -14,4 +14,3 @@ def block_update(_event, _context):
     )
     js = resp.json()
     Datastore.batch_block_host(js)
-

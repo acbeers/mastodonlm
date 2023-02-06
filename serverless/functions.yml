@@ -1,10 +1,11 @@
 auth:
-  handler: handler.auth
+  handler: shared.auth
   timeout: 30
   events:
     - httpApi:
         path: /auth
         method: GET
+
 callback:
   handler: handler.callback
   timeout: 30
@@ -70,7 +71,7 @@ logout:
         method: POST
 
 clientcallback:
-  handler: handler.clientcallback
+  handler: client.clientcallback
   timeout: 30
   events:
     - httpApi:
@@ -78,7 +79,7 @@ clientcallback:
         method: POST
 clientlogout:
   timeout: 30
-  handler: handler.clientlogout
+  handler: client.clientlogout
   events:
     - httpApi:
         path: /clientlogout
