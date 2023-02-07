@@ -234,5 +234,31 @@ export default class APIWorker extends WorkerBase {
         .then(() => console.log("removed"));
     });
   }
+
+  // Creates a new list and imports data into it
+  async importList(list_name: string, data: string[]): Promise<void> {
+    // FIXME: We should allow importing into an existing list.
+    console.log("IMPORT");
+    return this.instance().then((masto) => {
+      return masto.v1.lists.create({ title: list_name }).then((newlist) => {
+        console.log("Created list");
+        const list_id = newlist.id;
+        // FIXME: data needs to be translated into account IDs, not acct strings.
+        console.log("Getting account info");
+        const proms = data.map((acct) => masto.v1.accounts.lookup({ acct }));
+        return Promise.all(proms).then((accts) => {
+          const ids = accts.map((x) => x.id);
+          console.log(ids);
+          return masto.v1.lists.addAccount(list_id, { accountIds: ids });
+        });
+
+        // FIXME: If data is too long, we might get into problems.
+        // FIXME: We should offer to follow accounts that we aren't following already.
+        // But, that API is one account at a time, so could run afoul of API limits.
+        // FIXME: Perhaps I just need to have a limit of e.g. 50 accounts, plus go to
+        // some efforts to not do any work for accounts that I already know about.
+      });
+    });
+  }
 }
 Comlink.expose(APIWorker);

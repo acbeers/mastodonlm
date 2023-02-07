@@ -11,6 +11,7 @@ import CreateListDialog from "./CreateListDialog";
 import DeleteListDialog from "./DeleteListDialog";
 import TimeoutDialog from "./TimeoutDialog";
 import ExportListDialog from "./ExportListDialog";
+import ImportListDialog from "./ImportListDialog";
 
 import FollowingTable from "./FollowingTable";
 import Controls from "./Controls";
@@ -40,6 +41,7 @@ function info2Groups(
   filter: string,
   search: string
 ) {
+  console.log(info);
   // First, compute the groups
   const getGroupName = (fol: User) => fol.display_name.toUpperCase()[0];
   const getGroupNone = (fol: User) => "All";
@@ -160,6 +162,15 @@ function Manager({ api }: ManagerProps) {
       };
       const remote = await api;
       remote.error(data);
+    },
+    [api]
+  );
+
+  const importCB = useCallback(
+    async (list_name: string, data: string[]) => {
+      const remote = await api;
+      console.log("Doing the import");
+      await remote.importList(list_name, data);
     },
     [api]
   );
@@ -288,6 +299,27 @@ function Manager({ api }: ManagerProps) {
     saveAs(blob, "export.csv");
   };
 
+  // Import list dialog
+  const [importOpen, setImportOpen] = useState(false);
+  const handleMenuImportList = () => {
+    setImportOpen(true);
+  };
+  const handleImportList = (list_name: string, data: string[]) => {
+    // Figure out which people I'm not following
+    const followerMap: Record<string, User> = {};
+    info.followers.forEach((x) => {
+      followerMap[x.acct] = x;
+    });
+
+    const toFollow = data.filter((x) => !(x in followerMap));
+    //const toAdd = data.filter((x) => x in followerMap);
+    console.log("To follow (not implemented):");
+    console.log(toFollow);
+
+    // Pass this off to our API, which will do the heavy lifting.
+    importCB(list_name, data).then(() => loadDataCB());
+  };
+
   // Build the crazy table.
   const lists = info.lists;
 
@@ -371,6 +403,7 @@ function Manager({ api }: ManagerProps) {
       acct={acct}
       handleMenuAbout={handleMenuAbout}
       handleMenuExportList={handleMenuExportList}
+      handleMenuImportList={handleMenuImportList}
       handleMenuNewList={handleMenuNewList}
       handleMenuLogout={handleLogout}
     />
@@ -448,6 +481,11 @@ function Manager({ api }: ManagerProps) {
         lists={info.lists}
         handleExport={handleExportList}
         handleClose={() => setExportOpen(false)}
+      />
+      <ImportListDialog
+        open={importOpen}
+        handleImport={handleImportList}
+        handleClose={() => setImportOpen(false)}
       />
     </div>
   );

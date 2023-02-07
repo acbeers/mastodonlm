@@ -9,7 +9,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import { List } from "./types";
 
-type CreateListDialogProps = {
+type ExportListDialogProps = {
   open: boolean;
   lists: List[];
   handleExport: (list: List) => void;
@@ -21,7 +21,7 @@ function ExportListDialog({
   lists,
   handleExport,
   handleClose,
-}: CreateListDialogProps) {
+}: ExportListDialogProps) {
   const [value, setValue] = useState<number | string>("");
 
   const opts = lists.map((list, index) => (

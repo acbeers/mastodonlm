@@ -13,6 +13,7 @@ type TopBarProps = {
   acct: string;
   handleMenuNewList: () => void;
   handleMenuExportList: () => void;
+  handleMenuImportList: () => void;
   handleMenuAbout: () => void;
   handleMenuLogout: () => void;
 };
@@ -21,6 +22,7 @@ export default function TopBar({
   acct,
   handleMenuNewList,
   handleMenuExportList,
+  handleMenuImportList,
   handleMenuAbout,
   handleMenuLogout,
 }: TopBarProps) {
@@ -42,6 +44,10 @@ export default function TopBar({
   const clickMenuExportList = () => {
     handleMenuClose();
     handleMenuExportList();
+  };
+  const clickMenuImportList = () => {
+    handleMenuClose();
+    handleMenuImportList();
   };
   const clickMenuNewAbout = () => {
     handleMenuClose();
@@ -80,6 +86,7 @@ export default function TopBar({
           >
             <MenuItem onClick={clickMenuNewList}>New List</MenuItem>
             <MenuItem onClick={clickMenuExportList}>Export List</MenuItem>
+            <MenuItem onClick={clickMenuImportList}>Import List</MenuItem>
             <MenuItem onClick={clickMenuNewAbout}>About</MenuItem>
             <MenuItem onClick={clickMenuLogout}>Logout</MenuItem>
           </Menu>{" "}
