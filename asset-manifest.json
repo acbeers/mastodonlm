@@ -1,0 +1,23 @@
+{
+  "files": {
+    "main.css": "/mastodonlm/static/css/main.c8cc28d9.css",
+    "main.js": "/mastodonlm/static/js/main.90e33363.js",
+    "static/js/734.ed462d51.chunk.js": "/mastodonlm/static/js/734.ed462d51.chunk.js",
+    "static/js/408.33830f4a.chunk.js": "/mastodonlm/static/js/408.33830f4a.chunk.js",
+    "static/js/988.6d021930.chunk.js": "/mastodonlm/static/js/988.6d021930.chunk.js",
+    "static/js/144.d2d8652c.chunk.js": "/mastodonlm/static/js/144.d2d8652c.chunk.js",
+    "static/js/916.8e9dbd35.chunk.js": "/mastodonlm/static/js/916.8e9dbd35.chunk.js",
+    "index.html": "/mastodonlm/index.html",
+    "main.c8cc28d9.css.map": "/mastodonlm/static/css/main.c8cc28d9.css.map",
+    "main.90e33363.js.map": "/mastodonlm/static/js/main.90e33363.js.map",
+    "734.ed462d51.chunk.js.map": "/mastodonlm/static/js/734.ed462d51.chunk.js.map",
+    "408.33830f4a.chunk.js.map": "/mastodonlm/static/js/408.33830f4a.chunk.js.map",
+    "988.6d021930.chunk.js.map": "/mastodonlm/static/js/988.6d021930.chunk.js.map",
+    "144.d2d8652c.chunk.js.map": "/mastodonlm/static/js/144.d2d8652c.chunk.js.map",
+    "916.8e9dbd35.chunk.js.map": "/mastodonlm/static/js/916.8e9dbd35.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.c8cc28d9.css",
+    "static/js/main.90e33363.js"
+  ]
+}
