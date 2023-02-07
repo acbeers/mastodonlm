@@ -54,6 +54,19 @@ function App() {
     return res;
   }, [clientApiClass, serverApiClass]);
 
+  // Set up a global error handler
+
+  window.onerror = async (_event, _source, _lineno, _colno, error) => {
+    const remote = await api;
+    if (error) {
+      const telem = {
+        stack: error.stack,
+        message: error.message,
+      };
+      remote.error(telem);
+    }
+  };
+
   return (
     <React.StrictMode>
       <BrowserRouter basename={process.env.REACT_APP_BASE_PATH}>

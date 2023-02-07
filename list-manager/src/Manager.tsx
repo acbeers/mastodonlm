@@ -41,7 +41,6 @@ function info2Groups(
   filter: string,
   search: string
 ) {
-  console.log(info);
   // First, compute the groups
   const getGroupName = (fol: User) => fol.display_name.toUpperCase()[0];
   const getGroupNone = (fol: User) => "All";
@@ -169,10 +168,15 @@ function Manager({ api }: ManagerProps) {
   const importCB = useCallback(
     async (list_name: string, data: string[]) => {
       const remote = await api;
-      console.log("Doing the import");
-      await remote.importList(list_name, data);
+      remote.importList(list_name, data).then(() => {
+        const telem = {
+          action: "import",
+          num_imported: data.length,
+        };
+        telemetryCB(telem);
+      });
     },
-    [api]
+    [api, telemetryCB]
   );
 
   const loadDataCB = useCallback(async () => {
@@ -297,6 +301,11 @@ function Manager({ api }: ManagerProps) {
     const data = ["account"].concat(accts);
     var blob = new Blob([data.join("\n")], { type: "text/csv;charset=utf-8" });
     saveAs(blob, "export.csv");
+    const telem = {
+      action: "export",
+      num_exported: accts.length,
+    };
+    telemetryCB(telem);
   };
 
   // Import list dialog
@@ -311,10 +320,10 @@ function Manager({ api }: ManagerProps) {
       followerMap[x.acct] = x;
     });
 
-    const toFollow = data.filter((x) => !(x in followerMap));
+    //const toFollow = data.filter((x) => !(x in followerMap));
     //const toAdd = data.filter((x) => x in followerMap);
-    console.log("To follow (not implemented):");
-    console.log(toFollow);
+    //console.log("To follow (not implemented):");
+    //console.log(toFollow);
 
     // Pass this off to our API, which will do the heavy lifting.
     importCB(list_name, data).then(() => loadDataCB());
