@@ -214,9 +214,7 @@ export default class APIWorker extends WorkerBase {
       url: `https://${this.domain}`,
       accessToken: this.token,
     }).then((masto) => {
-      return masto.v1.lists
-        .addAccount(list_id, { accountIds: [follower_id] })
-        .then(() => console.log("added"));
+      return masto.v1.lists.addAccount(list_id, { accountIds: [follower_id] });
     });
   }
 
@@ -229,26 +227,22 @@ export default class APIWorker extends WorkerBase {
       url: `https://${this.domain}`,
       accessToken: this.token,
     }).then((masto) => {
-      return masto.v1.lists
-        .removeAccount(list_id, { accountIds: [follower_id] })
-        .then(() => console.log("removed"));
+      return masto.v1.lists.removeAccount(list_id, {
+        accountIds: [follower_id],
+      });
     });
   }
 
   // Creates a new list and imports data into it
   async importList(list_name: string, data: string[]): Promise<void> {
     // FIXME: We should allow importing into an existing list.
-    console.log("IMPORT");
     return this.instance().then((masto) => {
       return masto.v1.lists.create({ title: list_name }).then((newlist) => {
-        console.log("Created list");
         const list_id = newlist.id;
         // FIXME: data needs to be translated into account IDs, not acct strings.
-        console.log("Getting account info");
         const proms = data.map((acct) => masto.v1.accounts.lookup({ acct }));
         return Promise.all(proms).then((accts) => {
           const ids = accts.map((x) => x.id);
-          console.log(ids);
           return masto.v1.lists.addAccount(list_id, { accountIds: ids });
         });
 

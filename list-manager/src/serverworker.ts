@@ -90,7 +90,6 @@ export default class ServerAPIWorker extends WorkerBase {
     })
       .then((resp) => checkJSON(resp))
       .then((data) => {
-        console.log(data);
         self.cookie = data.auth;
       });
   }
@@ -185,7 +184,6 @@ export default class ServerAPIWorker extends WorkerBase {
     return this.authPOST(`${urlCreate}?list_name=${list_name}`)
       .then((resp) => checkJSON(resp))
       .then((data) => {
-        console.log(data);
         const list_id = data.list.id;
         return this.authPOST(
           `${urlImport}?list_id=${list_id}&accts=${accounts.join(",")}`
