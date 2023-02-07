@@ -192,9 +192,9 @@ export default class APIWorker extends WorkerBase {
   }
 
   // Creates a new list
-  async createList(list_name: string): Promise<void> {
+  async createList(list_name: string): Promise<List> {
     return this.instance().then((masto) => {
-      masto.v1.lists.create({ title: list_name });
+      return masto.v1.lists.create({ title: list_name });
     });
   }
 

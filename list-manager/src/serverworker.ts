@@ -152,10 +152,12 @@ export default class ServerAPIWorker extends WorkerBase {
   }
 
   // Creates a new list
-  async createList(list_name: string): Promise<void> {
-    return this.authPOST(`${urlCreate}?list_name=${list_name}`).then((resp) =>
-      checkJSON(resp)
-    );
+  async createList(list_name: string): Promise<List> {
+    return this.authPOST(`${urlCreate}?list_name=${list_name}`)
+      .then((resp) => checkJSON(resp))
+      .then((data) => {
+        return data.list;
+      });
   }
 
   // Deletes a list
