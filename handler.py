@@ -78,6 +78,8 @@ def meta(event, _):
 
     # Also fetch lists (sadly, sizes not available!)
     lsts = mastodon.lists()
+    for x in lsts:
+        x["id"] = str(x["id"])
 
     output = {"me": meinfo, "lists": lsts}
     return response(json.dumps(output))
@@ -250,9 +252,9 @@ def add_to_list(event, _):
         return blocked_response()
 
     lid = event["queryStringParameters"]["list_id"]
-    accountid = event["queryStringParameters"]["account_id"]
+    accountids = event["queryStringParameters"]["account_id"].split(",")
     try:
-        mastodon.list_accounts_add(lid, [accountid])
+        mastodon.list_accounts_add(lid, accountids)
         return response(json.dumps({"status": "OK"}))
     except MastodonNotFoundError as e:
         logging.error("ERROR - not found: %s", str(e))
@@ -334,8 +336,9 @@ def create_list(event, _):
     lname = event["queryStringParameters"]["list_name"]
 
     try:
-        mastodon.list_create(lname)
-        return response(json.dumps({"status": "OK"}))
+        listobj = mastodon.list_create(lname)
+        listobj["id"] = str(listobj["id"])
+        return response(json.dumps({"status": "OK", "list": listobj}))
     except MastodonNotFoundError as e:
         logging.error("ERROR - not found: %s", str(e))
         return err_response("ERROR - not found")
@@ -402,3 +405,48 @@ def logout(event, _):
         return err_response("ERROR - API error")
 
     return response(json.dumps({"status": "OK"}))
+
+
+def importToList(event, _):
+    """Import a set of users into a list"""
+    cookie = get_cookie(event)
+
+    # If we have no cookie, tell the client to go away
+    if cookie is None:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    try:
+        mastodon = MastodonFactory.from_cookie(cookie)
+        mastodon.me()
+    except MastodonIllegalArgumentError:
+        return {"statusCode": 500, "body": "ERROR"}
+    except MastodonInternalServerError:
+        return {"statusCode": 500, "body": "ERROR"}
+    except (MastodonUnauthorizedError, NoAuthInfo):
+        resp = {"status": "not_authorized"}
+        return response(json.dumps(resp), statusCode=403)
+    except NotMastodon:
+        return blocked_response()
+
+    # First, translate accounts to IDs
+    lid = event["queryStringParameters"]["list_id"]
+    print(lid)
+    accts = event["queryStringParameters"]["accts"].split(",")
+    print(accts)
+
+    ids = [mastodon.account_lookup(acct).id for acct in accts]
+    print(ids)
+
+    try:
+        mastodon.list_accounts_add(lid, ids)
+        return response(json.dumps({"status": "OK"}))
+    except MastodonNotFoundError as e:
+        logging.error("ERROR - not found: %s", str(e))
+        return err_response("ERROR - not found")
+    except MastodonUnauthorizedError as e:
+        logging.error("ERROR - unauthorized: %s", str(e))
+        return err_response("ERROR - unauthorized")
+    except MastodonAPIError as e:
+        logging.error("ERROR - other API error: %s", str(e))
+        return err_response("ERROR - API error")

@@ -69,6 +69,13 @@ logout:
     - httpApi:
         path: /logout
         method: POST
+import:
+  timeout: 30
+  handler: handler.importToList
+  events:
+    - httpApi:
+        path: /import
+        method: POST
 
 clientcallback:
   handler: client.clientcallback

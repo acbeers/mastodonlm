@@ -15,6 +15,7 @@ const urlDelete = process.env.REACT_APP_BACKEND_URL + "/delete";
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
 const urlCallback = process.env.REACT_APP_BACKEND_URL + "/callback";
 const urlLogout = process.env.REACT_APP_BACKEND_URL + "/logout";
+const urlImport = process.env.REACT_APP_BACKEND_URL + "/import";
 
 // Given a fetch response, check it for errors and throw
 // reasonable exceptions if so.  Otherwise, return the response
@@ -177,6 +178,19 @@ export default class ServerAPIWorker extends WorkerBase {
     return this.authPOST(
       `${urlRemove}?list_id=${list_id}&account_id=${follower_id}`
     ).then((resp) => checkJSON(resp));
+  }
+
+  // Creates a new list and imports data into it
+  async importList(list_name: string, accounts: string[]): Promise<void> {
+    return this.authPOST(`${urlCreate}?list_name=${list_name}`)
+      .then((resp) => checkJSON(resp))
+      .then((data) => {
+        console.log(data);
+        const list_id = data.list.id;
+        return this.authPOST(
+          `${urlImport}?list_id=${list_id}&accts=${accounts.join(",")}`
+        ).then((resp) => checkJSON(resp));
+      });
   }
 }
 

@@ -450,6 +450,7 @@ class TestCRUD(TestCase):
     def test_create(self, factory, data_store):
         """Test /create"""
         mf = factory.from_cookie.return_value.list_create
+        mf.return_value = {"id": 123, "title": "listname"}
         qs = {"list_name": "listname"}
         self.helper_func(factory, data_store, qs, handler.create_list, mf)
 

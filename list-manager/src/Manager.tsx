@@ -10,11 +10,14 @@ import AboutDialog from "./AboutDialog";
 import CreateListDialog from "./CreateListDialog";
 import DeleteListDialog from "./DeleteListDialog";
 import TimeoutDialog from "./TimeoutDialog";
+import ExportListDialog from "./ExportListDialog";
+import ImportListDialog from "./ImportListDialog";
 
-// FIXME: these errors need to change!
 import FollowingTable from "./FollowingTable";
 import Controls from "./Controls";
 import TopBar from "./TopBar";
+
+import { saveAs } from "file-saver";
 
 import {
   User,
@@ -38,6 +41,7 @@ function info2Groups(
   filter: string,
   search: string
 ) {
+  console.log(info);
   // First, compute the groups
   const getGroupName = (fol: User) => fol.display_name.toUpperCase()[0];
   const getGroupNone = (fol: User) => "All";
@@ -162,6 +166,15 @@ function Manager({ api }: ManagerProps) {
     [api]
   );
 
+  const importCB = useCallback(
+    async (list_name: string, data: string[]) => {
+      const remote = await api;
+      console.log("Doing the import");
+      await remote.importList(list_name, data);
+    },
+    [api]
+  );
+
   const loadDataCB = useCallback(async () => {
     setLoading(true);
     setLoadProgress(0);
@@ -246,6 +259,9 @@ function Manager({ api }: ManagerProps) {
   const handleMenuNewList = () => {
     setCreateOpen(true);
   };
+  const handleMenuExportList = () => {
+    setExportOpen(true);
+  };
   const handleLogout = () => {
     logoutCB().then(() => setRedirect("/main"));
   };
@@ -270,6 +286,38 @@ function Manager({ api }: ManagerProps) {
         telemetryCB({ action: "create_list" });
       })
       .catch((err) => handleError(err));
+  };
+
+  // Export List Dialog
+  const [exportOpen, setExportOpen] = useState(false);
+  const handleExportList = (list: List) => {
+    // Filter to just this list.
+    const filtered = info.followers.filter((x) => x.lists.includes(list.id));
+    const accts = filtered.map((x) => x.acct);
+    const data = ["account"].concat(accts);
+    var blob = new Blob([data.join("\n")], { type: "text/csv;charset=utf-8" });
+    saveAs(blob, "export.csv");
+  };
+
+  // Import list dialog
+  const [importOpen, setImportOpen] = useState(false);
+  const handleMenuImportList = () => {
+    setImportOpen(true);
+  };
+  const handleImportList = (list_name: string, data: string[]) => {
+    // Figure out which people I'm not following
+    const followerMap: Record<string, User> = {};
+    info.followers.forEach((x) => {
+      followerMap[x.acct] = x;
+    });
+
+    const toFollow = data.filter((x) => !(x in followerMap));
+    //const toAdd = data.filter((x) => x in followerMap);
+    console.log("To follow (not implemented):");
+    console.log(toFollow);
+
+    // Pass this off to our API, which will do the heavy lifting.
+    importCB(list_name, data).then(() => loadDataCB());
   };
 
   // Build the crazy table.
@@ -354,6 +402,8 @@ function Manager({ api }: ManagerProps) {
     <TopBar
       acct={acct}
       handleMenuAbout={handleMenuAbout}
+      handleMenuExportList={handleMenuExportList}
+      handleMenuImportList={handleMenuImportList}
       handleMenuNewList={handleMenuNewList}
       handleMenuLogout={handleLogout}
     />
@@ -425,6 +475,17 @@ function Manager({ api }: ManagerProps) {
       <TimeoutDialog
         open={showTimeout}
         handleClose={() => setShowTimeout(false)}
+      />
+      <ExportListDialog
+        open={exportOpen}
+        lists={info.lists}
+        handleExport={handleExportList}
+        handleClose={() => setExportOpen(false)}
+      />
+      <ImportListDialog
+        open={importOpen}
+        handleImport={handleImportList}
+        handleClose={() => setImportOpen(false)}
       />
     </div>
   );
