@@ -283,10 +283,11 @@ function Manager({ api }: ManagerProps) {
   };
   const handleCreateCommit = (name: string) => {
     createListCB(name)
-      .then(() => {
+      .then((list: List) => {
         setCreateOpen(false);
-        // We have to do this to get the new ID of the list.
-        loadDataCB();
+        const newInfo: APIData = { ...info };
+        newInfo.lists.push(list);
+        setInfo(newInfo);
         telemetryCB({ action: "create_list" });
       })
       .catch((err) => handleError(err));
@@ -344,7 +345,14 @@ function Manager({ api }: ManagerProps) {
   };
   const handleDelete = (list: List) => {
     deleteListCB(list.id)
-      .then(() => loadDataCB())
+      .then(() => {
+        const newInfo = { ...info };
+        newInfo.lists = info.lists.filter((x) => x.id !== list.id);
+        newInfo.followers.forEach((fol) => {
+          fol.lists = fol.lists.filter((x) => x !== list.id);
+        });
+        setInfo(newInfo);
+      })
       .then(() => setDeleteOpen(false))
       .then(() => telemetryCB({ action: "delete_list" }))
       .catch((err) => handleError(err));
