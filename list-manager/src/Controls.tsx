@@ -16,6 +16,8 @@ type ControlsProps = {
   search: string;
   handleSearchChange: (g: string) => void;
   refresh: () => Promise<void>;
+  pageSize: number;
+  handlePageSizeChange: (ps: number) => void;
 };
 
 export default function Controls({
@@ -26,6 +28,8 @@ export default function Controls({
   handleFilterChange,
   search,
   handleSearchChange,
+  pageSize = 500,
+  handlePageSizeChange,
   refresh,
 }: ControlsProps) {
   const notOnfilterItems = (lists || []).map((list) => (
@@ -101,6 +105,29 @@ export default function Controls({
           value={search}
           onChange={(event) => handleSearchChange(event.target.value)}
         />
+      </FormControl>
+      <FormControl sx={{ marginTop: "12px", width: 90, marginBottom: "12px" }}>
+        <InputLabel htmlFor="controls-filter-select" id="controls-select-label">
+          Page size
+        </InputLabel>
+        <Select
+          key="filter"
+          id="controls-pagesize-select"
+          name="controls-pagesize-select"
+          data-testid="controls-pagesize-select"
+          inputProps={{ "data-testid": "controls-pagesize-input" }}
+          value={pageSize}
+          label="Page size"
+          onChange={(event) =>
+            handlePageSizeChange(event.target.value as number)
+          }
+        >
+          <MenuItem value={10}>10</MenuItem>
+          <MenuItem value={25}>25</MenuItem>
+          <MenuItem value={50}>50</MenuItem>
+          <MenuItem value={100}>100</MenuItem>
+          <MenuItem value={500}>500</MenuItem>
+        </Select>
       </FormControl>
     </div>
   );
