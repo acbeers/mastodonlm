@@ -77,8 +77,10 @@ function MainPage() {
           <Typography variant="body2" color="text.secondary" component="div">
             <ul>
               <li>
-                This works well if you are following up to a few thousand
-                accounts. After that, it may become slow or cumbersome.
+                This should work even if you are following many thousands of
+                accounts. Use the page size to keep the size of the tables under
+                control, and search/group/filter to find the accounts you want
+                to change.
               </li>
               <li>
                 I collect some telemetry about usage that's tied to your account

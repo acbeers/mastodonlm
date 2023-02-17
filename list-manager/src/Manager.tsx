@@ -393,6 +393,15 @@ function Manager({ api }: ManagerProps) {
       });
   };
 
+  const handlePageSizeChange = (ps: number) => {
+    console.log(ps);
+    localStorage.setItem("list-manager-pagesize", ps.toString());
+    setPageSize(ps);
+  };
+  const [pageSize, setPageSize] = useState(
+    parseInt(localStorage.getItem("list-manager-pagesize") || "500")
+  );
+
   // Build one table per group.
   const tables = groups.map((group, gindex) => {
     return (
@@ -406,6 +415,7 @@ function Manager({ api }: ManagerProps) {
         add={add}
         handleDeleteClick={handleDeleteClick}
         defaultOpen={groups.length === 1}
+        pageSize={pageSize}
       />
     );
   });
@@ -446,6 +456,8 @@ function Manager({ api }: ManagerProps) {
       search={search}
       handleSearchChange={setSearch}
       refresh={loadDataCB}
+      pageSize={pageSize}
+      handlePageSizeChange={handlePageSizeChange}
     />
   );
 

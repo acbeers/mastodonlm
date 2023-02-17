@@ -1,7 +1,8 @@
 // A following/list mapping table
 
-import React, { useState, MouseEvent } from "react";
+import React, { useState, useEffect, MouseEvent } from "react";
 import Avatar from "@mui/material/Avatar";
+import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardHeader from "@mui/material/CardHeader";
@@ -43,6 +44,7 @@ type FollowingTableProps = {
   add: (groupIndex: number, index: number, listid: string) => void;
   handleDeleteClick: (list: List) => void;
   defaultOpen: boolean;
+  pageSize?: number;
 };
 
 export default function FollowingTable({
@@ -54,12 +56,17 @@ export default function FollowingTable({
   add,
   handleDeleteClick,
   defaultOpen,
+  pageSize = 500,
 }: FollowingTableProps) {
   // Popover anchor and handlers
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [follower, setFollower] = useState<User | null>(null);
   // Whether or not we are open
   const [open, setOpen] = useState(defaultOpen);
+  // which page we are on.
+  const [page, setPage] = useState(0);
+
+  const numPages = Math.ceil(group.followers.length / pageSize);
 
   const handlePopoverOpen = (event: MouseEvent<HTMLElement>, fol: User) => {
     setFollower(fol);
@@ -69,6 +76,10 @@ export default function FollowingTable({
   const handlePopoverClose = () => {
     setAnchorEl(null);
   };
+
+  useEffect(() => {
+    if (page >= numPages) setPage(numPages - 1);
+  }, [group, page, numPages]);
 
   const popoverOpen = Boolean(anchorEl);
 
@@ -125,7 +136,9 @@ export default function FollowingTable({
       </Popover>
     );
   }
-  const rows = group.followers.map((fol, index) => {
+  const start = page * pageSize;
+  const end = start + pageSize;
+  const rows = group.followers.slice(start, end).map((fol, index) => {
     const cols = lists.map((l) => {
       const cmp = { list: l.id, follower: fol.id };
       if (JSON.stringify(inProgress) === JSON.stringify(cmp)) {
@@ -195,6 +208,16 @@ export default function FollowingTable({
 
   const icon = open ? <KeyboardArrowDownIcon /> : <KeyboardArrowRightIcon />;
 
+  const pageControls = (
+    <div>
+      <Button onClick={() => setPage(Math.max(page - 1, 0))}>&lt;</Button>
+      Page {page + 1} / {numPages}
+      <Button onClick={() => setPage(Math.min(page + 1, numPages - 1))}>
+        &gt;
+      </Button>
+    </div>
+  );
+
   return (
     <div key={group.key}>
       <div
@@ -205,6 +228,7 @@ export default function FollowingTable({
         {icon} {group.key} ({group.followers.length})
       </div>
       {open ? table : ""}
+      {open ? pageControls : ""}
       {popover}
     </div>
   );
