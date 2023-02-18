@@ -16,6 +16,8 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 import { List, User, Group, InProgress } from "./types";
 
+import "./FollowingTable.css";
+
 const style = {
   card: {
     header: {
@@ -65,6 +67,8 @@ export default function FollowingTable({
   const [open, setOpen] = useState(defaultOpen);
   // which page we are on.
   const [page, setPage] = useState(0);
+  // which column to highlight
+  const [hoverCol, setHoverCol] = useState<number | null>(null);
 
   const numPages = Math.ceil(group.followers.length / pageSize);
 
@@ -139,15 +143,20 @@ export default function FollowingTable({
   const start = page * pageSize;
   const end = start + pageSize;
   const rows = group.followers.slice(start, end).map((fol, index) => {
-    const cols = lists.map((l) => {
+    const cols = lists.map((l, lindex) => {
+      const classes = ["cell"];
+      if (hoverCol === lindex) classes.push("hover");
+      const cn = classes.join(" ");
       const cmp = { list: l.id, follower: fol.id };
       if (JSON.stringify(inProgress) === JSON.stringify(cmp)) {
         return (
           <td
             key={l.id + fol.id}
-            className="cell"
+            className={cn}
             data-testid={l.id + fol.id}
             onClick={() => remove(groupIndex, index, l.id)}
+            onMouseEnter={() => setHoverCol(lindex)}
+            onMouseLeave={() => setHoverCol(null)}
           >
             <CircularProgress size={10} />
           </td>
@@ -156,9 +165,11 @@ export default function FollowingTable({
         return (
           <td
             key={l.id + fol.id}
-            className="cell"
+            className={cn}
             data-testid={l.id + fol.id}
             onClick={() => remove(groupIndex, index, l.id)}
+            onMouseEnter={() => setHoverCol(lindex)}
+            onMouseLeave={() => setHoverCol(null)}
           >
             X
           </td>
@@ -167,9 +178,11 @@ export default function FollowingTable({
         return (
           <td
             key={l.id + fol.id}
-            className="cell"
+            className={cn}
             data-testid={l.id + fol.id}
             onClick={() => add(groupIndex, index, l.id)}
+            onMouseEnter={() => setHoverCol(lindex)}
+            onMouseLeave={() => setHoverCol(null)}
           >
             &nbsp;
           </td>
@@ -195,7 +208,7 @@ export default function FollowingTable({
   });
 
   const table = (
-    <table className="followerTable">
+    <table className="followingTable">
       <thead>
         <tr>
           <th>&nbsp;</th>

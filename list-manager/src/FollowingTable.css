@@ -1,0 +1,17 @@
+.followingTable {
+  margin-bottom: 12px;
+}
+
+.followingTable thead {
+  position: sticky;
+  top: 0px;
+  background-color: white;
+}
+
+.followingTable tr:hover {
+  background-color: #efefff;
+}
+
+.followingTable tr td.hover {
+  background-color: #efefff;
+}

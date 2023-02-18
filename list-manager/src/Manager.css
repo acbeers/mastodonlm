@@ -58,16 +58,6 @@ div.group {
   background-color: #eee;
 }
 
-.followerTable {
-  margin-bottom: 12px;
-}
-
-.followerTable thead {
-  position: sticky;
-  top: 0px;
-  background-color: white;
-}
-
 #alltables {
   flex-grow: 1;
   overflow: scroll;
