@@ -78,7 +78,7 @@ class TestAuth(TestCase):
 
         res = shared.auth(event, context)
         # We should return a 401 response
-        self.assertEqual(res["statusCode"], 401)
+        self.assertEqual(res["statusCode"], 500)
         self.assertEqual(json.loads(res["body"])["status"], "bad_host")
 
     @patch("shared.Datastore")

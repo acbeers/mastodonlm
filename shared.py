@@ -12,7 +12,14 @@ from mastodon import (
 
 from factory import MastodonFactory, NoAuthInfo, NotMastodon, USER_AGENT
 from models import Datastore
-from utils import get_cookie, response, cleandomain, blocked_response, err_response
+from utils import (
+    get_cookie,
+    response,
+    cleandomain,
+    blocked_response,
+    err_response,
+    badhost_response,
+)
 
 
 def make_app(domain, redirect_url):
@@ -42,7 +49,8 @@ def auth(event, _):
     cookie = get_cookie(event)
 
     params = event.get("queryStringParameters", {}) or {}
-    domain = cleandomain(params.get("domain", None))
+    rawdomain = params.get("domain", None)
+    domain = cleandomain(rawdomain)
 
     # Ignore the cookie if it belongs to some other domain
     if cookie is not None:
@@ -70,7 +78,7 @@ def auth(event, _):
 
     # If we don't have a domain here, then we have to bail
     if domain is None or domain == "":
-        return response(json.dumps({"status": "bad_host"}), statusCode=401)
+        return badhost_response(domain)
 
     # See if this domain is allowed
     allow = Datastore.is_allowed(domain.lower())
@@ -93,8 +101,8 @@ def auth(event, _):
             (client_id, client_secret) = make_app(domain, redirect_url)
             logging.debug("auth: Made the app!")
         except MastodonNetworkError:
-            logging.error("Bad host: %s", domain)
-            return response(json.dumps({"status": "bad_host"}), statusCode=500)
+            # Log what the user typed with the error.
+            return badhost_response(rawdomain)
 
         cfg = Datastore.set_host_config(
             domain, client_id=client_id, client_secret=client_secret

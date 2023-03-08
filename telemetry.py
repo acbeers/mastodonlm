@@ -3,6 +3,8 @@
 import json
 import logging
 
+from smap import map_stacktrace
+
 # AWS doens't set a logging level, so set it here.
 logging.getLogger("root").setLevel(logging.INFO)
 # But don't log much from botocore
@@ -25,6 +27,12 @@ def telemetry(event,_):
     return ok_response()
 
 def error(event,_):
+    """Log an error event"""
     # Basically log everything that we got.
-    logging.error(event["body"])
+    data = json.loads(event["body"])
+    if "stack" in data:
+        frames = map_stacktrace(data["stack"])
+        if len(frames)>0:
+            data["stack"] = "\n".join(frames)
+    logging.error(json.dumps(data))
     return ok_response()

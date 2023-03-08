@@ -35,6 +35,13 @@ def blocked_response():
     return err_response("blocked")
 
 
+def badhost_response(host):
+    """Returns a "bad_host" response"""
+
+    obj = {"status": "bad_host", "host": host}
+    return response(json.dumps(obj), statusCode=500)
+
+
 def cleandomain(domain):
     """Clean up a domain input - all lowercase, no @"""
     if domain is None:

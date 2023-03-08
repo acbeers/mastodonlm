@@ -198,10 +198,18 @@ function Manager({ api }: ManagerProps) {
         return data;
       })
       .then((data) => {
+        // Compute list sizes
+        const list_sizes = data.lists.map((list) => {
+          const fols = data.followers.filter((fol) =>
+            fol.lists.includes(list.id)
+          );
+          return fols.length;
+        });
         const telem = {
           action: "info",
           num_following: data.followers.length,
           num_lists: data.lists.length,
+          list_sizes: list_sizes,
         };
         telemetryCB(telem);
       })
