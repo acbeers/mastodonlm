@@ -50,6 +50,7 @@ type FollowingTableProps = {
   handleInfoClick: (list: List) => void;
   defaultOpen: boolean;
   pageSize?: number;
+  onNewList: () => void;
 };
 
 export default function FollowingTable({
@@ -63,6 +64,7 @@ export default function FollowingTable({
   handleInfoClick,
   defaultOpen,
   pageSize = 500,
+  onNewList,
 }: FollowingTableProps) {
   // Popover anchor and handlers
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -241,6 +243,13 @@ export default function FollowingTable({
         <tr>
           <th>&nbsp;</th>
           {headers}
+          <th>
+            <div>
+              <span className="listTitle newList" onClick={onNewList}>
+                (New list)
+              </span>
+            </div>
+          </th>
         </tr>
       </thead>
       <tbody>{rows}</tbody>

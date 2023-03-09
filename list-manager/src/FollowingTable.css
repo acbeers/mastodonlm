@@ -31,3 +31,13 @@ th.listname div.icon {
 th.listname div.icon:hover {
   color: darkgray;
 }
+
+span.listTitle {
+  writing-mode: vertical-lr;
+  -webkit-transform: rotate(180deg);
+}
+
+span.listTitle.newList {
+  color: #77f;
+  cursor: pointer;
+}

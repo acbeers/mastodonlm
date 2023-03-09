@@ -77,6 +77,7 @@ function ImportListDialog({
             sx={{ marginTop: "5px" }}
             label="New list name"
             value={name}
+            autoFocus
             onChange={(evt) => setName(evt.target.value)}
           ></TextField>
         </FormControl>
