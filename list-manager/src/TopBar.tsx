@@ -91,7 +91,21 @@ export default function TopBar({
             <MenuItem onClick={clickMenuLogout}>Logout</MenuItem>
           </Menu>{" "}
           <Typography>Mastodon List Manager</Typography>&nbsp;
-          <Typography align="right">(@{acct})</Typography>
+          <Typography>(@{acct})</Typography>
+          <div style={{ flexGrow: "100", textAlign: "right" }}>
+            <a
+              href="https://ko-fi.com/M4M5IFTCP"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <img
+                height="36"
+                style={{ border: "0px", height: "36px" }}
+                src="https://storage.ko-fi.com/cdn/kofi2.png?v=3"
+                alt="Buy Me a Coffee at ko-fi.com"
+              />
+            </a>{" "}
+          </div>
         </Toolbar>
       </AppBar>
     </Box>
