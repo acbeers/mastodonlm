@@ -35,6 +35,14 @@ import * as Comlink from "comlink";
 
 import "./Manager.css";
 
+// Helper functions for timing things
+function getTime() {
+  return new Date().getTime();
+}
+function getElapsed(startTime: number) {
+  return new Date().getTime() - startTime;
+}
+
 function info2Groups(
   info: APIData,
   by: string,
@@ -167,11 +175,14 @@ function Manager({ api }: ManagerProps) {
 
   const importCB = useCallback(
     async (list_name: string, data: string[]) => {
+      const startTime = getTime();
       const remote = await api;
       remote.importList(list_name, data).then(() => {
+        const elapsedMS = getElapsed(startTime);
         const telem = {
           action: "import",
           num_imported: data.length,
+          elapsed_ms: elapsedMS,
         };
         telemetryCB(telem);
       });
@@ -182,6 +193,8 @@ function Manager({ api }: ManagerProps) {
   const loadDataCB = useCallback(async () => {
     setLoading(true);
     setLoadProgress(0);
+    const startTime = getTime();
+
     const remote = await api;
     remote
       .info(Comlink.proxy(progress))
@@ -205,11 +218,13 @@ function Manager({ api }: ManagerProps) {
           );
           return fols.length;
         });
+        const elapsedMS = getElapsed(startTime);
         const telem = {
           action: "info",
           num_following: data.followers.length,
           num_lists: data.lists.length,
           list_sizes: list_sizes,
+          elapsed_ms: elapsedMS,
         };
         telemetryCB(telem);
       })
@@ -243,6 +258,7 @@ function Manager({ api }: ManagerProps) {
 
   // Generate the groups
   useEffect(() => {
+    const startTime = new Date().getTime();
     const groups = info2Groups(info, groupBy, filter, search);
     setGroups(groups);
     const gtotal = groups
@@ -251,7 +267,13 @@ function Manager({ api }: ManagerProps) {
     const total = info.followers.length;
     const perc = Math.round((100 * gtotal) / total);
     if (perc !== 100) {
-      telemetryCB({ action: "filter_result", value: perc });
+      const endTime = new Date().getTime();
+      const elapsedMS = endTime - startTime;
+      telemetryCB({
+        action: "filter_result",
+        value: perc,
+        elapsed_ms: elapsedMS,
+      });
     }
   }, [info, groupBy, search, filter, telemetryCB]);
 
@@ -290,13 +312,15 @@ function Manager({ api }: ManagerProps) {
     setCreateOpen(false);
   };
   const handleCreateCommit = (name: string) => {
+    const startTime = getTime();
     createListCB(name)
       .then((list: List) => {
         setCreateOpen(false);
         const newInfo: APIData = { ...info };
         newInfo.lists.push(list);
         setInfo(newInfo);
-        telemetryCB({ action: "create_list" });
+        const elapsedMS = getElapsed(startTime);
+        telemetryCB({ action: "create_list", elapsed_ms: elapsedMS });
       })
       .catch((err) => handleError(err));
   };
@@ -305,14 +329,17 @@ function Manager({ api }: ManagerProps) {
   const [exportOpen, setExportOpen] = useState(false);
   const handleExportList = (list: List) => {
     // Filter to just this list.
+    const startTime = getTime();
     const filtered = info.followers.filter((x) => x.lists.includes(list.id));
     const accts = filtered.map((x) => x.acct);
     const data = ["account"].concat(accts);
     var blob = new Blob([data.join("\n")], { type: "text/csv;charset=utf-8" });
     saveAs(blob, "export.csv");
+    const elapsedMS = getElapsed(startTime);
     const telem = {
       action: "export",
       num_exported: accts.length,
+      elapsed_ms: elapsedMS,
     };
     telemetryCB(telem);
   };
@@ -352,6 +379,7 @@ function Manager({ api }: ManagerProps) {
     setDeleteOpen(true);
   };
   const handleDelete = (list: List) => {
+    const startTime = getTime();
     deleteListCB(list.id)
       .then(() => {
         const newInfo = { ...info };
@@ -362,11 +390,15 @@ function Manager({ api }: ManagerProps) {
         setInfo(newInfo);
       })
       .then(() => setDeleteOpen(false))
-      .then(() => telemetryCB({ action: "delete_list" }))
+      .then(() => {
+        const elapsedMS = getElapsed(startTime);
+        telemetryCB({ action: "delete_list", elapsed_ms: elapsedMS });
+      })
       .catch((err) => handleError(err));
   };
 
   const remove = async (groupIndex: number, index: number, lid: string) => {
+    const startTime = getTime();
     const newGroups = groups.slice();
     const fol = newGroups[groupIndex].followers[index];
     const use = await api;
@@ -377,12 +409,14 @@ function Manager({ api }: ManagerProps) {
       .then((resp) => {
         setInProgress(null);
         setGroups(newGroups);
-        telemetryCB({ action: "remove" });
+        const elapsedMS = getElapsed(startTime);
+        telemetryCB({ action: "remove", elapsed_ms: elapsedMS });
       })
       .catch((err) => handleError(err));
   };
 
   const add = async (groupIndex: number, index: number, lid: string) => {
+    const startTime = getTime();
     const newGroups = groups.slice();
     const fol = newGroups[groupIndex].followers[index];
     fol.lists.push(lid);
@@ -393,7 +427,8 @@ function Manager({ api }: ManagerProps) {
       .then((data) => {
         setInProgress(null);
         setGroups(newGroups);
-        telemetryCB({ action: "add" });
+        const elapsedMS = getElapsed(startTime);
+        telemetryCB({ action: "add", elapsed_ms: elapsedMS });
       })
       .catch((err) => {
         handleError(err);
