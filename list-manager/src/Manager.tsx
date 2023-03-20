@@ -12,6 +12,7 @@ import DeleteListDialog from "./DeleteListDialog";
 import TimeoutDialog from "./TimeoutDialog";
 import ExportListDialog from "./ExportListDialog";
 import ImportListDialog from "./ImportListDialog";
+import AnalyticsDialog from "./AnalyticsDialog";
 
 import FollowingTable from "./FollowingTable";
 import Controls from "./Controls";
@@ -306,6 +307,17 @@ function Manager({ api }: ManagerProps) {
     setAboutOpen(false);
   };
 
+  // Analytics Dialog handlers
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [analyticsList, setAnalyticsList] = useState<List | null>(null);
+  const handleAnalyticsClick = (list: List) => {
+    setAnalyticsList(list);
+    setAnalyticsOpen(true);
+  };
+  const handleAnalyticsClose = () => {
+    setAnalyticsOpen(false);
+  };
+
   // Create List Dialog
   const [createOpen, setCreateOpen] = useState(false);
   const handleCreateClose = () => {
@@ -457,6 +469,7 @@ function Manager({ api }: ManagerProps) {
         remove={remove}
         add={add}
         handleDeleteClick={handleDeleteClick}
+        handleInfoClick={handleAnalyticsClick}
         defaultOpen={groups.length === 1}
         pageSize={pageSize}
       />
@@ -558,6 +571,12 @@ function Manager({ api }: ManagerProps) {
         open={importOpen}
         handleImport={handleImportList}
         handleClose={() => setImportOpen(false)}
+      />
+      <AnalyticsDialog
+        open={analyticsOpen}
+        list={analyticsList}
+        api={api}
+        handleClose={handleAnalyticsClose}
       />
     </div>
   );

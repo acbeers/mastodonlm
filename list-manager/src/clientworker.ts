@@ -1,9 +1,17 @@
 // Web Worker
 
-import { User, List, APIData, TimeoutError, AuthError } from "./types";
+import {
+  User,
+  List,
+  APIData,
+  ListAnalytics,
+  TimeoutError,
+  AuthError,
+} from "./types";
 import * as Comlink from "comlink";
 import { login } from "masto";
 import { WorkerBase } from "./workerbase";
+import { fetchAnalytics } from "./analytics";
 
 // Endpoints
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
@@ -155,7 +163,10 @@ export default class APIWorker extends WorkerBase {
               display_name: user.displayName,
               username: user.username,
               avatar: user.avatar,
-              acct: user.acct,
+              acct:
+                user.acct && user.acct.indexOf("@") > 0
+                  ? user.acct
+                  : user.acct + "@" + self.domain,
               note: user.note,
               following_count: 0,
               lists: [],
@@ -253,6 +264,11 @@ export default class APIWorker extends WorkerBase {
         // some efforts to not do any work for accounts that I already know about.
       });
     });
+  }
+
+  // Computes analytics for the given list
+  async listAnalytics(list: List): Promise<ListAnalytics> {
+    return this.instance().then((masto) => fetchAnalytics(masto, list));
   }
 }
 Comlink.expose(APIWorker);

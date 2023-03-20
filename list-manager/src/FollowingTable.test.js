@@ -5,8 +5,8 @@ import FollowingTable from "./FollowingTable";
 
 const group_2members = {
   followers: [
-    { id: "1", display_name: "user-1", lists: [] },
-    { id: "2", display_name: "user-2", lists: ["a"] },
+    { id: "1", display_name: "user-1", acct: "user-1@domain", lists: [] },
+    { id: "2", display_name: "user-2", acct: "user-2@domain", lists: ["a"] },
   ],
 };
 

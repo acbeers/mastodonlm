@@ -31,6 +31,20 @@ export type APIData = {
   me: User;
 };
 
+// Analytics data for a list
+export type ListAnalytics = {
+  list_id: string;
+  list_name: string;
+  latest_post: Date;
+  earliest_post: Date;
+  num_posts: number;
+  num_orig_posts: number;
+  num_boosts: number;
+  num_replies: number;
+  top_posters: { acct: User; count_orig: number; count_boost: number }[];
+  top_boosts: { acct: User; count: number }[];
+};
+
 // A data structure representing an in progress list operation
 export type InProgress = {
   list: string;
