@@ -9,8 +9,10 @@ import CardHeader from "@mui/material/CardHeader";
 import CircularProgress from "@mui/material/CircularProgress";
 import Popover from "@mui/material/Popover";
 import Typography from "@mui/material/Typography";
+import Tooltip from "@mui/material/Tooltip";
 
-import DeleteIcon from "@mui/icons-material/Delete";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
@@ -45,6 +47,7 @@ type FollowingTableProps = {
   remove: (groupIndex: number, index: number, listid: string) => void;
   add: (groupIndex: number, index: number, listid: string) => void;
   handleDeleteClick: (list: List) => void;
+  handleInfoClick: (list: List) => void;
   defaultOpen: boolean;
   pageSize?: number;
 };
@@ -57,6 +60,7 @@ export default function FollowingTable({
   remove,
   add,
   handleDeleteClick,
+  handleInfoClick,
   defaultOpen,
   pageSize = 500,
 }: FollowingTableProps) {
@@ -87,15 +91,35 @@ export default function FollowingTable({
 
   const popoverOpen = Boolean(anchorEl);
 
-  const headers = lists.map((l) => {
+  const headers = lists.map((l, lindex) => {
+    const classes = ["listname"];
+    if (hoverCol === lindex) classes.push("hover");
     return (
-      <th key={l.id}>
-        <div key={l.id} className="listname">
-          <div className="icon">
-            <DeleteIcon onClick={() => handleDeleteClick(l)} />
-          </div>
+      <th key={l.id} className={classes.join(" ")}>
+        <div key={l.id}>
           <div>
             <span className="listTitle">{l.title}</span>
+          </div>
+          <div className="icon">
+            <Tooltip enterDelay={500} enterNextDelay={500} title="Delete list">
+              <DeleteOutlinedIcon
+                fontSize="small"
+                onClick={() => handleDeleteClick(l)}
+              />
+            </Tooltip>
+          </div>
+          <br />
+          <div className="icon">
+            <Tooltip
+              enterDelay={500}
+              enterNextDelay={500}
+              title="List analytics"
+            >
+              <InfoOutlinedIcon
+                fontSize="small"
+                onClick={() => handleInfoClick(l)}
+              />
+            </Tooltip>
           </div>
         </div>
       </th>
@@ -189,6 +213,8 @@ export default function FollowingTable({
         );
       }
     });
+    const [user, domain] = fol.acct.split("@");
+    const link = `https://${domain}/@${user}`;
     return (
       <tr className="following-row" key={fol.id}>
         <td align="right" className="usercell">
@@ -199,7 +225,9 @@ export default function FollowingTable({
             onMouseEnter={(evt) => handlePopoverOpen(evt, fol)}
             onMouseLeave={handlePopoverClose}
           >
-            <span>{fol.display_name}</span>
+            <a href={link} target="_blank" rel="noreferrer">
+              <span>{fol.display_name}</span>
+            </a>
           </Typography>
         </td>
         {cols}

@@ -20,6 +20,7 @@ provider:
       allowedOrigins:
         - https://acbeers.github.io
         - https://www.mastodonlistmanager.org
+        - https://mastodonlistmanager.org
         - http://localhost:3000
       allowedHeaders:
         - Content-Type

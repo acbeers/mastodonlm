@@ -8,10 +8,26 @@
   background-color: white;
 }
 
-.followingTable tr:hover {
+.followingTable tr.following-row:hover {
   background-color: #efefff;
 }
 
 .followingTable tr td.hover {
   background-color: #efefff;
+}
+
+.followingTable tr th.hover {
+  background-color: #efefff;
+}
+
+th.listname div.icon {
+  display: inline;
+  writing-mode: horizontal-tb;
+  transform-origin: 12px 12px;
+  transform: rotate(180deg);
+  color: lightgray;
+}
+
+th.listname div.icon:hover {
+  color: darkgray;
 }

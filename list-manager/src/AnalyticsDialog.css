@@ -1,0 +1,51 @@
+table.analytics tr th {
+  text-align: right;
+  font-weight: normal;
+  padding-right: 5px;
+}
+
+a {
+  text-decoration: none;
+  color: black;
+}
+
+div.bar_orig {
+  display: inline-block;
+  background-color: #aaf;
+  outline: 1px solid #22f;
+  height: 1em;
+}
+
+div.orig_swatch {
+  display: inline-block;
+  background-color: #aaf;
+  outline: 1px solid #22f;
+  height: 1em;
+  width: 1em;
+  margin-right: 5px;
+}
+
+div.bar_boost {
+  display: inline-block;
+  background-color: #faa;
+  outline: 1px solid #f22;
+  height: 1em;
+}
+
+div.boost_swatch {
+  display: inline-block;
+  background-color: #faa;
+  outline: 1px solid #f22;
+  height: 1em;
+  width: 1em;
+  margin-right: 5px;
+}
+
+span.bar_label {
+  margin-left: 5px;
+  font-size: 10px;
+}
+
+td.date {
+  font-size: 9pt;
+}

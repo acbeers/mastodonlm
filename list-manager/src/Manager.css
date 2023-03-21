@@ -40,18 +40,6 @@ table {
   max-width: 400px;
 }
 
-div.listname div.icon {
-  display: inline;
-  writing-mode: horizontal-tb;
-  transform-origin: 12px 12px;
-  transform: rotate(180deg);
-  visibility: hidden;
-}
-
-div.listname:hover div.icon {
-  visibility: visible;
-}
-
 div.group {
   font-size: 12pt;
   cursor: pointer;
