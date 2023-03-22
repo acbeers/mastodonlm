@@ -325,9 +325,9 @@ function Manager({ api }: ManagerProps) {
   };
   const handleCreateCommit = (name: string) => {
     const startTime = getTime();
+    setCreateOpen(false);
     createListCB(name)
       .then((list: List) => {
-        setCreateOpen(false);
         const newInfo: APIData = { ...info };
         newInfo.lists.push(list);
         setInfo(newInfo);
@@ -472,6 +472,9 @@ function Manager({ api }: ManagerProps) {
         handleInfoClick={handleAnalyticsClick}
         defaultOpen={groups.length === 1}
         pageSize={pageSize}
+        onNewList={() => {
+          setCreateOpen(true);
+        }}
       />
     );
   });

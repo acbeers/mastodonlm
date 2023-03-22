@@ -19,6 +19,18 @@ function CreateListDialog({
 }: CreateListDialogProps) {
   const [value, setValue] = useState("");
 
+  const clear = () => {
+    setValue("");
+  };
+  const onCreate = (value: string) => {
+    handleCreate(value);
+    clear();
+  };
+  const onClose = () => {
+    clear();
+    handleClose();
+  };
+
   return (
     <Dialog
       open={open}
@@ -32,12 +44,19 @@ function CreateListDialog({
           sx={{ marginTop: "5px" }}
           label="List name"
           value={value}
+          autoFocus
           onChange={(evt) => setValue(evt.target.value)}
+          onKeyPress={(ev) => {
+            if (ev.key === "Enter") {
+              onCreate(value);
+              ev.preventDefault();
+            }
+          }}
         ></TextField>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
-        <Button onClick={() => handleCreate(value)} autoFocus>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={() => onCreate(value)} autoFocus>
           Create
         </Button>
       </DialogActions>
