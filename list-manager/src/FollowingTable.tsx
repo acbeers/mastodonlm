@@ -191,7 +191,7 @@ export default function FollowingTable({
             key={l.id + fol.id}
             className={cn}
             data-testid={l.id + fol.id}
-            onClick={() => remove(groupIndex, index, l.id)}
+            onClick={() => remove(groupIndex, page * pageSize + index, l.id)}
             onMouseEnter={() => setHoverCol(lindex)}
             onMouseLeave={() => setHoverCol(null)}
           >
@@ -204,7 +204,7 @@ export default function FollowingTable({
             key={l.id + fol.id}
             className={cn}
             data-testid={l.id + fol.id}
-            onClick={() => add(groupIndex, index, l.id)}
+            onClick={() => add(groupIndex, page * pageSize + index, l.id)}
             onMouseEnter={() => setHoverCol(lindex)}
             onMouseLeave={() => setHoverCol(null)}
           >
@@ -253,7 +253,10 @@ export default function FollowingTable({
     <div>
       <Button onClick={() => setPage(Math.max(page - 1, 0))}>&lt;</Button>
       Page {page + 1} / {numPages}
-      <Button onClick={() => setPage(Math.min(page + 1, numPages - 1))}>
+      <Button
+        data-testid="next-page"
+        onClick={() => setPage(Math.min(page + 1, numPages - 1))}
+      >
         &gt;
       </Button>
     </div>
