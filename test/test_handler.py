@@ -217,6 +217,30 @@ class TestAuth(TestCase):
         # We should not have created a new app
         self.assertFalse(make_app.called)
 
+    # Test auth with URL instead of a domain
+    @patch("shared.Datastore")
+    @patch("shared.MastodonFactory", new_callable=mock_factory)
+    @patch("shared.make_app")
+    def test_auth_nocookie_urlhost(self, make_app, _factory, dataStore):
+        """Test /auth when we haven't seen this host before"""
+
+        (event, context) = setupNoCookies()
+        event["queryStringParameters"] = {"domain": "https://mydomain"}
+
+        dataStore.is_allowed.return_value = True
+        dataStore.get_host_config.return_value = None
+        make_app.return_value = ("id", "secret")
+
+        res = shared.auth(event, context)
+        # We should return a 200 response with the correct redirect URL.
+        # And, we should call make_app
+        self.assertEqual(res["statusCode"], 200)
+        self.assertEqual(json.loads(res["body"])["url"], "https://mock_redirect")
+        # We should have created a new mastodon app
+        make_app.assert_called_with(
+            "mydomain", "https://www.mastodonlistmanager.org/callback?domain=mydomain"
+        )
+
     @patch("handler.Datastore")
     @patch("handler.MastodonFactory", new_callable=mock_factory)
     def test_logout(self, factory, data_store):
@@ -228,7 +252,7 @@ class TestAuth(TestCase):
 
         handler.logout(event, context)
         # We should have made a mastodon instance from the stored config
-        self.assertTrue(factory.from_cookie.called_with("mycookie"))
+        factory.from_cookie.assert_called_with("mycookie")
         # We should drop the access token
         self.assertTrue(mastomock.revoke_access_token.called)
         # We should drop the auth from dynamodb

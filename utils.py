@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 
 
 def get_cookie(event):
@@ -47,4 +48,22 @@ def cleandomain(domain):
     if domain is None:
         return domain
 
-    return domain.strip().lower().replace("@", "")
+    # Clean up some common problems:
+    # - https://domain
+    # - username@domain
+
+    ldomain = domain.lower()
+
+    # The URL case
+    m = re.match("https://([^/]*)", ldomain)
+    if m is not None:
+        return m.group(1)
+
+    # The username case
+    m = re.match("([^@]*)@([a-zA-Z0-9_.-]*)", ldomain)
+    if m is not None:
+        return m.group(2)
+
+    # Otherwise, just get rid of garbage.
+    return re.sub("[^a-zA-Z0-9_.-]", "", ldomain)
+    # return domain.strip().lower().replace("@", "")
