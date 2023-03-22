@@ -64,6 +64,43 @@ test("renders all lists when open", () => {
   });
 });
 
+test("has new list", () => {
+  const group = group_2members;
+  const lists = lists_2members;
+
+  render(
+    <FollowingTable
+      groupIndex={1}
+      group={group}
+      lists={lists}
+      defaultOpen={true}
+    />
+  );
+
+  const newlist = screen.queryByTestId("new-list");
+  expect(newlist).toBeInTheDocument();
+});
+
+test("new list creates new list", (done) => {
+  const group = group_2members;
+  const lists = lists_2members;
+
+  const handler = () => done();
+
+  render(
+    <FollowingTable
+      groupIndex={1}
+      group={group}
+      lists={lists}
+      defaultOpen={true}
+      onNewList={handler}
+    />
+  );
+
+  const newlist = screen.queryByTestId("new-list");
+  fireEvent.click(newlist);
+});
+
 test("opens and closes", () => {
   const group = group_2members;
   const lists = lists_2members;

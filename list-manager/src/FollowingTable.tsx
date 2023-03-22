@@ -245,9 +245,19 @@ export default function FollowingTable({
           {headers}
           <th>
             <div>
-              <span className="listTitle newList" onClick={onNewList}>
+              <span
+                data-testid="new-list"
+                className="listTitle newList"
+                onClick={onNewList}
+              >
                 (New list)
               </span>
+            </div>
+            <div style={{ visibility: "hidden" }} className="icon">
+              <DeleteOutlinedIcon fontSize="small" />
+            </div>
+            <div style={{ visibility: "hidden" }} className="icon">
+              <InfoOutlinedIcon fontSize="small" />
             </div>
           </th>
         </tr>
