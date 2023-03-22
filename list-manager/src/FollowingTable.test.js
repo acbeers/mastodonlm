@@ -15,6 +15,17 @@ const lists_2members = [
   { id: "b", title: "list-b" },
 ];
 
+function generateGroup(num) {
+  return {
+    followers: Array.from(Array(num)).map((_, x) => ({
+      id: `${x}`,
+      display_name: "user-" + x,
+      acct: `user-${x}@domain`,
+      lists: x % 2 ? ["a"] : ["b"],
+    })),
+  };
+}
+
 test("renders the whole list of users when open", () => {
   const group = group_2members;
   const lists = lists_2members;
@@ -116,5 +127,73 @@ test("removes", (done) => {
   const l1 = lists[0].id;
   const cell = screen.getByTestId(`${l1}${u2}`);
 
+  fireEvent.click(cell);
+});
+
+test("adds on page 2", (done) => {
+  const group = generateGroup(20);
+  const lists = lists_2members;
+
+  const uidx = 10;
+  const u1 = group.followers[uidx].id;
+  const l1 = lists[0].id;
+
+  const handler = (groupIndex, index, lid) => {
+    expect(groupIndex).toEqual(1);
+    expect(index).toEqual(uidx);
+    expect(lid).toEqual(l1);
+    done();
+  };
+
+  render(
+    <FollowingTable
+      groupIndex={1}
+      group={group}
+      lists={lists}
+      defaultOpen={true}
+      add={handler}
+      pageSize={10}
+    />
+  );
+
+  const nextButton = screen.getByTestId("next-page");
+
+  fireEvent.click(nextButton);
+
+  const cell = screen.getByTestId(`${l1}${u1}`);
+  fireEvent.click(cell);
+});
+
+test("removes on page 2", (done) => {
+  const group = generateGroup(20);
+  const lists = lists_2members;
+
+  const uidx = 11;
+  const u1 = group.followers[uidx].id;
+  const l1 = lists[0].id;
+
+  const handler = (groupIndex, index, lid) => {
+    expect(groupIndex).toEqual(1);
+    expect(index).toEqual(uidx);
+    expect(lid).toEqual(l1);
+    done();
+  };
+
+  render(
+    <FollowingTable
+      groupIndex={1}
+      group={group}
+      lists={lists}
+      defaultOpen={true}
+      remove={handler}
+      pageSize={10}
+    />
+  );
+
+  const nextButton = screen.getByTestId("next-page");
+
+  fireEvent.click(nextButton);
+
+  const cell = screen.getByTestId(`${l1}${u1}`);
   fireEvent.click(cell);
 });
