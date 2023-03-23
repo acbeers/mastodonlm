@@ -11,7 +11,7 @@ import TableBody from "@mui/material/TableBody";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 
-import { ListAnalytics, List } from "./types";
+import { ListAnalytics, List } from "@mastodonlm/shared";
 
 // For our API work
 import type APIWorker from "./clientworker";

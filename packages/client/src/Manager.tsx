@@ -28,7 +28,7 @@ import {
   InProgress,
   AuthError,
   TimeoutError,
-} from "./types";
+} from "@mastodonlm/shared";
 
 // For our API work
 import type APIWorker from "./clientworker";

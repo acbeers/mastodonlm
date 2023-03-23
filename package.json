@@ -1,5 +1,9 @@
 {
   "scripts": {
+    "start": "yarn workspace client start",
+    "test": "yarn workspace client test",
+    "build:packages": "npx tsc -b packages",
+    "build:packages:watch": "npx tsc -b packages --watch",
     "predeploy": "cd list-manager && npm run build",
     "deploy": "sls deploy --aws-profile slsdeploy deploy --stage newprod"
   },
@@ -12,5 +16,9 @@
     "serverless-domain-manager": "^6.2.2",
     "serverless-s3-sync": "^3.1.0",
     "serverless-website-domain": "^3.0.1"
-  }
+  },
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
 }

@@ -1,6 +1,6 @@
 // Baseclass for client and server workers
 
-import { User } from "./types";
+import { User } from "@mastodonlm/shared";
 import { v4 as uuidv4 } from "uuid";
 
 // Endpoints

@@ -1,6 +1,12 @@
 // API methods for List Manager
 
-import { User, List, APIData, TimeoutError, AuthError } from "./types";
+import {
+  User,
+  List,
+  APIData,
+  TimeoutError,
+  AuthError,
+} from "@mastodonlm/shared";
 import * as Comlink from "comlink";
 import { WorkerBase } from "./workerbase";
 

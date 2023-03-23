@@ -7,11 +7,11 @@ import {
   ListAnalytics,
   TimeoutError,
   AuthError,
-} from "./types";
+} from "@mastodonlm/shared";
 import * as Comlink from "comlink";
 import { login } from "masto";
 import { WorkerBase } from "./workerbase";
-import { fetchAnalytics } from "./analytics";
+import { fetchAnalytics } from "@mastodonlm/shared";
 
 // Endpoints
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
