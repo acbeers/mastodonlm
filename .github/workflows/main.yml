@@ -17,10 +17,9 @@ jobs:
 
       - name: npm install, build, test
         run: |
-          cd list-manager
-          npm install
-          npm run build
-          npm test
+          yarn install
+          yarn build:packages
+          yarn test
 
   backend_test:
     name: Run backend tests

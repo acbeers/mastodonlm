@@ -3,7 +3,8 @@
 #   s3sync: ${file(serverless/s3sync.yml}
 
 - bucketName: ${self:custom.websiteBucket}
-  localDir: list-manager/build
+  localDir: packages/client/build
+  enabled: ${self:custom.enableS3Sync.${self:provider.stage}}
   params:
     - index.html:
         CacheControl: "no-cache"

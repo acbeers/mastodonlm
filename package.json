@@ -4,6 +4,7 @@
     "test": "yarn workspace client test",
     "build:packages": "npx tsc -b packages",
     "build:packages:watch": "npx tsc -b packages --watch",
+    "build:devstage": "yarn workspace client env-cmd -f .env.devstage npm run build",
     "predeploy": "cd list-manager && npm run build",
     "deploy": "sls deploy --aws-profile slsdeploy deploy --stage newprod"
   },
@@ -11,6 +12,9 @@
     "serverless-cloudfront-invalidate": "^1.12.2",
     "serverless-offline": "^11.3.0",
     "serverless-python-requirements": "^6.0.0"
+  },
+  "resolutions": {
+    "**/graceful-fs": "4.2.9"
   },
   "devDependencies": {
     "serverless-domain-manager": "^6.2.2",

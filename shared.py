@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 
 from mastodon import (
     Mastodon,
@@ -36,9 +37,9 @@ def make_app(domain, redirect_url):
 def make_redirect_url(event, domain):
     """Create a redirect URL based on the origin of the request"""
     origin = event["headers"]["origin"]
-    if origin == "http://localhost:3000":
-        return f"http://localhost:3000/callback?domain={domain}"
-    return f"https://www.mastodonlistmanager.org/callback?domain={domain}"
+    redirect_base = os.environ.get("AUTH_REDIRECT", "http://localhost:3000")
+    redirect = f"{redirect_base}/callback?domain={domain}"
+    return redirect
 
 
 def auth(event, _):
