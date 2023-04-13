@@ -1,14 +1,16 @@
 {
   "scripts": {
     "start": "yarn workspace client start",
-    "test": "yarn workspace client test",
+    "test": "yarn workspace client test && yarn workspace @mastodonlm/server test",
     "build:packages": "npx tsc -b packages",
     "build:packages:watch": "npx tsc -b packages --watch",
     "build:devstage": "yarn workspace client env-cmd -f .env.devstage npm run build",
-    "predeploy": "cd list-manager && npm run build",
+    "predeploy": "yarn workspace client build",
     "deploy": "sls deploy --aws-profile slsdeploy deploy --stage newprod"
   },
   "dependencies": {
+    "@nova-odm/annotations": "^0.8.3",
+    "@nova-odm/mapper": "^0.8.3",
     "serverless-cloudfront-invalidate": "^1.12.2",
     "serverless-offline": "^11.3.0",
     "serverless-python-requirements": "^6.0.0"
@@ -18,11 +20,15 @@
   },
   "devDependencies": {
     "serverless-domain-manager": "^6.2.2",
+    "serverless-plugin-typescript": "^2.1.4",
     "serverless-s3-sync": "^3.1.0",
-    "serverless-website-domain": "^3.0.1"
+    "serverless-website-domain": "^3.0.1",
+    "typescript": "^5.0.4"
   },
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/client",
+    "packages/shared",
+    "packages/server"
   ]
 }

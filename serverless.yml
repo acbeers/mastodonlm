@@ -91,6 +91,10 @@ package:
   patterns:
     - "!node_modules"
     - "!packages"
+  # serverless-plugin-typescript seems to break the inclusion of *.py files.
+  # so be explicit.
+  include:
+    - "*.py"
 
 custom:
   # Table names
@@ -129,6 +133,9 @@ custom:
     devstage: true
     dev: false
 
+  serverlessPluginTypescript:
+    tsConfigFileLocation: "packages/server/tsconfig.json"
+
   # Domain name support
   name: ${self:service}-${self:provider.stage}
   websiteBucket: ${self:custom.name}
@@ -151,6 +158,8 @@ custom:
 
 plugins:
   - serverless-python-requirements
+  # For running typescript
+  - serverless-plugin-typescript
   - serverless-offline
   # For putting lambda functions behind a custom domain
   - serverless-domain-manager

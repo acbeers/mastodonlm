@@ -146,7 +146,7 @@ export default function FollowingTable({
       >
         <Card sx={{ maxWidth: 400 }}>
           <CardHeader
-            style={style.card.header}
+            style={style.card.header.container}
             avatar={
               <Avatar
                 aria-label="user"
@@ -157,7 +157,7 @@ export default function FollowingTable({
             title={follower.display_name}
             subheader={follower.acct}
           />
-          <CardContent style={style.card.content}>
+          <CardContent style={style.card.content.container}>
             <Typography variant="body2">
               <span dangerouslySetInnerHTML={{ __html: follower.note }}></span>
             </Typography>

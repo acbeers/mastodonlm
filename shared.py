@@ -101,8 +101,11 @@ def auth(event, _):
         try:
             (client_id, client_secret) = make_app(domain, redirect_url)
             logging.debug("auth: Made the app!")
-        except MastodonNetworkError:
+        except MastodonNetworkError as e:
             # Log what the user typed with the error.
+            print("mastodon network error")
+            print(e)
+            print(redirect_url)
             return badhost_response(rawdomain)
 
         cfg = Datastore.set_host_config(

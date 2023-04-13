@@ -579,6 +579,7 @@ function Manager({ api }: ManagerProps) {
         open={analyticsOpen}
         list={analyticsList}
         api={api}
+        key={analyticsList ? analyticsList.id : "none"}
         handleClose={handleAnalyticsClose}
       />
     </div>

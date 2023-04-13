@@ -15,7 +15,7 @@ module.exports = function override(config, webpackEnv) {
     loader: require.resolve("babel-loader"),
     options: {
       babelrc: false,
-      configFile: false,
+      //configFile: false,
       compact: false,
       presets: [
         [
@@ -25,7 +25,7 @@ module.exports = function override(config, webpackEnv) {
       ],
       cacheDirectory: true,
       // See #6846 for context on why cacheCompression is disabled
-      cacheCompression: false,
+      //cacheCompression: false,
       // @remove-on-eject-begin
       cacheIdentifier: getCacheIdentifier(
         isEnvProduction ? "production" : isEnvDevelopment && "development",
@@ -40,7 +40,7 @@ module.exports = function override(config, webpackEnv) {
       // Babel sourcemaps are needed for debugging into node_modules
       // code.  Without the options below, debuggers like VSCode
       // show incorrect code and set breakpoints on the wrong lines.
-      sourceMaps: shouldUseSourceMap,
+      sourceMap: shouldUseSourceMap,
       inputSourceMap: shouldUseSourceMap,
     },
   });
