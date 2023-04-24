@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import requests
 
 from mastodon import (
     Mastodon,
@@ -25,10 +26,17 @@ from utils import (
 
 def make_app(domain, redirect_url):
     """Creates a Mastodon app on a given host"""
+    # Some web gateways will block requests without a User-Agent header
+    # The Mastodon object can be constructed with an agent= parameter, but
+    # the create_app class method doesn't support it.  Create a session with the
+    # correct header
+    s = requests.Session()
+    s.headers.update({"User-Agent":USER_AGENT})
     (client_id, client_secret) = Mastodon.create_app(
         "Mastodon List Manager",
         scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
         redirect_uris=redirect_url,
+        session=s,
         api_base_url=f"https://{domain}",
     )
     return (client_id, client_secret)
