@@ -35,6 +35,14 @@ th.listname div.icon:hover {
 span.listTitle {
   writing-mode: vertical-lr;
   -webkit-transform: rotate(180deg);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-height: 150px;
+  overflow: hidden;
+}
+
+span.listTitle.expanded {
+  max-height: none;
 }
 
 span.listTitle.newList {
