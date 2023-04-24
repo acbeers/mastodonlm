@@ -75,6 +75,8 @@ export default function FollowingTable({
   const [page, setPage] = useState(0);
   // which column to highlight
   const [hoverCol, setHoverCol] = useState<number | null>(null);
+  // Whether or not the titles are constrained height or expanded
+  const [titleExpanded, setTitleExpanded] = useState(false);
 
   const numPages = Math.ceil(group.followers.length / pageSize);
 
@@ -93,6 +95,8 @@ export default function FollowingTable({
 
   const popoverOpen = Boolean(anchorEl);
 
+  const listTitleClass = titleExpanded ? "listTitle expanded" : "listTitle";
+
   const headers = lists.map((l, lindex) => {
     const classes = ["listname"];
     if (hoverCol === lindex) classes.push("hover");
@@ -100,7 +104,12 @@ export default function FollowingTable({
       <th key={l.id} className={classes.join(" ")}>
         <div key={l.id}>
           <div>
-            <span className="listTitle">{l.title}</span>
+            <span
+              onDoubleClick={() => setTitleExpanded(!titleExpanded)}
+              className={listTitleClass}
+            >
+              {l.title}
+            </span>
           </div>
           <div className="icon">
             <Tooltip enterDelay={500} enterNextDelay={500} title="Delete list">
@@ -247,7 +256,7 @@ export default function FollowingTable({
             <div>
               <span
                 data-testid="new-list"
-                className="listTitle newList"
+                className={listTitleClass + " newList"}
                 onClick={onNewList}
               >
                 (New list)
