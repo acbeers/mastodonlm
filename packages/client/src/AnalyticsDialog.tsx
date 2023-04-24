@@ -11,7 +11,7 @@ import TableBody from "@mui/material/TableBody";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 
-import { ListAnalytics, List } from "./types";
+import { ListAnalytics, List } from "@mastodonlm/shared";
 
 // For our API work
 import type APIWorker from "./clientworker";
@@ -69,7 +69,9 @@ function AnalyticsDialog({
           };
           telemetryCB(data);
         })
-        .catch(() => setError("Unable to load analytics"));
+        .catch((err) => {
+          setError("Unable to load analytics");
+        });
     }
   }, [api, list, telemetryCB]);
 
@@ -102,7 +104,7 @@ function AnalyticsDialog({
       const [user, domain] = x.acct.acct.split("@");
       const link = `https://${domain}/@${user}`;
       return (
-        <TableRow>
+        <TableRow key={x.acct.acct}>
           <TableCell
             sx={{ textAlign: "right", paddingRight: 1, fontSize: "12px" }}
           >
@@ -138,7 +140,7 @@ function AnalyticsDialog({
       const [user, domain] = x.acct.acct.split("@");
       const link = `https://${domain}/@${user}`;
       return (
-        <TableRow>
+        <TableRow key={x.acct.acct}>
           <TableCell
             sx={{ textAlign: "right", paddingRight: 1, fontSize: "12px" }}
           >
@@ -248,6 +250,8 @@ function AnalyticsDialog({
     <span>Analytics</span>
   );
 
+  const buttonText = analytics ? "Great!" : "Cancel";
+
   return (
     <Dialog
       open={open}
@@ -259,7 +263,7 @@ function AnalyticsDialog({
       {content}
       <DialogActions>
         <Button onClick={onClose} autoFocus>
-          Great!
+          {buttonText}
         </Button>
       </DialogActions>
     </Dialog>

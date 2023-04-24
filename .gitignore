@@ -9,3 +9,11 @@ archive
 
 # Local notes
 TODO.md
+
+# No dist / build folders
+dist
+.build
+
+# No tmp folders
+tmp
+xxx

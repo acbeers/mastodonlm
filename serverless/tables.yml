@@ -63,10 +63,12 @@ hostsTable:
 
 readcapacity:
   dev: 2
+  devstage: 2
   prod: 5
   newprod: 5
 writecapacity:
   dev: 2
+  devstage: 2
   prod: 5
   newprod: 5
 dynamodb:

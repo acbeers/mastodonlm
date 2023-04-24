@@ -1,6 +1,13 @@
 // API methods for List Manager
 
-import { User, List, APIData, TimeoutError, AuthError } from "./types";
+import {
+  User,
+  List,
+  APIData,
+  ListAnalytics,
+  TimeoutError,
+  AuthError,
+} from "@mastodonlm/shared";
 import * as Comlink from "comlink";
 import { WorkerBase } from "./workerbase";
 
@@ -16,6 +23,7 @@ const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
 const urlCallback = process.env.REACT_APP_BACKEND_URL + "/callback";
 const urlLogout = process.env.REACT_APP_BACKEND_URL + "/logout";
 const urlImport = process.env.REACT_APP_BACKEND_URL + "/import";
+const urlAnalytics = process.env.REACT_APP_BACKEND_URL + "/analytics";
 
 // Given a fetch response, check it for errors and throw
 // reasonable exceptions if so.  Otherwise, return the response
@@ -190,6 +198,21 @@ export default class ServerAPIWorker extends WorkerBase {
         return this.authPOST(
           `${urlImport}?list_id=${list_id}&accts=${accounts.join(",")}`
         ).then((resp) => checkJSON(resp));
+      });
+  }
+
+  // Computes analytics for the given list
+  async listAnalytics(list: List): Promise<ListAnalytics> {
+    return this.authGET(`${urlAnalytics}?list_id=${list.id}`)
+      .then((resp) => checkJSON(resp))
+      .then((data) => {
+        // Data is just a JSON object.  Fix some points
+        const la = {
+          ...data,
+          latest_post: new Date(data.latest_post),
+          earliest_post: new Date(data.earliest_post),
+        };
+        return la;
       });
   }
 }

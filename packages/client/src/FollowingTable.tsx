@@ -16,7 +16,7 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
-import { List, User, Group, InProgress } from "./types";
+import { List, User, Group, InProgress } from "@mastodonlm/shared";
 
 import "./FollowingTable.css";
 
@@ -146,7 +146,7 @@ export default function FollowingTable({
       >
         <Card sx={{ maxWidth: 400 }}>
           <CardHeader
-            style={style.card.header}
+            style={style.card.header.container}
             avatar={
               <Avatar
                 aria-label="user"
@@ -157,7 +157,7 @@ export default function FollowingTable({
             title={follower.display_name}
             subheader={follower.acct}
           />
-          <CardContent style={style.card.content}>
+          <CardContent style={style.card.content.container}>
             <Typography variant="body2">
               <span dangerouslySetInnerHTML={{ __html: follower.note }}></span>
             </Typography>

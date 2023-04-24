@@ -28,7 +28,7 @@ import {
   InProgress,
   AuthError,
   TimeoutError,
-} from "./types";
+} from "@mastodonlm/shared";
 
 // For our API work
 import type APIWorker from "./clientworker";
@@ -579,6 +579,7 @@ function Manager({ api }: ManagerProps) {
         open={analyticsOpen}
         list={analyticsList}
         api={api}
+        key={analyticsList ? analyticsList.id : "none"}
         handleClose={handleAnalyticsClose}
       />
     </div>

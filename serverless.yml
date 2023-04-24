@@ -15,13 +15,10 @@ provider:
     TABLE_ALLOWED: ${self:custom.allowedTable}
     TABLE_BLOCKED: ${self:custom.blockedTable}
     TABLE_HOSTCFG: ${self:custom.hostcfgTable}
+    AUTH_REDIRECT: ${self:custom.redirects.${self:provider.stage}}
   httpApi:
     cors:
-      allowedOrigins:
-        - https://acbeers.github.io
-        - https://www.mastodonlistmanager.org
-        - https://mastodonlistmanager.org
-        - http://localhost:3000
+      allowedOrigins: ${self:custom.origins.${self:provider.stage}}
       allowedHeaders:
         - Content-Type
         - Authorization
@@ -72,7 +69,7 @@ resources: # CloudFormation template syntax from here on.
       Value:
         Ref: CloudFrontDistribution
       Export:
-        Name: CDNDistributionId
+        Name: CDNDistributionId-${self:provider.stage}
 
   Resources:
     # Stores auth tokens for users and other info
@@ -93,7 +90,11 @@ functions: ${file(serverless/functions.yml)}
 package:
   patterns:
     - "!node_modules"
-    - "!list-manager"
+    - "!packages"
+  # serverless-plugin-typescript seems to break the inclusion of *.py files.
+  # so be explicit.
+  include:
+    - "*.py"
 
 custom:
   # Table names
@@ -109,9 +110,35 @@ custom:
   writecapacity: ${file(serverless/tables.yml):writecapacity}
   dynamodb: ${file(serverless/tables.yml):dynamodb}
 
+  # Redirects
+  redirects:
+    newprod: https://www.mastodonlistmanager.org
+    devstage: https://devstage.mastodonlistmanager.org
+    dev: http://localhost:3000
+
+  # Origins
+  origins:
+    newprod:
+      - https://www.mastodonlistmanager.org
+      - https://mastodonlistmanager.org
+    devstage:
+      - https://www-devstage.mastodonlistmanager.org
+      - https://devstage.mastodonlistmanager.org
+    dev:
+      - http://localhost:3000
+
+  # Should we s3 sync?
+  enableS3Sync:
+    newprod: true
+    devstage: true
+    dev: false
+
+  serverlessPluginTypescript:
+    tsConfigFileLocation: "packages/server/tsconfig.json"
+
   # Domain name support
-  websiteBucket: ${self:custom.name}
   name: ${self:service}-${self:provider.stage}
+  websiteBucket: ${self:custom.name}
   cloudfrontOriginId: ${self:custom.name}-cloud-front
   # Configuration for backend domain
   customDomain: ${file(serverless/cfwebsite.yml):customDomain}
@@ -131,6 +158,8 @@ custom:
 
 plugins:
   - serverless-python-requirements
+  # For running typescript
+  - serverless-plugin-typescript
   - serverless-offline
   # For putting lambda functions behind a custom domain
   - serverless-domain-manager

@@ -44,8 +44,16 @@ AssetsBucket:
 
 # Custom domain for the backend
 customDomain:
-  domainName: backend.mastodonlistmanager.org
-  stage: newprod
+  enableStages:
+    newprod: true
+    devstage: true
+    dev: false
+  enabled: ${self:custom.customDomain.enableStages.${self:provider.stage}}
+  backendName:
+    newprod: backend
+    devstage: backend-devstage
+    dev: backend-dev
+  domainName: ${self:custom.customDomain.backendName.${self:provider.stage}}.mastodonlistmanager.org
   basePath: ""
   certificateName: "*.mastodonlistmanager.org"
   createRoute53Record: true
@@ -57,8 +65,17 @@ customDomain:
   region: us-west-2
 # Configuration for frontend (website) domain
 domainComponents:
-  withWWW: www.${self:custom.domainComponents.withoutWWW}
-  withoutWWW: mastodonlistmanager.org
+  domainBase: mastodonlistmanager.org
+  namesWithWWW:
+    newprod: www.${self:custom.domainComponents.domainBase}
+    devstage: www-devstage.${self:custom.domainComponents.domainBase}
+    dev: www-dev.${self:custom.domainComponents.domainBase}
+  namesWithoutWWW:
+    newprod: ${self:custom.domainComponents.domainBase}
+    devstage: devstage.${self:custom.domainComponents.domainBase}
+    dev: dev.${self:custom.domainComponents.domainBase}
+  withWWW: ${self:custom.domainComponents.namesWithWWW.${self:provider.stage}}
+  withoutWWW: ${self:custom.domainComponents.namesWithoutWWW.${self:provider.stage}}
 websiteDomain:
   cloudfrontOutputKey: "myCloudfrontDomain"
   domain: ${self:custom.domainComponents.withWWW}

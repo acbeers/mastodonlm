@@ -7,7 +7,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import FormControl from "@mui/material/FormControl";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
-import { List } from "./types";
+import { List } from "@mastodonlm/shared";
 
 type ExportListDialogProps = {
   open: boolean;

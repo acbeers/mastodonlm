@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 from unittest.mock import MagicMock, patch, sentinel
 from unittest import TestCase
 from mastodon import MastodonAPIError, MastodonUnauthorizedError
@@ -221,6 +222,7 @@ class TestAuth(TestCase):
     @patch("shared.Datastore")
     @patch("shared.MastodonFactory", new_callable=mock_factory)
     @patch("shared.make_app")
+    @patch.dict(os.environ, {"AUTH_REDIRECT": "https://test_redirect"})
     def test_auth_nocookie_urlhost(self, make_app, _factory, dataStore):
         """Test /auth when we haven't seen this host before"""
 
@@ -238,7 +240,7 @@ class TestAuth(TestCase):
         self.assertEqual(json.loads(res["body"])["url"], "https://mock_redirect")
         # We should have created a new mastodon app
         make_app.assert_called_with(
-            "mydomain", "https://www.mastodonlistmanager.org/callback?domain=mydomain"
+            "mydomain", "https://test_redirect/callback?domain=mydomain"
         )
 
     @patch("handler.Datastore")

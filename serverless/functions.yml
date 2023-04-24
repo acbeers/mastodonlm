@@ -1,6 +1,7 @@
 auth:
   handler: shared.auth
   timeout: 30
+  runtime: python3.9
   events:
     - httpApi:
         path: /auth
@@ -76,6 +77,15 @@ import:
     - httpApi:
         path: /import
         method: POST
+
+analytics:
+  timeout: 30
+  runtime: nodejs16.x
+  handler: packages/server/analytics_server.analytics
+  events:
+    - httpApi:
+        path: /analytics
+        method: GET
 
 clientcallback:
   handler: client.clientcallback
