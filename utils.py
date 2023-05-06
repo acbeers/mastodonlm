@@ -50,12 +50,17 @@ def cleandomain(domain):
 
     # Clean up some common problems:
     # - https://domain
+    # - http://domain
     # - username@domain
 
     ldomain = domain.lower()
 
-    # The URL case
+    # The URL cases
     m = re.match("https://([^/]*)", ldomain)
+    if m is not None:
+        return m.group(1)
+
+    m = re.match("http://([^/]*)", ldomain)
     if m is not None:
         return m.group(1)
 
