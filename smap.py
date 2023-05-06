@@ -25,7 +25,7 @@ def map_stacktrace(str):
     """Parses a string stacktrace, returning an array of mapped frames in the trace."""
     res = []
     for line in str.split("\n"):
-        m = re.search(r"\s+at \S+ \((http[s]?://[^/]+[^:]*):(\d+):(\d+)\)",line)
+        m = re.search(r"\S+@(http[s]?://[^/]+[^:]*):(\d+):(\d+)",line)
         if m is not None:
             url = m.group(1)
             lineno = int(m.group(2))-1
@@ -34,16 +34,7 @@ def map_stacktrace(str):
     return res
 
 if __name__ == "__main__":
-    stk = """
-        
-    MastoHttpUnauthorizedError: The access token is invalid
-        at W (https://www.mastodonlistmanager.org/static/js/916.0e3d9032.chunk.js:2:88193)
-        at n.<anonymous> (https://www.mastodonlistmanager.org/static/js/916.0e3d9032.chunk.js:2:98395)
-        at p (https://www.mastodonlistmanager.org/static/js/144.ab1fc33d.chunk.js:2:5828)
-        at Generator.<anonymous> (https://www.mastodonlistmanager.org/static/js/144.ab1fc33d.chunk.js:2:7171)
-        at Generator.next (https://www.mastodonlistmanager.org/static/js/144.ab1fc33d.chunk.js:2:6191)
-        at a (https://www.mastodonlistmanager.org/static/js/916.0e3d9032.chunk.js:2:95913)
-    """
+    stk = "e/<@https://www.mastodonlistmanager.org/static/js/799.63a02032.chunk.js:2:146782\np@https://www.mastodonlistmanager.org/static/js/605.aeeb9d40.chunk.js:2:6710\nO/<@https://www.mastodonlistmanager.org/static/js/605.aeeb9d40.chunk.js:2:8054\nZ/</<@https://www.mastodonlistmanager.org/static/js/605.aeeb9d40.chunk.js:2:7073\na@https://www.mastodonlistmanager.org/static/js/799.63a02032.chunk.js:2:97221\n"
 
     strace = map_stacktrace(stk)
     for frame in strace:
