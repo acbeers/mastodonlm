@@ -6,6 +6,13 @@ export type List = {
   title: string;
 };
 
+export enum Relationship {
+  Unknown = "unknown",
+  Follower = "follower",
+  Following = "following",
+  Mutual = "mutual",
+}
+
 // A user returned by the Mastodon API
 export type User = {
   id: string;
@@ -16,17 +23,21 @@ export type User = {
   note: string;
   lists: string[];
   following_count: number;
+  follower_count: number;
+  // Our relationships
+  following: boolean;
+  follower: boolean;
 };
 
 // A group of users as shown in the interface
 export type Group = {
   key: string;
-  followers: User[];
+  users: User[];
 };
 
 // The data returned by our backend API
 export type APIData = {
-  followers: User[];
+  users: User[];
   lists: List[];
   me: User;
 };

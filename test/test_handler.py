@@ -523,13 +523,13 @@ class TestCRUD(TestCase):
         qs = {"list_id": "listid", "account_id": "acctid"}
         self.helper_func_error(factory, data_store, qs, handler.add_to_list, mf)
 
+
 class TestInfo(TestCase):
     """Tests for make_app"""
 
-    @patch("shared.Mastodon.create_app", return_value=("id","secret"))
+    @patch("shared.Mastodon.create_app", return_value=("id", "secret"))
     def test_makeapp_agent(self, create_app):
         """make_app must be called with a session object that includes a user-agent header"""
-        shared.make_app("domain","https://redirect_url")
+        shared.make_app("domain", "https://redirect_url")
         self.assertTrue("session" in create_app.call_args.kwargs)
         self.assertTrue("User-Agent" in create_app.call_args.kwargs["session"].headers)
-

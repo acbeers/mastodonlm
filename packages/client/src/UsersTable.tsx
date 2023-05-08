@@ -16,9 +16,15 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
-import { List, User, Group, InProgress } from "@mastodonlm/shared";
+import {
+  List,
+  User,
+  Group,
+  InProgress,
+  Relationship,
+} from "@mastodonlm/shared";
 
-import "./FollowingTable.css";
+import "./UsersTable.css";
 
 const style = {
   card: {
@@ -39,7 +45,7 @@ const style = {
   },
 };
 
-type FollowingTableProps = {
+type UsersTableProps = {
   groupIndex: number;
   group: Group;
   lists: List[];
@@ -48,12 +54,13 @@ type FollowingTableProps = {
   add: (groupIndex: number, index: number, listid: string) => void;
   handleDeleteClick: (list: List) => void;
   handleInfoClick: (list: List) => void;
+  handleFollow: (userid: string, follow: boolean) => void;
   defaultOpen: boolean;
   pageSize?: number;
   onNewList: () => void;
 };
 
-export default function FollowingTable({
+export default function UsersTable({
   groupIndex,
   group,
   lists,
@@ -62,10 +69,11 @@ export default function FollowingTable({
   add,
   handleDeleteClick,
   handleInfoClick,
+  handleFollow,
   defaultOpen,
   pageSize = 500,
   onNewList,
-}: FollowingTableProps) {
+}: UsersTableProps) {
   // Popover anchor and handlers
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [follower, setFollower] = useState<User | null>(null);
@@ -78,7 +86,7 @@ export default function FollowingTable({
   // Whether or not the titles are constrained height or expanded
   const [titleExpanded, setTitleExpanded] = useState(false);
 
-  const numPages = Math.ceil(group.followers.length / pageSize);
+  const numPages = Math.ceil(group.users.length / pageSize);
 
   const handlePopoverOpen = (event: MouseEvent<HTMLElement>, fol: User) => {
     setFollower(fol);
@@ -177,19 +185,28 @@ export default function FollowingTable({
   }
   const start = page * pageSize;
   const end = start + pageSize;
-  const rows = group.followers.slice(start, end).map((fol, index) => {
+  const rows = group.users.slice(start, end).map((fol, index) => {
     const cols = lists.map((l, lindex) => {
       const classes = ["cell"];
       if (hoverCol === lindex) classes.push("hover");
+      const nofollow = !fol.following;
+      if (nofollow) classes.push("nofollow");
       const cn = classes.join(" ");
       const cmp = { list: l.id, follower: fol.id };
+      const removeHandler = nofollow
+        ? () => {}
+        : () => remove(groupIndex, page * pageSize + index, l.id);
+      const addHandler = nofollow
+        ? () => {}
+        : () => add(groupIndex, page * pageSize + index, l.id);
+      const title = nofollow ? "Can't add non-followed accounts to lists" : "";
+
       if (JSON.stringify(inProgress) === JSON.stringify(cmp)) {
         return (
           <td
             key={l.id + fol.id}
             className={cn}
             data-testid={l.id + fol.id}
-            onClick={() => remove(groupIndex, index, l.id)}
             onMouseEnter={() => setHoverCol(lindex)}
             onMouseLeave={() => setHoverCol(null)}
           >
@@ -202,7 +219,7 @@ export default function FollowingTable({
             key={l.id + fol.id}
             className={cn}
             data-testid={l.id + fol.id}
-            onClick={() => remove(groupIndex, page * pageSize + index, l.id)}
+            onClick={removeHandler}
             onMouseEnter={() => setHoverCol(lindex)}
             onMouseLeave={() => setHoverCol(null)}
           >
@@ -215,7 +232,8 @@ export default function FollowingTable({
             key={l.id + fol.id}
             className={cn}
             data-testid={l.id + fol.id}
-            onClick={() => add(groupIndex, page * pageSize + index, l.id)}
+            title={title}
+            onClick={addHandler}
             onMouseEnter={() => setHoverCol(lindex)}
             onMouseLeave={() => setHoverCol(null)}
           >
@@ -241,6 +259,13 @@ export default function FollowingTable({
             </a>
           </Typography>
         </td>
+        <td
+          align="right"
+          className="cell"
+          onClick={() => handleFollow(fol.id, !fol.following)}
+        >
+          {fol.following ? <>&#10004;</> : "-"}
+        </td>
         {cols}
       </tr>
     );
@@ -251,6 +276,15 @@ export default function FollowingTable({
       <thead>
         <tr>
           <th>&nbsp;</th>
+          <th>
+            <span className="listTitle">Following</span>
+            <div style={{ visibility: "hidden" }} className="icon">
+              <DeleteOutlinedIcon fontSize="small" />
+            </div>
+            <div style={{ visibility: "hidden" }} className="icon">
+              <InfoOutlinedIcon fontSize="small" />
+            </div>
+          </th>
           {headers}
           <th>
             <div>
@@ -297,7 +331,7 @@ export default function FollowingTable({
         className="group"
         onClick={() => setOpen(!open)}
       >
-        {icon} {group.key} ({group.followers.length})
+        {icon} {group.key} ({group.users.length})
       </div>
       {open ? table : ""}
       {open ? pageControls : ""}
