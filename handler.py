@@ -134,10 +134,62 @@ def following(event, _):
         for x in accts
     ]
 
-    logging.info("Returning %d followers", len(outpeople))
+    logging.info("Returning %d following", len(outpeople))
 
     return response(json.dumps(outpeople))
 
+def followers(event, _):
+    """
+    Endpoint which enumerates followers
+    """
+    cookie = get_cookie(event)
+
+    # If we have no cookie, tell the client to go away
+    if cookie is None:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    try:
+        mastodon = MastodonFactory.from_cookie(cookie)
+        if mastodon is None:
+            resp = {"status": "no_cookie"}
+            return response(json.dumps(resp), statusCode=403)
+        me = mastodon.me()
+    except MastodonIllegalArgumentError:
+        return err_response("ERROR - illegal argument")
+    except MastodonInternalServerError:
+        return err_response("ERROR - internal server error")
+    except (MastodonUnauthorizedError, NoAuthInfo):
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    me_id = me["id"]
+    logging.info(
+        "Getting %d follower accounts from %s for %s",
+        me["following_count"],
+        mastodon.api_base_url,
+        me["acct"],
+    )
+    page1 = mastodon.account_followers(me_id)
+    accts = mastodon.fetch_remaining(page1)
+    outpeople = [
+        {
+            k: str(x[k]) if k == "id" else x[k]
+            for k in [
+                "id",
+                "display_name",
+                "username",
+                "acct",
+                "note",
+                "avatar",
+            ]
+        }
+        for x in accts
+    ]
+
+    logging.info("Returning %d followers", len(outpeople))
+
+    return response(json.dumps(outpeople))
 
 def lists(event, _):
     """
@@ -450,3 +502,93 @@ def importToList(event, _):
     except MastodonAPIError as e:
         logging.error("ERROR - other API error: %s", str(e))
         return err_response("ERROR - API error")
+
+
+
+def build_error_response(err):
+    """Given an error, build an error response"""
+    try:
+        raise err
+    except MastodonIllegalArgumentError:
+        return {"statusCode": 500, "body": "ERROR"}
+    except MastodonInternalServerError:
+        return {"statusCode": 500, "body": "ERROR"}
+    except (MastodonUnauthorizedError, NoAuthInfo):
+        resp = {"status": "not_authorized"}
+        return response(json.dumps(resp), statusCode=403)
+    except NotMastodon:
+        return blocked_response()
+
+
+def follow(event, _):
+    """Follow a user"""
+
+    cookie = get_cookie(event)
+
+    # If we have no cookie, tell the client to go away
+    if cookie is None:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    try:
+        mastodon = MastodonFactory.from_cookie(cookie)
+        mastodon.me()
+    except (
+        MastodonIllegalArgumentError,
+        MastodonInternalServerError,
+        MastodonUnauthorizedError,
+        NoAuthInfo,
+        NotMastodon,
+    ) as err:
+        return build_error_response(err)
+
+    userid = event["queryStringParameters"]["user_id"]
+
+    try:
+        mastodon.account_follow(userid)
+        return response(json.dumps({"status": "OK"}))
+    except (
+        MastodonIllegalArgumentError,
+        MastodonInternalServerError,
+        MastodonUnauthorizedError,
+        NoAuthInfo,
+        NotMastodon,
+    ) as err:
+        return build_error_response(err)
+
+
+def unfollow(event, _):
+    """Follow a user"""
+
+    cookie = get_cookie(event)
+
+    # If we have no cookie, tell the client to go away
+    if cookie is None:
+        resp = {"status": "no_cookie"}
+        return response(json.dumps(resp), statusCode=403)
+
+    try:
+        mastodon = MastodonFactory.from_cookie(cookie)
+        mastodon.me()
+    except (
+        MastodonIllegalArgumentError,
+        MastodonInternalServerError,
+        MastodonUnauthorizedError,
+        NoAuthInfo,
+        NotMastodon,
+    ) as err:
+        return build_error_response(err)
+
+    userid = event["queryStringParameters"]["user_id"]
+
+    try:
+        mastodon.account_unfollow(userid)
+        return response(json.dumps({"status": "OK"}))
+    except (
+        MastodonIllegalArgumentError,
+        MastodonInternalServerError,
+        MastodonUnauthorizedError,
+        NoAuthInfo,
+        NotMastodon,
+    ) as err:
+        return build_error_response(err)

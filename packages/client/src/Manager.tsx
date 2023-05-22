@@ -14,7 +14,7 @@ import ExportListDialog from "./ExportListDialog";
 import ImportListDialog from "./ImportListDialog";
 import AnalyticsDialog from "./AnalyticsDialog";
 
-import FollowingTable from "./FollowingTable";
+import UsersTable from "./UsersTable";
 import Controls from "./Controls";
 import TopBar from "./TopBar";
 
@@ -28,6 +28,7 @@ import {
   InProgress,
   AuthError,
   TimeoutError,
+  Relationship,
 } from "@mastodonlm/shared";
 
 // For our API work
@@ -48,7 +49,8 @@ function info2Groups(
   info: APIData,
   by: string,
   filter: string,
-  search: string
+  search: string,
+  relationships: Relationship
 ) {
   // First, compute the groups
   const getGroupName = (fol: User) => fol.display_name.toUpperCase()[0];
@@ -76,7 +78,22 @@ function info2Groups(
   };
   const filterFunc = filterFuncs[key] || ((x: User) => true);
 
-  info.followers.forEach((fol: User) => {
+  const s = Relationship.Following;
+
+  const relFilter: Record<Relationship, (x: User) => boolean> = {
+    unknown: (x) => false,
+    following: (x) => x.following,
+    follower: (x) => x.follower,
+    mutual: (x) => x.following && x.follower,
+  };
+
+  const users = info.users;
+  users.sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+  users.forEach((fol: User) => {
+    // Is the relationshiph the right one
+    if (!relFilter[relationships](fol)) return;
+
     // First, see if it passes the filter
     if (!filterFunc(fol)) return;
 
@@ -96,7 +113,7 @@ function info2Groups(
   // Now, order the groups and produce an array
   const keys = Object.keys(groups);
   keys.sort();
-  return keys.map((k) => ({ key: k, followers: groups[k] }));
+  return keys.map((k) => ({ key: k, users: groups[k] }));
 }
 
 type ManagerProps = {
@@ -107,7 +124,7 @@ function Manager({ api }: ManagerProps) {
   // The data
   const [info, setInfo] = useState<APIData>({
     lists: [],
-    followers: [],
+    users: [],
     me: {
       id: "",
       display_name: "",
@@ -116,11 +133,18 @@ function Manager({ api }: ManagerProps) {
       acct: "",
       note: "",
       following_count: 0,
+      follower_count: 0,
+      following: false,
+      follower: false,
       lists: [],
     },
   });
   // The grouped data - as an array of info objects.
   const [groups, setGroups] = useState<Group[]>([]);
+  // What relationships
+  const [relationships, setRelationships] = useState<Relationship>(
+    Relationship.Following
+  );
   // How we want things grouped
   const [groupBy, setGroupBy] = useState("none");
   // Whether or not to display the loading indicator
@@ -200,12 +224,10 @@ function Manager({ api }: ManagerProps) {
     remote
       .info(Comlink.proxy(progress))
       .then((data: APIData) => {
-        data.followers.forEach((f) => {
+        data.users.forEach((f) => {
           if (f.display_name === "") f.display_name = f.username;
         });
-        data.followers.sort((a, b) =>
-          a.display_name.localeCompare(b.display_name)
-        );
+        data.users.sort((a, b) => a.display_name.localeCompare(b.display_name));
         data.lists.sort((a, b) => a.title.localeCompare(b.title));
         setInfo(data);
         setLoading(false);
@@ -214,15 +236,13 @@ function Manager({ api }: ManagerProps) {
       .then((data) => {
         // Compute list sizes
         const list_sizes = data.lists.map((list) => {
-          const fols = data.followers.filter((fol) =>
-            fol.lists.includes(list.id)
-          );
+          const fols = data.users.filter((fol) => fol.lists.includes(list.id));
           return fols.length;
         });
         const elapsedMS = getElapsed(startTime);
         const telem = {
           action: "info",
-          num_following: data.followers.length,
+          num_following: data.users.length,
           num_lists: data.lists.length,
           list_sizes: list_sizes,
           elapsed_ms: elapsedMS,
@@ -260,12 +280,11 @@ function Manager({ api }: ManagerProps) {
   // Generate the groups
   useEffect(() => {
     const startTime = new Date().getTime();
-    const groups = info2Groups(info, groupBy, filter, search);
+    const groups = info2Groups(info, groupBy, filter, search, relationships);
     setGroups(groups);
-    const gtotal = groups
-      .map((x) => x.followers.length)
-      .reduce((a, b) => a + b, 0);
-    const total = info.followers.length;
+    // TODO: fix this math
+    const gtotal = groups.map((x) => x.users.length).reduce((a, b) => a + b, 0);
+    const total = info.users.length;
     const perc = Math.round((100 * gtotal) / total);
     if (perc !== 100) {
       const endTime = new Date().getTime();
@@ -276,7 +295,7 @@ function Manager({ api }: ManagerProps) {
         elapsed_ms: elapsedMS,
       });
     }
-  }, [info, groupBy, search, filter, telemetryCB]);
+  }, [info, groupBy, search, filter, relationships, telemetryCB]);
 
   // Fetch the data
   useEffect(() => {
@@ -342,7 +361,7 @@ function Manager({ api }: ManagerProps) {
   const handleExportList = (list: List) => {
     // Filter to just this list.
     const startTime = getTime();
-    const filtered = info.followers.filter((x) => x.lists.includes(list.id));
+    const filtered = info.users.filter((x) => x.lists.includes(list.id));
     const accts = filtered.map((x) => x.acct);
     const data = ["account"].concat(accts);
     var blob = new Blob([data.join("\n")], { type: "text/csv;charset=utf-8" });
@@ -364,7 +383,7 @@ function Manager({ api }: ManagerProps) {
   const handleImportList = (list_name: string, data: string[]) => {
     // Figure out which people I'm not following
     const followerMap: Record<string, User> = {};
-    info.followers.forEach((x) => {
+    info.users.forEach((x) => {
       followerMap[x.acct] = x;
     });
 
@@ -396,7 +415,7 @@ function Manager({ api }: ManagerProps) {
       .then(() => {
         const newInfo = { ...info };
         newInfo.lists = info.lists.filter((x) => x.id !== list.id);
-        newInfo.followers.forEach((fol) => {
+        newInfo.users.forEach((fol) => {
           fol.lists = fol.lists.filter((x) => x !== list.id);
         });
         setInfo(newInfo);
@@ -412,7 +431,7 @@ function Manager({ api }: ManagerProps) {
   const remove = async (groupIndex: number, index: number, lid: string) => {
     const startTime = getTime();
     const newGroups = groups.slice();
-    const fol = newGroups[groupIndex].followers[index];
+    const fol = newGroups[groupIndex].users[index];
     const use = await api;
     setInProgress({ list: lid, follower: fol.id });
     fol.lists = fol.lists.filter((value) => value !== lid);
@@ -430,7 +449,7 @@ function Manager({ api }: ManagerProps) {
   const add = async (groupIndex: number, index: number, lid: string) => {
     const startTime = getTime();
     const newGroups = groups.slice();
-    const fol = newGroups[groupIndex].followers[index];
+    const fol = newGroups[groupIndex].users[index];
     fol.lists.push(lid);
     const use = await api;
     setInProgress({ list: lid, follower: fol.id });
@@ -449,7 +468,6 @@ function Manager({ api }: ManagerProps) {
   };
 
   const handlePageSizeChange = (ps: number) => {
-    console.log(ps);
     localStorage.setItem("list-manager-pagesize", ps.toString());
     setPageSize(ps);
   };
@@ -457,10 +475,26 @@ function Manager({ api }: ManagerProps) {
     parseInt(localStorage.getItem("list-manager-pagesize") || "500")
   );
 
+  const handleFollowClick = async (userid: string, follow: boolean) => {
+    console.log(`FOLLOW ${userid} -> ${follow}`);
+    const use = await api;
+    const method = follow ? use.follow : use.unfollow;
+    await method(userid).then(() => {
+      // Update our local copy of the data
+      const newInfo: APIData = { ...info };
+      newInfo.users = newInfo.users.slice();
+      const user = newInfo.users.find((x) => x.id === userid);
+      if (user) {
+        user.following = follow;
+        setInfo(newInfo);
+      }
+    });
+  };
+
   // Build one table per group.
   const tables = groups.map((group, gindex) => {
     return (
-      <FollowingTable
+      <UsersTable
         key={group.key}
         groupIndex={gindex}
         group={group}
@@ -470,6 +504,7 @@ function Manager({ api }: ManagerProps) {
         add={add}
         handleDeleteClick={handleDeleteClick}
         handleInfoClick={handleAnalyticsClick}
+        handleFollow={handleFollowClick}
         defaultOpen={groups.length === 1}
         pageSize={pageSize}
         onNewList={() => {
@@ -495,6 +530,11 @@ function Manager({ api }: ManagerProps) {
     />
   );
 
+  const handleRelationship = (rel: Relationship) => {
+    setRelationships(rel);
+    telemetryCB({ action: "relationships", relationships: rel });
+  };
+
   const handleGroupBy = (groupby: string) => {
     setGroupBy(groupby);
     telemetryCB({ action: "groupby", groupby: groupby });
@@ -507,6 +547,8 @@ function Manager({ api }: ManagerProps) {
 
   const controls = (
     <Controls
+      relationships={relationships}
+      handleRelationshipChange={handleRelationship}
       groupBy={groupBy}
       handleGroupByChange={handleGroupBy}
       lists={lists}

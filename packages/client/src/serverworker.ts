@@ -13,6 +13,7 @@ import { WorkerBase } from "./workerbase";
 
 // Our endpoints
 const urlFollowing = process.env.REACT_APP_BACKEND_URL + "/following";
+const urlFollowers = process.env.REACT_APP_BACKEND_URL + "/followers";
 const urlMeta = process.env.REACT_APP_BACKEND_URL + "/meta";
 const urlLists = process.env.REACT_APP_BACKEND_URL + "/lists";
 const urlAdd = process.env.REACT_APP_BACKEND_URL + "/add";
@@ -24,6 +25,8 @@ const urlCallback = process.env.REACT_APP_BACKEND_URL + "/callback";
 const urlLogout = process.env.REACT_APP_BACKEND_URL + "/logout";
 const urlImport = process.env.REACT_APP_BACKEND_URL + "/import";
 const urlAnalytics = process.env.REACT_APP_BACKEND_URL + "/analytics";
+const urlFollow = process.env.REACT_APP_BACKEND_URL + "/follow";
+const urlUnfollow = process.env.REACT_APP_BACKEND_URL + "/unfollow";
 
 // Given a fetch response, check it for errors and throw
 // reasonable exceptions if so.  Otherwise, return the response
@@ -131,6 +134,27 @@ export default class ServerAPIWorker extends WorkerBase {
           .then((resp) => checkJSON(resp))
           .then((x) => {
             following = x;
+            following.forEach((x) => {
+              x.following = true;
+              x.follower = false;
+            });
+            callback(100 / total);
+          })
+          .then(() => this.authGET(urlFollowers))
+          .then((resp) => checkJSON(resp))
+          .then((followers) => {
+            // Update
+            const followingMap: Record<string, User> = {};
+            following.forEach((fol) => {
+              followingMap[fol.id] = fol;
+            });
+            followers.forEach((fol: User) => {
+              fol.follower = true;
+              fol.following = false;
+              if (fol.id in followingMap) {
+                followingMap[fol.id].follower = true;
+              } else following.push(fol);
+            });
             callback(100 / total);
           })
           .then(() => this.authGET(urlLists))
@@ -138,7 +162,9 @@ export default class ServerAPIWorker extends WorkerBase {
           .then((listaccts) => {
             callback(200 / total);
             // Build up lists for each follower
-            following.forEach((x) => (x.lists = []));
+            following.forEach((x) => {
+              x.lists = [];
+            });
             // A map for easy lookup
             const followerMap: Record<string, User> = {};
             following.forEach((x) => (followerMap[x.id] = x));
@@ -151,7 +177,7 @@ export default class ServerAPIWorker extends WorkerBase {
               });
             });
             return {
-              followers: following,
+              users: following,
               lists: lists,
               me: meta.me,
             };
@@ -214,6 +240,20 @@ export default class ServerAPIWorker extends WorkerBase {
         };
         return la;
       });
+  }
+
+  // Follows an account
+  async follow(userid: string): Promise<void> {
+    return this.authPOST(`${urlFollow}?user_id=${userid}`).then((resp) =>
+      checkJSON(resp)
+    );
+  }
+
+  // Follows an account
+  async unfollow(userid: string): Promise<void> {
+    return this.authPOST(`${urlUnfollow}?user_id=${userid}`).then((resp) =>
+      checkJSON(resp)
+    );
   }
 }
 

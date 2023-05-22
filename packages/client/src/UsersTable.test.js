@@ -1,12 +1,26 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import FollowingTable from "./FollowingTable";
+import UsersTable from "./UsersTable";
 
 /* TEST DATA */
 
 const group_2members = {
-  followers: [
-    { id: "1", display_name: "user-1", acct: "user-1@domain", lists: [] },
-    { id: "2", display_name: "user-2", acct: "user-2@domain", lists: ["a"] },
+  users: [
+    {
+      id: "1",
+      display_name: "user-1",
+      acct: "user-1@domain",
+      following: true,
+      follower: false,
+      lists: [],
+    },
+    {
+      id: "2",
+      display_name: "user-2",
+      acct: "user-2@domain",
+      following: true,
+      follower: false,
+      lists: ["a"],
+    },
   ],
 };
 
@@ -17,10 +31,12 @@ const lists_2members = [
 
 function generateGroup(num) {
   return {
-    followers: Array.from(Array(num)).map((_, x) => ({
+    users: Array.from(Array(num)).map((_, x) => ({
       id: `${x}`,
       display_name: "user-" + x,
       acct: `user-${x}@domain`,
+      following: true,
+      follower: false,
       lists: x % 2 ? ["a"] : ["b"],
     })),
   };
@@ -31,15 +47,10 @@ test("renders the whole list of users when open", () => {
   const lists = lists_2members;
 
   render(
-    <FollowingTable
-      groupIndex={1}
-      group={group}
-      lists={lists}
-      defaultOpen={true}
-    />
+    <UsersTable groupIndex={1} group={group} lists={lists} defaultOpen={true} />
   );
 
-  group.followers.forEach((fol) => {
+  group.users.forEach((fol) => {
     const elt = screen.getByText(fol.display_name);
     expect(elt).toBeInTheDocument();
   });
@@ -50,12 +61,7 @@ test("renders all lists when open", () => {
   const lists = lists_2members;
 
   render(
-    <FollowingTable
-      groupIndex={1}
-      group={group}
-      lists={lists}
-      defaultOpen={true}
-    />
+    <UsersTable groupIndex={1} group={group} lists={lists} defaultOpen={true} />
   );
 
   lists.forEach((list) => {
@@ -69,12 +75,7 @@ test("has new list", () => {
   const lists = lists_2members;
 
   render(
-    <FollowingTable
-      groupIndex={1}
-      group={group}
-      lists={lists}
-      defaultOpen={true}
-    />
+    <UsersTable groupIndex={1} group={group} lists={lists} defaultOpen={true} />
   );
 
   const newlist = screen.queryByTestId("new-list");
@@ -88,7 +89,7 @@ test("new list creates new list", (done) => {
   const handler = () => done();
 
   render(
-    <FollowingTable
+    <UsersTable
       groupIndex={1}
       group={group}
       lists={lists}
@@ -105,19 +106,19 @@ test("opens and closes", () => {
   const group = group_2members;
   const lists = lists_2members;
 
-  render(<FollowingTable groupIndex={1} group={group} lists={lists} />);
+  render(<UsersTable groupIndex={1} group={group} lists={lists} />);
 
-  const nouser = screen.queryByText(group.followers[0].display_name);
+  const nouser = screen.queryByText(group.users[0].display_name);
   expect(nouser).toEqual(null);
 
   const expando = screen.getByTestId("ft-expando");
 
   fireEvent.click(expando);
-  const user = screen.queryByText(group.followers[0].display_name);
+  const user = screen.queryByText(group.users[0].display_name);
   expect(user).toBeInTheDocument();
 
   fireEvent.click(expando);
-  const nouser2 = screen.queryByText(group.followers[0].display_name);
+  const nouser2 = screen.queryByText(group.users[0].display_name);
   expect(nouser2).toEqual(null);
 });
 
@@ -128,7 +129,7 @@ test("adds", (done) => {
   const handler = () => done();
 
   render(
-    <FollowingTable
+    <UsersTable
       groupIndex={1}
       group={group}
       lists={lists}
@@ -137,7 +138,7 @@ test("adds", (done) => {
     />
   );
 
-  const u1 = group.followers[0].id;
+  const u1 = group.users[0].id;
   const l1 = lists[0].id;
   const cell = screen.getByTestId(`${l1}${u1}`);
 
@@ -151,7 +152,7 @@ test("removes", (done) => {
   const handler = () => done();
 
   render(
-    <FollowingTable
+    <UsersTable
       groupIndex={1}
       group={group}
       lists={lists}
@@ -160,7 +161,7 @@ test("removes", (done) => {
     />
   );
 
-  const u2 = group.followers[1].id;
+  const u2 = group.users[1].id;
   const l1 = lists[0].id;
   const cell = screen.getByTestId(`${l1}${u2}`);
 
@@ -172,7 +173,7 @@ test("adds on page 2", (done) => {
   const lists = lists_2members;
 
   const uidx = 10;
-  const u1 = group.followers[uidx].id;
+  const u1 = group.users[uidx].id;
   const l1 = lists[0].id;
 
   const handler = (groupIndex, index, lid) => {
@@ -183,7 +184,7 @@ test("adds on page 2", (done) => {
   };
 
   render(
-    <FollowingTable
+    <UsersTable
       groupIndex={1}
       group={group}
       lists={lists}
@@ -206,7 +207,7 @@ test("removes on page 2", (done) => {
   const lists = lists_2members;
 
   const uidx = 11;
-  const u1 = group.followers[uidx].id;
+  const u1 = group.users[uidx].id;
   const l1 = lists[0].id;
 
   const handler = (groupIndex, index, lid) => {
@@ -217,7 +218,7 @@ test("removes on page 2", (done) => {
   };
 
   render(
-    <FollowingTable
+    <UsersTable
       groupIndex={1}
       group={group}
       lists={lists}

@@ -23,6 +23,11 @@ from utils import (
     badhost_response,
 )
 
+# The list of scopes that we need for our app
+# NOTE: If this of scopes changes, you'll have to remove items in the
+# hostsCfg table to allow them to be recreated.
+SCOPES = ["read:lists", "read:follows", "read:accounts", "write:lists", "write:follows"]
+
 
 def make_app(domain, redirect_url):
     """Creates a Mastodon app on a given host"""
@@ -31,10 +36,10 @@ def make_app(domain, redirect_url):
     # the create_app class method doesn't support it.  Create a session with the
     # correct header
     s = requests.Session()
-    s.headers.update({"User-Agent":USER_AGENT})
+    s.headers.update({"User-Agent": USER_AGENT})
     (client_id, client_secret) = Mastodon.create_app(
         "Mastodon List Manager",
-        scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
+        scopes=SCOPES,
         redirect_uris=redirect_url,
         session=s,
         api_base_url=f"https://{domain}",
@@ -129,7 +134,7 @@ def auth(event, _):
     logging.debug("created from config")
 
     url = mastodon.auth_request_url(
-        scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
+        scopes=SCOPES,
         redirect_uris=redirect_url,
     )
     return response(json.dumps({"url": url}))
@@ -161,7 +166,7 @@ def callback_helper(event, _, finish):
         token = mastodon.log_in(
             code=code,
             redirect_uri=redirect_url,
-            scopes=["read:lists", "read:follows", "read:accounts", "write:lists"],
+            scopes=SCOPES,
         )
     except MastodonIllegalArgumentError:
         logging.error(

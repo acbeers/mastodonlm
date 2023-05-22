@@ -20,6 +20,10 @@
   background-color: #efefff;
 }
 
+.followingTable tr td.nofollow {
+  background-color: #ccc;
+}
+
 th.listname div.icon {
   display: inline;
   writing-mode: horizontal-tb;

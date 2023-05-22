@@ -16,7 +16,10 @@ function makeUser(acct: Account): User {
     acct: acct.acct,
     note: acct.note,
     lists: [],
-    following_count: acct.followersCount,
+    following_count: acct.followingCount,
+    follower_count: acct.followersCount,
+    following: false,
+    follower: false,
   };
 }
 

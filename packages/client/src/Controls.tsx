@@ -5,9 +5,11 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
-import { List } from "@mastodonlm/shared";
+import { List, Relationship } from "@mastodonlm/shared";
 
 type ControlsProps = {
+  relationships: Relationship;
+  handleRelationshipChange: (r: Relationship) => void;
   groupBy: string;
   handleGroupByChange: (g: string) => void;
   lists: List[];
@@ -21,6 +23,8 @@ type ControlsProps = {
 };
 
 export default function Controls({
+  relationships,
+  handleRelationshipChange,
   groupBy,
   handleGroupByChange,
   lists,
@@ -56,6 +60,30 @@ export default function Controls({
       >
         Refresh
       </Button>
+      <FormControl sx={{ marginTop: "12px", width: 200, marginBottom: "12px" }}>
+        <InputLabel
+          htmlFor="controls-relationship-select"
+          id="controls-relationship-label"
+        >
+          Relationships
+        </InputLabel>
+        <Select
+          key="relationship"
+          id="controls-relationship-select"
+          name="controls-relationship-select"
+          data-testid="controls-relationship-select"
+          inputProps={{ "data-testid": "controls-relationship-input" }}
+          value={relationships || Relationship.Following}
+          label="Relationships"
+          onChange={(event) =>
+            handleRelationshipChange(event.target.value as Relationship)
+          }
+        >
+          <MenuItem value={Relationship.Following}>I'm following</MenuItem>
+          <MenuItem value={Relationship.Follower}>Following me</MenuItem>
+          <MenuItem value={Relationship.Mutual}>Following each other</MenuItem>
+        </Select>
+      </FormControl>
       <FormControl sx={{ marginTop: "12px", width: 200, marginBottom: "12px" }}>
         <InputLabel
           htmlFor="controls-groupby-select"

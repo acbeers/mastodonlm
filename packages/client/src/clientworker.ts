@@ -12,6 +12,7 @@ import * as Comlink from "comlink";
 import { login } from "masto";
 import { WorkerBase } from "./workerbase";
 import { fetchAnalytics } from "@mastodonlm/shared";
+import type { mastodon } from "masto";
 
 // Endpoints
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
@@ -25,6 +26,30 @@ async function asyncForEach(
   for (let index = 0; index < array.length; index++) {
     await callback(array[index], index, array);
   }
+}
+
+function account2User(
+  account: mastodon.v1.Account,
+  following: boolean,
+  follower: boolean,
+  domain: string | null
+): User {
+  return {
+    id: account.id,
+    display_name: account.displayName,
+    username: account.username,
+    avatar: account.avatar,
+    acct:
+      account.acct && account.acct.indexOf("@") > 0
+        ? account.acct
+        : account.acct + "@" + domain,
+    note: account.note,
+    following_count: 0,
+    follower_count: 0,
+    following: following,
+    follower: follower,
+    lists: [],
+  };
 }
 
 // Given a fetch response, check it for errors and throw
@@ -134,10 +159,13 @@ export default class APIWorker extends WorkerBase {
             note: me.note,
             lists: [],
             following_count: me.followingCount,
+            follower_count: me.followersCount,
+            following: false,
+            follower: false,
           };
           self.me = meuser;
           return {
-            followers: [],
+            users: [],
             lists: [],
             me: meuser,
           };
@@ -151,52 +179,71 @@ export default class APIWorker extends WorkerBase {
             }));
             res = res.concat(batch);
           }
-          return { followers: data.followers, lists: res, me: data.me };
+          return {
+            users: data.users,
+            lists: res,
+            me: data.me,
+          };
         })
         .then(async (data: APIData) => {
-          let res: User[] = [];
+          // Build a map to track duplicates
+          const userMap: Record<string, User> = {};
+          const totalrels = data.me.following_count + data.me.follower_count;
+          // First people that we are following
+          let following: User[] = [];
           for await (const users of masto.v1.accounts.listFollowing(
             data.me.id
           )) {
-            const batch: User[] = users.map((user) => ({
-              id: user.id,
-              display_name: user.displayName,
-              username: user.username,
-              avatar: user.avatar,
-              acct:
-                user.acct && user.acct.indexOf("@") > 0
-                  ? user.acct
-                  : user.acct + "@" + self.domain,
-              note: user.note,
-              following_count: 0,
-              lists: [],
-            }));
-            res = res.concat(batch);
+            const batch: User[] = users.map((acct) => {
+              const u = account2User(acct, true, false, self.domain);
+              userMap[u.id] = u;
+              return u;
+            });
+            following = following.concat(batch);
             callback(
-              (100 * res.length) / (data.me.following_count + data.lists.length)
+              (100 * following.length) / (totalrels + data.lists.length)
             );
           }
-          // Build a map
-          const followerMap: Record<string, User> = {};
-          res.forEach((u) => {
-            followerMap[u.id] = u;
-          });
+          // Next, those following us
+          let followers: User[] = [];
+          for await (const users of masto.v1.accounts.listFollowers(
+            data.me.id
+          )) {
+            const batch: User[] = users.map((acct) => {
+              if (userMap[acct.id]) {
+                userMap[acct.id].follower = true;
+                return userMap[acct.id];
+              }
+              const u = account2User(acct, false, true, self.domain);
+              userMap[u.id] = u;
+              return u;
+            });
+            followers = followers.concat(batch);
+            callback(
+              (100 * (following.length + followers.length)) /
+                (totalrels + data.lists.length)
+            );
+          }
+
           // Now pull list memberships
           await asyncForEach(data.lists, async (list, idx) => {
             for await (const users of masto.v1.lists.listAccounts(list.id)) {
               users.forEach((user) => {
-                const fol = followerMap[user.id];
+                const fol = userMap[user.id];
                 if (fol) {
                   fol.lists.push(list.id);
                 }
               });
               callback(
-                (100 * (data.me.following_count + idx)) /
-                  (data.me.following_count + data.lists.length)
+                (100 * (totalrels + idx)) / (totalrels + data.lists.length)
               );
             }
           });
-          return { followers: res, lists: data.lists, me: data.me };
+          return {
+            users: Object.values(userMap),
+            lists: data.lists,
+            me: data.me,
+          };
         })
         .then((data) => data);
     });
@@ -269,6 +316,20 @@ export default class APIWorker extends WorkerBase {
   // Computes analytics for the given list
   async listAnalytics(list: List): Promise<ListAnalytics> {
     return this.instance().then((masto) => fetchAnalytics(masto, list));
+  }
+
+  // Follows an account
+  async follow(userid: string): Promise<void> {
+    return this.instance().then((masto) => {
+      masto.v1.accounts.follow(userid);
+    });
+  }
+
+  // Follows an account
+  async unfollow(userid: string): Promise<void> {
+    return this.instance().then((masto) => {
+      masto.v1.accounts.unfollow(userid);
+    });
   }
 }
 Comlink.expose(APIWorker);

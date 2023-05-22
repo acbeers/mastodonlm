@@ -28,6 +28,13 @@ following:
     - httpApi:
         path: /following
         method: GET
+followers:
+  timeout: 30
+  handler: handler.followers
+  events:
+    - httpApi:
+        path: /followers
+        method: GET
 lists:
   timeout: 30
   handler: handler.lists
@@ -63,6 +70,21 @@ delete:
     - httpApi:
         path: /delete
         method: POST
+follow:
+  timeout: 30
+  handler: handler.follow
+  events:
+    - httpApi:
+        path: /follow
+        method: POST
+unfollow:
+  timeout: 30
+  handler: handler.unfollow
+  events:
+    - httpApi:
+        path: /unfollow
+        method: POST
+
 logout:
   timeout: 30
   handler: handler.logout
