@@ -11,7 +11,7 @@ import {
 import * as Comlink from "comlink";
 import { login } from "masto";
 import { WorkerBase } from "./workerbase";
-import { fetchAnalytics } from "@mastodonlm/shared";
+import { fetchAnalytics, follow, unfollow } from "@mastodonlm/shared";
 import type { mastodon } from "masto";
 
 // Endpoints
@@ -320,16 +320,12 @@ export default class APIWorker extends WorkerBase {
 
   // Follows an account
   async follow(userid: string): Promise<void> {
-    return this.instance().then((masto) => {
-      masto.v1.accounts.follow(userid);
-    });
+    return this.instance().then((masto) => follow(masto, userid));
   }
 
   // Follows an account
   async unfollow(userid: string): Promise<void> {
-    return this.instance().then((masto) => {
-      masto.v1.accounts.unfollow(userid);
-    });
+    return this.instance().then((masto) => unfollow(masto, userid));
   }
 }
 Comlink.expose(APIWorker);

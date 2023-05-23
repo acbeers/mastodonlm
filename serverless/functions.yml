@@ -72,14 +72,16 @@ delete:
         method: POST
 follow:
   timeout: 30
-  handler: handler.follow
+  runtime: nodejs16.x
+  handler: packages/server/follow_server.follow_handler
   events:
     - httpApi:
         path: /follow
         method: POST
 unfollow:
   timeout: 30
-  handler: handler.unfollow
+  runtime: nodejs16.x
+  handler: packages/server/follow_server.unfollow_handler
   events:
     - httpApi:
         path: /unfollow
