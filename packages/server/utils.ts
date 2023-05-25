@@ -1,7 +1,8 @@
-export function ok_response(msg: string) {
+export function ok_response(obj: object) {
+  const body = { ...obj, status: "OK" };
   const response = {
     statusCode: 200,
-    body: JSON.stringify({ status: msg }),
+    body: JSON.stringify(body),
   };
 
   return response;

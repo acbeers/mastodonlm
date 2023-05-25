@@ -14,7 +14,7 @@ export const analytics: Handler = async (event, context) => {
 
     const list = { id: event.queryStringParameters?.list_id, title: "" };
     return fetchAnalytics(masto, list)
-      .then((res) => ok_response(JSON.stringify(res)))
+      .then((res) => ok_response(res))
       .catch((err) => err_response("analytics failed"));
   });
 };

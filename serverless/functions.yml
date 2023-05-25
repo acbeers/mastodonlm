@@ -44,28 +44,32 @@ lists:
         method: GET
 add:
   timeout: 30
-  handler: handler.add_to_list
+  runtime: nodejs16.x
+  handler: packages/server/listcrud_server.list_add_handler
   events:
     - httpApi:
         path: /add
         method: POST
 remove:
   timeout: 30
-  handler: handler.remove_from_list
+  runtime: nodejs16.x
+  handler: packages/server/listcrud_server.list_remove_handler
   events:
     - httpApi:
         path: /remove
         method: POST
 create:
   timeout: 30
-  handler: handler.create_list
+  runtime: nodejs16.x
+  handler: packages/server/listcrud_server.list_create_handler
   events:
     - httpApi:
         path: /create
         method: POST
 delete:
   timeout: 30
-  handler: handler.delete_list
+  runtime: nodejs16.x
+  handler: packages/server/listcrud_server.list_delete_handler
   events:
     - httpApi:
         path: /delete

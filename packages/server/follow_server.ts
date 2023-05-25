@@ -14,7 +14,7 @@ export const follow_handler: Handler = async (event, context) => {
 
     const userid = event.queryStringParameters?.user_id;
     return follow(masto, userid)
-      .then((res) => ok_response("OK"))
+      .then((res) => ok_response({}))
       .catch((err) => err_response("Follow failed"));
   });
 };
@@ -28,7 +28,7 @@ export const unfollow_handler: Handler = async (event, context) => {
 
     const userid = event.queryStringParameters?.user_id;
     return unfollow(masto, userid)
-      .then((res) => ok_response("OK"))
+      .then((res) => ok_response({}))
       .catch((err) => err_response("Follow failed"));
   });
 };

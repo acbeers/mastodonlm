@@ -11,7 +11,15 @@ import {
 import * as Comlink from "comlink";
 import { login } from "masto";
 import { WorkerBase } from "./workerbase";
-import { fetchAnalytics, follow, unfollow } from "@mastodonlm/shared";
+import {
+  fetchAnalytics,
+  follow,
+  unfollow,
+  list_create,
+  list_delete,
+  list_add,
+  list_remove,
+} from "@mastodonlm/shared";
 import type { mastodon } from "masto";
 
 // Endpoints
@@ -251,16 +259,12 @@ export default class APIWorker extends WorkerBase {
 
   // Creates a new list
   async createList(list_name: string): Promise<List> {
-    return this.instance().then((masto) => {
-      return masto.v1.lists.create({ title: list_name });
-    });
+    return this.instance().then((masto) => list_create(masto, list_name));
   }
 
   // Deletes a list
   async deleteList(list_id: string): Promise<void> {
-    return this.instance().then((masto) => {
-      masto.v1.lists.remove(list_id);
-    });
+    return this.instance().then((masto) => list_delete(masto, list_id));
   }
 
   // Adds a user to a list
@@ -268,12 +272,9 @@ export default class APIWorker extends WorkerBase {
     if (!this.ready()) throw Error("API not ready");
     if (!this.token) throw Error("API not ready");
 
-    return login({
-      url: `https://${this.domain}`,
-      accessToken: this.token,
-    }).then((masto) => {
-      return masto.v1.lists.addAccount(list_id, { accountIds: [follower_id] });
-    });
+    return this.instance().then((masto) =>
+      list_add(masto, list_id, [follower_id])
+    );
   }
 
   // Removes a user from a list
@@ -281,14 +282,9 @@ export default class APIWorker extends WorkerBase {
     if (!this.ready()) throw Error("API not ready");
     if (!this.token) throw Error("API not ready");
 
-    return login({
-      url: `https://${this.domain}`,
-      accessToken: this.token,
-    }).then((masto) => {
-      return masto.v1.lists.removeAccount(list_id, {
-        accountIds: [follower_id],
-      });
-    });
+    return this.instance().then((masto) =>
+      list_remove(masto, list_id, follower_id)
+    );
   }
 
   // Creates a new list and imports data into it
