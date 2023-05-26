@@ -16,28 +16,32 @@ callback:
         method: POST
 meta:
   timeout: 30
-  handler: handler.meta
+  runtime: nodejs16.x
+  handler: packages/server/info_server.info_meta_handler
   events:
     - httpApi:
         path: /meta
         method: GET
 following:
   timeout: 30
-  handler: handler.following
+  runtime: nodejs16.x
+  handler: packages/server/info_server.info_following_handler
   events:
     - httpApi:
         path: /following
         method: GET
 followers:
   timeout: 30
-  handler: handler.followers
+  runtime: nodejs16.x
+  handler: packages/server/info_server.info_followers_handler
   events:
     - httpApi:
         path: /followers
         method: GET
 lists:
   timeout: 30
-  handler: handler.lists
+  runtime: nodejs16.x
+  handler: packages/server/info_server.info_lists_handler
   events:
     - httpApi:
         path: /lists

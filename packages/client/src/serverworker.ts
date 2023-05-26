@@ -133,7 +133,7 @@ export default class ServerAPIWorker extends WorkerBase {
         return this.authGET(urlFollowing)
           .then((resp) => checkJSON(resp))
           .then((x) => {
-            following = x;
+            following = x.following;
             following.forEach((x) => {
               x.following = true;
               x.follower = false;
@@ -148,7 +148,7 @@ export default class ServerAPIWorker extends WorkerBase {
             following.forEach((fol) => {
               followingMap[fol.id] = fol;
             });
-            followers.forEach((fol: User) => {
+            followers.followers.forEach((fol: User) => {
               fol.follower = true;
               fol.following = false;
               if (fol.id in followingMap) {
@@ -159,7 +159,8 @@ export default class ServerAPIWorker extends WorkerBase {
           })
           .then(() => this.authGET(urlLists))
           .then((resp) => checkJSON(resp))
-          .then((listaccts) => {
+          .then((resp) => {
+            const listaccts = resp.lists;
             callback(200 / total);
             // Build up lists for each follower
             following.forEach((x) => {

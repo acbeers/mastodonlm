@@ -19,6 +19,10 @@ import {
   list_delete,
   list_add,
   list_remove,
+  info_meta,
+  info_following,
+  info_followers,
+  info_lists,
 } from "@mastodonlm/shared";
 import type { mastodon } from "masto";
 
@@ -149,103 +153,70 @@ export default class APIWorker extends WorkerBase {
   async info(callback: (value: number) => void): Promise<APIData> {
     if (!this.ready()) throw Error("API not ready");
     if (!this.token) throw Error("API not ready");
+    if (!this.domain) throw Error("API not ready - no domain");
+
+    const domain = this.domain;
 
     const self = this;
     return login({
       url: `https://${this.domain}`,
       accessToken: this.token,
     }).then((masto) => {
-      return masto.v1.accounts
-        .verifyCredentials()
-        .then((me) => {
-          const meuser = {
-            id: me.id,
-            display_name: me.displayName,
-            username: me.username,
-            avatar: me.avatar,
-            acct: me.acct + "@" + self.domain,
-            note: me.note,
-            lists: [],
-            following_count: me.followingCount,
-            follower_count: me.followersCount,
-            following: false,
-            follower: false,
-          };
-          self.me = meuser;
-          return {
-            users: [],
-            lists: [],
-            me: meuser,
-          };
-        })
-        .then(async (data: APIData) => {
-          let res: List[] = [];
-          for await (const lists of masto.v1.lists.list()) {
-            const batch: List[] = lists.map((list) => ({
-              id: list.id,
-              title: list.title,
-            }));
-            res = res.concat(batch);
-          }
-          return {
-            users: data.users,
-            lists: res,
-            me: data.me,
-          };
-        })
+      return info_meta(masto, domain)
+        .then((res) => ({
+          me: res.me,
+          lists: res.lists,
+          users: [],
+        }))
         .then(async (data: APIData) => {
           // Build a map to track duplicates
           const userMap: Record<string, User> = {};
-          const totalrels = data.me.following_count + data.me.follower_count;
+          const totalwork =
+            data.me.following_count +
+            data.me.follower_count +
+            data.lists.length;
+
           // First people that we are following
           let following: User[] = [];
-          for await (const users of masto.v1.accounts.listFollowing(
-            data.me.id
-          )) {
-            const batch: User[] = users.map((acct) => {
-              const u = account2User(acct, true, false, self.domain);
-              userMap[u.id] = u;
-              return u;
-            });
-            following = following.concat(batch);
-            callback(
-              (100 * following.length) / (totalrels + data.lists.length)
-            );
-          }
-          // Next, those following us
-          let followers: User[] = [];
-          for await (const users of masto.v1.accounts.listFollowers(
-            data.me.id
-          )) {
-            const batch: User[] = users.map((acct) => {
-              if (userMap[acct.id]) {
-                userMap[acct.id].follower = true;
-                return userMap[acct.id];
-              }
-              const u = account2User(acct, false, true, self.domain);
-              userMap[u.id] = u;
-              return u;
-            });
-            followers = followers.concat(batch);
-            callback(
-              (100 * (following.length + followers.length)) /
-                (totalrels + data.lists.length)
-            );
-          }
-
+          const followingcb = (num: number) =>
+            callback((100 * num) / totalwork);
+          await info_following(masto, data.me.id, domain, followingcb).then(
+            (res) => {
+              following = res;
+              following.forEach((fol) => {
+                userMap[fol.id] = fol;
+              });
+            }
+          );
+          // Now, those following us
+          const followerscb = (num: number) =>
+            callback((100 * (data.me.following_count + num)) / totalwork);
+          await info_followers(masto, data.me.id, domain, followerscb).then(
+            (res) => {
+              res.forEach((acct) => {
+                if (userMap[acct.id]) {
+                  userMap[acct.id].follower = true;
+                  return userMap[acct.id];
+                }
+              });
+            }
+          );
           // Now pull list memberships
-          await asyncForEach(data.lists, async (list, idx) => {
-            for await (const users of masto.v1.lists.listAccounts(list.id)) {
-              users.forEach((user) => {
-                const fol = userMap[user.id];
+          const listscb = (num: number) =>
+            callback(
+              (100 * (data.me.following_count + data.me.follower_count + num)) /
+                totalwork
+            );
+          await info_lists(masto, listscb).then((res) => {
+            data.lists.forEach((list) => {
+              const userids = res[list.id];
+              userids.forEach((userid) => {
+                const fol = userMap[userid];
                 if (fol) {
                   fol.lists.push(list.id);
                 }
               });
-              callback(
-                (100 * (totalrels + idx)) / (totalrels + data.lists.length)
-              );
-            }
+            });
           });
           return {
             users: Object.values(userMap),
@@ -283,7 +254,7 @@ export default class APIWorker extends WorkerBase {
     if (!this.token) throw Error("API not ready");
 
     return this.instance().then((masto) =>
-      list_remove(masto, list_id, follower_id)
+      list_remove(masto, list_id, [follower_id])
     );
   }
 
