@@ -19,6 +19,7 @@ import {
   list_delete,
   list_add,
   list_remove,
+  list_import,
   info_meta,
   info_following,
   info_followers,
@@ -262,21 +263,7 @@ export default class APIWorker extends WorkerBase {
   async importList(list_name: string, data: string[]): Promise<void> {
     // FIXME: We should allow importing into an existing list.
     return this.instance().then((masto) => {
-      return masto.v1.lists.create({ title: list_name }).then((newlist) => {
-        const list_id = newlist.id;
-        // FIXME: data needs to be translated into account IDs, not acct strings.
-        const proms = data.map((acct) => masto.v1.accounts.lookup({ acct }));
-        return Promise.all(proms).then((accts) => {
-          const ids = accts.map((x) => x.id);
-          return masto.v1.lists.addAccount(list_id, { accountIds: ids });
-        });
-
-        // FIXME: If data is too long, we might get into problems.
-        // FIXME: We should offer to follow accounts that we aren't following already.
-        // But, that API is one account at a time, so could run afoul of API limits.
-        // FIXME: Perhaps I just need to have a limit of e.g. 50 accounts, plus go to
-        // some efforts to not do any work for accounts that I already know about.
-      });
+      list_import(masto, list_name, data);
     });
   }
 

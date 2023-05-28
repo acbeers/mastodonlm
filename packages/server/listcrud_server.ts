@@ -5,6 +5,7 @@ import {
   list_delete,
   list_add,
   list_remove,
+  list_import,
 } from "@mastodonlm/shared";
 import { Handler } from "aws-lambda";
 import { Factory } from "./factory";
@@ -67,6 +68,21 @@ export const list_remove_handler: Handler = async (event, context) => {
     const list_id = event.queryStringParameters?.list_id;
     const accountids = event.queryStringParameters?.account_id.split(",");
     return list_remove(masto, list_id, accountids)
+      .then((res) => ok_response({}))
+      .catch((err) => err_response("List deletion failed"));
+  });
+};
+
+export const list_import_handler: Handler = async (event, context) => {
+  const headers = event.headers || {};
+  const cookie = headers.authorization || "";
+
+  return Factory.fromCookie(cookie).then((masto) => {
+    if (!masto) return auth_response();
+
+    const list_name = event.queryStringParameters?.list_name;
+    const accountids = event.queryStringParameters?.accts.split(",");
+    return list_import(masto, list_name, accountids)
       .then((res) => ok_response({}))
       .catch((err) => err_response("List deletion failed"));
   });

@@ -218,14 +218,9 @@ export default class ServerAPIWorker extends WorkerBase {
 
   // Creates a new list and imports data into it
   async importList(list_name: string, accounts: string[]): Promise<void> {
-    return this.authPOST(`${urlCreate}?list_name=${list_name}`)
-      .then((resp) => checkJSON(resp))
-      .then((data) => {
-        const list_id = data.list.id;
-        return this.authPOST(
-          `${urlImport}?list_id=${list_id}&accts=${accounts.join(",")}`
-        ).then((resp) => checkJSON(resp));
-      });
+    return this.authPOST(
+      `${urlImport}?list_name=${list_name}&accts=${accounts.join(",")}`
+    ).then((resp) => checkJSON(resp));
   }
 
   // Computes analytics for the given list

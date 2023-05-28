@@ -104,7 +104,8 @@ logout:
         method: POST
 import:
   timeout: 30
-  handler: handler.importToList
+  runtime: nodejs16.x
+  handler: packages/server/listcrud_server.list_import_handler
   events:
     - httpApi:
         path: /import

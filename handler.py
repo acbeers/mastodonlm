@@ -101,51 +101,6 @@ def logout(event, _):
     return response(json.dumps({"status": "OK"}))
 
 
-def importToList(event, _):
-    """Import a set of users into a list"""
-    cookie = get_cookie(event)
-
-    # If we have no cookie, tell the client to go away
-    if cookie is None:
-        resp = {"status": "no_cookie"}
-        return response(json.dumps(resp), statusCode=403)
-
-    try:
-        mastodon = MastodonFactory.from_cookie(cookie)
-        mastodon.me()
-    except MastodonIllegalArgumentError:
-        return {"statusCode": 500, "body": "ERROR"}
-    except MastodonInternalServerError:
-        return {"statusCode": 500, "body": "ERROR"}
-    except (MastodonUnauthorizedError, NoAuthInfo):
-        resp = {"status": "not_authorized"}
-        return response(json.dumps(resp), statusCode=403)
-    except NotMastodon:
-        return blocked_response()
-
-    # First, translate accounts to IDs
-    lid = event["queryStringParameters"]["list_id"]
-    print(lid)
-    accts = event["queryStringParameters"]["accts"].split(",")
-    print(accts)
-
-    ids = [mastodon.account_lookup(acct).id for acct in accts]
-    print(ids)
-
-    try:
-        mastodon.list_accounts_add(lid, ids)
-        return response(json.dumps({"status": "OK"}))
-    except MastodonNotFoundError as e:
-        logging.error("ERROR - not found: %s", str(e))
-        return err_response("ERROR - not found")
-    except MastodonUnauthorizedError as e:
-        logging.error("ERROR - unauthorized: %s", str(e))
-        return err_response("ERROR - unauthorized")
-    except MastodonAPIError as e:
-        logging.error("ERROR - other API error: %s", str(e))
-        return err_response("ERROR - API error")
-
-
 def build_error_response(err):
     """Given an error, build an error response"""
     try:
