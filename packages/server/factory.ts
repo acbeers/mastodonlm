@@ -24,4 +24,8 @@ async function fromCookie(cookie: string): Promise<Client | null> {
   });
 }
 
-export const Factory = { fromCookie };
+async function unauthenticated(domain: string): Promise<Client> {
+  return login({ url: `https://{domain}` });
+}
+
+export const Factory = { fromCookie, unauthenticated };

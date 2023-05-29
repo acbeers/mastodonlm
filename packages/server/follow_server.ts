@@ -2,33 +2,22 @@
 
 import { follow, unfollow } from "@mastodonlm/shared";
 import { Handler } from "aws-lambda";
-import { Factory } from "./factory";
-import { ok_response, err_response, auth_response } from "./utils";
+import { gen_handler } from "./utils";
+import type { mastodon } from "masto";
+
+// Convenient type aliases
+type Client = mastodon.Client;
 
 export const follow_handler: Handler = async (event, context) => {
-  const headers = event.headers || {};
-  const cookie = headers.authorization || "";
-
-  return Factory.fromCookie(cookie).then((masto) => {
-    if (!masto) return auth_response();
-
-    const userid = event.queryStringParameters?.user_id;
-    return follow(masto, userid)
-      .then((res) => ok_response({}))
-      .catch((err) => err_response("Follow failed"));
-  });
+  const userid = event.queryStringParameters?.user_id;
+  const method = (masto: Client, domain: string) =>
+    follow(masto, userid).then(() => ({}));
+  return gen_handler(event, context, method);
 };
 
 export const unfollow_handler: Handler = async (event, context) => {
-  const headers = event.headers || {};
-  const cookie = headers.authorization || "";
-
-  return Factory.fromCookie(cookie).then((masto) => {
-    if (!masto) return auth_response();
-
-    const userid = event.queryStringParameters?.user_id;
-    return unfollow(masto, userid)
-      .then((res) => ok_response({}))
-      .catch((err) => err_response("Follow failed"));
-  });
+  const userid = event.queryStringParameters?.user_id;
+  const method = (masto: Client, domain: string) =>
+    unfollow(masto, userid).then(() => ({}));
+  return gen_handler(event, context, method);
 };

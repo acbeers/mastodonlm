@@ -35,14 +35,17 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
+beforeEach(() => {
+  Factory.fromCookie.mockResolvedValue(jest.fn());
+  Datastore.getAuth.mockResolvedValue(jest.fn());
+});
+
 test("meta succeeds", (done) => {
   const event = {
     headers: {},
     queryStringParameters: {},
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
-  Datastore.getAuth.mockResolvedValue(jest.fn());
   info_meta.mockResolvedValue({});
 
   info_meta_handler(event, {}).then((res) => {
@@ -62,8 +65,6 @@ test("following succeeds", (done) => {
     queryStringParameters: {},
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
-  Datastore.getAuth.mockResolvedValue(jest.fn());
   info_following.mockResolvedValue({});
 
   info_following_handler(event, {}).then((res) => {
@@ -83,8 +84,6 @@ test("followers succeeds", (done) => {
     queryStringParameters: {},
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
-  Datastore.getAuth.mockResolvedValue(jest.fn());
   info_followers.mockResolvedValue({});
 
   info_followers_handler(event, {}).then((res) => {

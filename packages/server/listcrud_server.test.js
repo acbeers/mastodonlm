@@ -4,6 +4,9 @@ import { jest } from "@jest/globals";
 jest.unstable_mockModule("./factory", () => ({
   Factory: { fromCookie: jest.fn() },
 }));
+jest.unstable_mockModule("./datastore", () => ({
+  Datastore: { getAuth: jest.fn() },
+}));
 jest.unstable_mockModule("@mastodonlm/shared", () => ({
   list_create: jest.fn(),
   list_delete: jest.fn(),
@@ -16,6 +19,8 @@ jest.unstable_mockModule("@mastodonlm/shared", () => ({
 // Some values will be set inside tests.
 const factory = await import("./factory");
 const Factory = factory.Factory;
+const datastore = await import("./datastore");
+const Datastore = datastore.Datastore;
 const shared = await import("@mastodonlm/shared");
 const list_create = shared.list_create;
 const list_delete = shared.list_delete;
@@ -36,21 +41,32 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
+beforeEach(() => {
+  Factory.fromCookie.mockResolvedValue(jest.fn());
+  Datastore.getAuth.mockResolvedValue(jest.fn());
+});
+
 test("list create succeeds, return a list", (done) => {
   const event = {
     headers: {},
     queryStringParameters: { list_name: "list-123" },
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
-  list_create.mockResolvedValue({ id: 123, title: "list-123" });
+  list_create.mockResolvedValue({ list: { id: 123, title: "list-123" } });
 
   list_create_handler(event, {}).then((res) => {
     const exp = {
       list: { id: 123, title: "list-123" },
       status: "OK",
     };
-    if (res.statusCode === 200 && res.body == JSON.stringify(exp)) done();
+    try {
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toBe(JSON.stringify(exp));
+      expect(list_create).toHaveBeenCalled();
+      done();
+    } catch (err) {
+      done(err);
+    }
   });
 });
 
@@ -60,11 +76,16 @@ test("list create fails, return an error", (done) => {
     queryStringParameters: { list_name: "list-123" },
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
   list_create.mockRejectedValue(jest.fn());
 
   list_create_handler(event, {}).then((res) => {
-    if (res.statusCode === 500) done();
+    try {
+      expect(res.statusCode).toBe(500);
+      expect(list_create).toHaveBeenCalled();
+      done();
+    } catch (err) {
+      done(err);
+    }
   });
 });
 
@@ -74,11 +95,16 @@ test("list delete succeeds", (done) => {
     queryStringParameters: { list_id: "123" },
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
   list_delete.mockResolvedValue(jest.fn());
 
   list_delete_handler(event, {}).then((res) => {
-    if (res.statusCode === 200) done();
+    try {
+      expect(res.statusCode).toBe(200);
+      expect(list_delete).toHaveBeenCalled();
+      done();
+    } catch (err) {
+      done(err);
+    }
   });
 });
 
@@ -88,11 +114,16 @@ test("list delete fails, return an error", (done) => {
     queryStringParameters: { list_name: "list-123" },
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
   list_delete.mockRejectedValue(jest.fn());
 
   list_delete_handler(event, {}).then((res) => {
-    if (res.statusCode === 500) done();
+    try {
+      expect(res.statusCode).toBe(500);
+      expect(list_delete).toHaveBeenCalled();
+      done();
+    } catch (err) {
+      done(err);
+    }
   });
 });
 
@@ -102,13 +133,13 @@ test("list add succeeds", (done) => {
     queryStringParameters: { list_id: "123", account_id: "45" },
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
   list_add.mockResolvedValue(jest.fn());
 
   list_add_handler(event, {}).then((res) => {
     try {
       expect(list_add).toBeCalled();
-      if (res.statusCode === 200) done();
+      expect(res.statusCode).toBe(200);
+      done();
     } catch (err) {
       done(err);
     }
@@ -121,13 +152,13 @@ test("list add fails, return an error", (done) => {
     queryStringParameters: { list_name: "list-123", account_id: "45" },
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
   list_add.mockRejectedValue(jest.fn());
 
   list_add_handler(event, {}).then((res) => {
     try {
       expect(list_add).toBeCalled();
-      if (res.statusCode === 500) done();
+      expect(res.statusCode).toBe(500);
+      done();
     } catch (err) {
       done(err);
     }
@@ -140,13 +171,13 @@ test("list remove succeeds", (done) => {
     queryStringParameters: { list_id: "123", account_id: "45" },
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
   list_remove.mockResolvedValue(jest.fn());
 
   list_remove_handler(event, {}).then((res) => {
     try {
       expect(list_remove).toBeCalled();
-      if (res.statusCode === 200) done();
+      expect(res.statusCode).toBe(200);
+      done();
     } catch (err) {
       done(err);
     }
@@ -159,13 +190,13 @@ test("list remove fails, return an error", (done) => {
     queryStringParameters: { list_name: "list-123", account_id: "45" },
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
   list_remove.mockRejectedValue(jest.fn());
 
   list_remove_handler(event, {}).then((res) => {
     try {
       expect(list_remove).toBeCalled();
-      if (res.statusCode === 500) done();
+      expect(res.statusCode).toBe(500);
+      done();
     } catch (err) {
       done(err);
     }
@@ -178,13 +209,13 @@ test("list import succeeds", (done) => {
     queryStringParameters: { list_id: "123", accts: "1,2,3" },
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
   list_import.mockResolvedValue(jest.fn());
 
   list_import_handler(event, {}).then((res) => {
     try {
       expect(list_import).toBeCalled();
-      if (res.statusCode === 200) done();
+      expect(res.statusCode).toBe(200);
+      done();
     } catch (err) {
       done(err);
     }
@@ -197,13 +228,13 @@ test("list import fails, return an error", (done) => {
     queryStringParameters: { list_name: "list-123", accts: "1,2,3" },
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
   list_import.mockRejectedValue(jest.fn());
 
   list_import_handler(event, {}).then((res) => {
     try {
       expect(list_import).toBeCalled();
-      if (res.statusCode === 500) done();
+      expect(res.statusCode).toBe(500);
+      done();
     } catch (err) {
       done(err);
     }
