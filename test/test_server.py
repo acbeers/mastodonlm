@@ -5,8 +5,8 @@ import logging
 import os
 from unittest.mock import MagicMock, patch, sentinel
 from unittest import TestCase
-from mastodon import MastodonAPIError, MastodonUnauthorizedError
-import handler
+from mastodon import MastodonAPIError
+import server
 import shared
 
 # Here, reconfigure the logger to send output to a file during tests.
@@ -155,7 +155,7 @@ class TestAuth(TestCase):
         (event, context) = setupWithCookies()
 
         # Make the me() method throw, which is how we know we aren't logged in.
-        factory.from_cookie.return_value.me.side_effect = handler.NoAuthInfo
+        factory.from_cookie.return_value.me.side_effect = shared.NoAuthInfo
 
         data_store.is_allowed.return_value = True
 
@@ -243,8 +243,8 @@ class TestAuth(TestCase):
             "mydomain", "https://test_redirect/callback?domain=mydomain"
         )
 
-    @patch("handler.Datastore")
-    @patch("handler.MastodonFactory", new_callable=mock_factory)
+    @patch("server.Datastore")
+    @patch("server.MastodonFactory", new_callable=mock_factory)
     def test_logout(self, factory, data_store):
         """Test /logout"""
 
@@ -252,7 +252,7 @@ class TestAuth(TestCase):
 
         mastomock = factory.from_cookie.return_value
 
-        handler.logout(event, context)
+        server.logout(event, context)
         # We should have made a mastodon instance from the stored config
         factory.from_cookie.assert_called_with("mycookie")
         # We should drop the access token

@@ -1,8 +1,5 @@
 """Tests for utility functions"""
 
-import json
-import logging
-from unittest.mock import MagicMock, patch, sentinel
 from unittest import TestCase
 import utils
 

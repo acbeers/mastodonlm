@@ -1,3 +1,6 @@
+# Auth functions are all still in python, because the JS masto library
+# doesn't yet have oAuth support
+#
 auth:
   handler: shared.auth
   timeout: 30
@@ -6,14 +9,38 @@ auth:
     - httpApi:
         path: /auth
         method: GET
-
 callback:
-  handler: handler.callback
+  handler: server.callback
   timeout: 30
   events:
     - httpApi:
         path: /callback
         method: POST
+logout:
+  timeout: 30
+  handler: server.logout
+  events:
+    - httpApi:
+        path: /logout
+        method: POST
+clientcallback:
+  handler: client.clientcallback
+  timeout: 30
+  events:
+    - httpApi:
+        path: /clientcallback
+        method: POST
+clientlogout:
+  timeout: 30
+  handler: client.clientlogout
+  events:
+    - httpApi:
+        path: /clientlogout
+        method: POST
+
+# Core functionality for the app is all in JS, that's shared between
+# server-side and client-side implementations
+#
 meta:
   timeout: 30
   runtime: nodejs16.x
@@ -78,6 +105,14 @@ delete:
     - httpApi:
         path: /delete
         method: POST
+import:
+  timeout: 30
+  runtime: nodejs16.x
+  handler: packages/server/listcrud_server.list_import_handler
+  events:
+    - httpApi:
+        path: /import
+        method: POST
 follow:
   timeout: 30
   runtime: nodejs16.x
@@ -95,22 +130,6 @@ unfollow:
         path: /unfollow
         method: POST
 
-logout:
-  timeout: 30
-  handler: handler.logout
-  events:
-    - httpApi:
-        path: /logout
-        method: POST
-import:
-  timeout: 30
-  runtime: nodejs16.x
-  handler: packages/server/listcrud_server.list_import_handler
-  events:
-    - httpApi:
-        path: /import
-        method: POST
-
 analytics:
   timeout: 30
   runtime: nodejs16.x
@@ -120,21 +139,8 @@ analytics:
         path: /analytics
         method: GET
 
-clientcallback:
-  handler: client.clientcallback
-  timeout: 30
-  events:
-    - httpApi:
-        path: /clientcallback
-        method: POST
-clientlogout:
-  timeout: 30
-  handler: client.clientlogout
-  events:
-    - httpApi:
-        path: /clientlogout
-        method: POST
-
+# Telemetry and error functions are in Python as well
+#
 telemetry:
   timeout: 30
   handler: telemetry.telemetry
@@ -150,6 +156,8 @@ error:
         path: /error
         method: POST
 
+# This is a routine that will copy hachyderm.io's blocklist
+#
 blocklistUpdate:
   handler: other.block_update
   timeout: 300
