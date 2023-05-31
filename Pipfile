@@ -17,9 +17,9 @@ sourcemap = "*"
 pylint = "*"
 
 [scripts]
-format = "black models.py client.py server.py shared.py other.py utils.py  test"
-lint = "pylint models.py client.py server.py shared.py other.py utils.py test"
-test = "python -m unittest discover test"
+format = "black backendpy"
+lint = "pylint backendpy"
+test = "python -m unittest discover backendpy"
 
 [requires]
 python_version = "3.9"

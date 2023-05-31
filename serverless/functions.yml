@@ -2,7 +2,7 @@
 # doesn't yet have oAuth support
 #
 auth:
-  handler: shared.auth
+  handler: backendpy.shared.auth
   timeout: 30
   runtime: python3.9
   events:
@@ -10,7 +10,7 @@ auth:
         path: /auth
         method: GET
 callback:
-  handler: server.callback
+  handler: backendpy.server.callback
   timeout: 30
   events:
     - httpApi:
@@ -18,13 +18,13 @@ callback:
         method: POST
 logout:
   timeout: 30
-  handler: server.logout
+  handler: backendpy.server.logout
   events:
     - httpApi:
         path: /logout
         method: POST
 clientcallback:
-  handler: client.clientcallback
+  handler: backendpy.client.clientcallback
   timeout: 30
   events:
     - httpApi:
@@ -32,7 +32,7 @@ clientcallback:
         method: POST
 clientlogout:
   timeout: 30
-  handler: client.clientlogout
+  handler: backendpy.client.clientlogout
   events:
     - httpApi:
         path: /clientlogout
@@ -143,14 +143,14 @@ analytics:
 #
 telemetry:
   timeout: 30
-  handler: telemetry.telemetry
+  handler: backendpy.telemetry.telemetry
   events:
     - httpApi:
         path: /telemetry
         method: POST
 error:
   timeout: 30
-  handler: telemetry.error
+  handler: backendpy.telemetry.error
   events:
     - httpApi:
         path: /error
@@ -159,7 +159,7 @@ error:
 # This is a routine that will copy hachyderm.io's blocklist
 #
 blocklistUpdate:
-  handler: other.block_update
+  handler: backendpy.other.block_update
   timeout: 300
   events:
     - schedule: cron(0 8 * * ? *)

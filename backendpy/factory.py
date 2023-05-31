@@ -17,7 +17,6 @@ class NotMastodon(Exception):
     """Internal exception for when we think we don't have a Mastodon connection"""
 
 
-
 class MastodonFactory:
     """Factory class for Mastodon instances"""
 
