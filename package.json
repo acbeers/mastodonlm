@@ -6,6 +6,7 @@
     "build:packages:watch": "npx tsc -b packages --watch",
     "build:devstage": "yarn workspace client env-cmd -f .env.devstage npm run build",
     "predeploy": "yarn workspace client build",
+    "deploy:devstage": "sls deploy --aws-profile slsdeploy deploy --stage devstage",
     "deploy": "sls deploy --aws-profile slsdeploy deploy --stage newprod"
   },
   "dependencies": {
