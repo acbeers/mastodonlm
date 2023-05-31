@@ -2,6 +2,8 @@
 
 A simple list manager, bulit in the style of Twitter List Manager.
 
+This is running live [HERE](https://www.mastodonlistmanager.org).
+
 ## Development Setup
 
 To get ready for development, ensure all packages are installed:
@@ -12,6 +14,12 @@ npm i
 cd list-manager
 npm i
 ```
+
+Also ensure Node installed. I have developed this with Node 19.7
+
+If you make changes in `packages/shared`, which contains shared Typescript
+libraries, you'll have to run `yarn run build:packages` for the other workspaces
+to see interface changes.
 
 ## Running locally
 
@@ -29,11 +37,10 @@ Then you can run things locally:
 AWS_PROFILE=<account> sls offline
 ```
 
-Run the front end via npm
+Run the front end via yarn
 
 ```
-cd list-manager
-npm run start
+yarn start
 ```
 
 To use, go to `http://localhost:3000/main`, which will allow you to enter your
@@ -47,13 +54,28 @@ the Mastodon server being handled by a Web Worker (via the very fine
 from prying eyes.
 
 Authentication still happens mostly via a backend process, deployed to AWS
-Lambda. This allows me to minimize the "applications" that are registered on a
-given Mastodon server, and protect the client IDs and secrets associated with
-those applications. After authentication happens, the token is disclosed to the
-client and further API calls are made directly by the Javascript app. The token
-is discarded when the page is closed (it is not persisted to local storage or
-stored as a cookie).
+Lambda, written in Python. This allows me to minimize the "applications" that
+are registered on a given Mastodon server, and protect the client IDs and
+secrets associated with those applications. After authentication happens, the
+token is disclosed to the client and further API calls are made directly by the
+Javascript app. The token is discarded when the page is closed (it is not
+persisted to local storage or stored as a cookie).
+
+The core work of the List Manager (list creation, account adds and deletes,
+etc.) are implemented in Typescript and run directly in the browser. They can
+also run via published Lambda functions via the server (though there is no
+user-friendly way yet to switch between these modes)
 
 The app reqeusts hopefully a minimal set of scopes from Mastodon: `read:lists`,
-`read:follows`, `read:accounts`, `write:lists`, to minimize the things it can
-change about the account.
+`read:follows`, `read:accounts`, `write:lists`, `write:follows` to minimize the
+things it can change about the account.
+
+There are three configured stages for AWS:
+
+- `dev`, which mostly contains the DynamoDB tables and lambda functions
+
+- `devstage`, which contains everything, including the web app and its hosted
+  domain.
+
+- `newprod`, which contains everything, including the web app and its hosted
+  public-facing domain (https://www.mastodonlistmanager.org)
