@@ -1,6 +1,7 @@
 """Lambda routines that don't directly process requests"""
 
 import requests
+import time
 from models import Datastore
 
 
@@ -13,4 +14,5 @@ def block_update(_event, _context):
         "https://hachyderm.io/api/v1/instance/domain_blocks", timeout=60
     )
     js = resp.json()
-    Datastore.batch_block_host(js)
+    ts = int(time.time())
+    Datastore.batch_block_host(js,ts)

@@ -6,6 +6,7 @@ import os
 import time
 
 from pynamodb.models import Model
+from pynamodb.indexes import GlobalSecondaryIndex, AllProjection
 from pynamodb.attributes import UnicodeAttribute, NumberAttribute
 
 
@@ -65,6 +66,7 @@ class BlockedHost(MyModel):
 
     hash = UnicodeAttribute(hash_key=True)
     host = UnicodeAttribute()
+    timestamp = UnicodeAttribute()
 
 
 class HostConfig(MyModel):
@@ -129,6 +131,7 @@ class Datastore:
         m = hashlib.sha256()
         m.update(lhost.encode("utf-8"))
         sha = m.hexdigest()
+        print(sha)
         block = BlockedHost.lookup(sha)
         return block is None
 
@@ -139,13 +142,28 @@ class Datastore:
         bh.save()
 
     @classmethod
-    def batch_block_host(cls, hosts):
+    def batch_block_host(cls, hosts, ts):
         """Adds multiple entries to the blocked host list"""
 
+        # First, write/update the new hosts
         with BlockedHost.batch_write() as batch:
-            items = [BlockedHost(x["digest"], host=x["domain"]) for x in hosts]
+            items = [
+                BlockedHost(x["digest"], host=x["domain"], timestamp=str(ts))
+                for x in hosts
+            ]
             for item in items:
                 batch.save(item)
+                # Manual rate limiting. This is dumb, but batch_write() doesn't
+                # support rate-limiting in pynamodb.
+                time.sleep(0.1)
+
+        # Now, query for and delete hosts that didn't get updated
+        # Since this involves a scan, it will be expensive.  But, the blocked table
+        # is generally pretty small, so I'm not going to worry about it for now.
+        cnt = 0
+        for item in BlockedHost.scan(BlockedHost.timestamp != str(ts), rate_limit=1):
+            item.delete()
+            cnt = cnt + 1
 
     @classmethod
     def get_host_config(cls, host):
