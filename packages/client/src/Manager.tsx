@@ -78,8 +78,6 @@ function info2Groups(
   };
   const filterFunc = filterFuncs[key] || ((x: User) => true);
 
-  const s = Relationship.Following;
-
   const relFilter: Record<Relationship, (x: User) => boolean> = {
     unknown: (x) => false,
     following: (x) => x.following,

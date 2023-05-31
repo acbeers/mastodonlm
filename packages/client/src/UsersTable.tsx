@@ -16,13 +16,7 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
-import {
-  List,
-  User,
-  Group,
-  InProgress,
-  Relationship,
-} from "@mastodonlm/shared";
+import { List, User, Group, InProgress } from "@mastodonlm/shared";
 
 import "./UsersTable.css";
 

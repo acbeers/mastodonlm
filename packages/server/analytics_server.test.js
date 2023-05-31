@@ -4,6 +4,9 @@ import { jest } from "@jest/globals";
 jest.unstable_mockModule("./factory", () => ({
   Factory: { fromCookie: jest.fn() },
 }));
+jest.unstable_mockModule("./datastore", () => ({
+  Datastore: { getAuth: jest.fn() },
+}));
 jest.unstable_mockModule("@mastodonlm/shared", () => ({
   fetchAnalytics: jest.fn(),
 }));
@@ -12,6 +15,8 @@ jest.unstable_mockModule("@mastodonlm/shared", () => ({
 // Some values will be set inside tests.
 const factory = await import("./factory");
 const Factory = factory.Factory;
+const datastore = await import("./datastore");
+const Datastore = datastore.Datastore;
 const shared = await import("@mastodonlm/shared");
 const fetchAnalytics = shared.fetchAnalytics;
 
@@ -22,14 +27,29 @@ fetchAnalytics.mockResolvedValue("test_value");
 const mod = await import("./analytics_server");
 const analytics = mod.analytics;
 
+afterEach(() => {
+  jest.clearAllMocks();
+});
+
+beforeEach(() => {
+  Factory.fromCookie.mockResolvedValue(jest.fn());
+  Datastore.getAuth.mockResolvedValue(jest.fn());
+});
+
 test("handles no cookie", (done) => {
   const event = {
     headers: {},
   };
 
   Factory.fromCookie.mockResolvedValue(null);
+
   analytics(event, {}).then((res) => {
-    if (res.statusCode === 401) done();
+    try {
+      expect(res.statusCode).toBe(401);
+      done();
+    } catch (err) {
+      done(err);
+    }
   });
 });
 
@@ -39,11 +59,13 @@ test("handles cookie", (done) => {
     queryStringParameters: { list_id: "listid" },
   };
 
-  Factory.fromCookie.mockResolvedValue(jest.fn());
   analytics(event, {}).then((res) => {
-    if (res.statusCode === 200) {
+    try {
+      expect(res.statusCode).toBe(200);
       expect(fetchAnalytics).toHaveBeenCalled();
       done();
+    } catch (err) {
+      done(err);
     }
   });
 });

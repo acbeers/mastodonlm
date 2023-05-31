@@ -1,103 +1,133 @@
+# Auth functions are all still in python, because the JS masto library
+# doesn't yet have oAuth support
+#
 auth:
-  handler: shared.auth
+  handler: backendpy.shared.auth
   timeout: 30
   runtime: python3.9
   events:
     - httpApi:
         path: /auth
         method: GET
-
 callback:
-  handler: handler.callback
+  handler: backendpy.server.callback
   timeout: 30
   events:
     - httpApi:
         path: /callback
         method: POST
+logout:
+  timeout: 30
+  handler: backendpy.server.logout
+  events:
+    - httpApi:
+        path: /logout
+        method: POST
+clientcallback:
+  handler: backendpy.client.clientcallback
+  timeout: 30
+  events:
+    - httpApi:
+        path: /clientcallback
+        method: POST
+clientlogout:
+  timeout: 30
+  handler: backendpy.client.clientlogout
+  events:
+    - httpApi:
+        path: /clientlogout
+        method: POST
+
+# Core functionality for the app is all in JS, that's shared between
+# server-side and client-side implementations
+#
 meta:
   timeout: 30
-  handler: handler.meta
+  runtime: nodejs16.x
+  handler: packages/server/info_server.info_meta_handler
   events:
     - httpApi:
         path: /meta
         method: GET
 following:
   timeout: 30
-  handler: handler.following
+  runtime: nodejs16.x
+  handler: packages/server/info_server.info_following_handler
   events:
     - httpApi:
         path: /following
         method: GET
 followers:
   timeout: 30
-  handler: handler.followers
+  runtime: nodejs16.x
+  handler: packages/server/info_server.info_followers_handler
   events:
     - httpApi:
         path: /followers
         method: GET
 lists:
   timeout: 30
-  handler: handler.lists
+  runtime: nodejs16.x
+  handler: packages/server/info_server.info_lists_handler
   events:
     - httpApi:
         path: /lists
         method: GET
 add:
   timeout: 30
-  handler: handler.add_to_list
+  runtime: nodejs16.x
+  handler: packages/server/listcrud_server.list_add_handler
   events:
     - httpApi:
         path: /add
         method: POST
 remove:
   timeout: 30
-  handler: handler.remove_from_list
+  runtime: nodejs16.x
+  handler: packages/server/listcrud_server.list_remove_handler
   events:
     - httpApi:
         path: /remove
         method: POST
 create:
   timeout: 30
-  handler: handler.create_list
+  runtime: nodejs16.x
+  handler: packages/server/listcrud_server.list_create_handler
   events:
     - httpApi:
         path: /create
         method: POST
 delete:
   timeout: 30
-  handler: handler.delete_list
+  runtime: nodejs16.x
+  handler: packages/server/listcrud_server.list_delete_handler
   events:
     - httpApi:
         path: /delete
         method: POST
+import:
+  timeout: 30
+  runtime: nodejs16.x
+  handler: packages/server/listcrud_server.list_import_handler
+  events:
+    - httpApi:
+        path: /import
+        method: POST
 follow:
   timeout: 30
-  handler: handler.follow
+  runtime: nodejs16.x
+  handler: packages/server/follow_server.follow_handler
   events:
     - httpApi:
         path: /follow
         method: POST
 unfollow:
   timeout: 30
-  handler: handler.unfollow
+  runtime: nodejs16.x
+  handler: packages/server/follow_server.unfollow_handler
   events:
     - httpApi:
         path: /unfollow
-        method: POST
-
-logout:
-  timeout: 30
-  handler: handler.logout
-  events:
-    - httpApi:
-        path: /logout
-        method: POST
-import:
-  timeout: 30
-  handler: handler.importToList
-  events:
-    - httpApi:
-        path: /import
         method: POST
 
 analytics:
@@ -109,38 +139,27 @@ analytics:
         path: /analytics
         method: GET
 
-clientcallback:
-  handler: client.clientcallback
-  timeout: 30
-  events:
-    - httpApi:
-        path: /clientcallback
-        method: POST
-clientlogout:
-  timeout: 30
-  handler: client.clientlogout
-  events:
-    - httpApi:
-        path: /clientlogout
-        method: POST
-
+# Telemetry and error functions are in Python as well
+#
 telemetry:
   timeout: 30
-  handler: telemetry.telemetry
+  handler: backendpy.telemetry.telemetry
   events:
     - httpApi:
         path: /telemetry
         method: POST
 error:
   timeout: 30
-  handler: telemetry.error
+  handler: backendpy.telemetry.error
   events:
     - httpApi:
         path: /error
         method: POST
 
+# This is a routine that will copy hachyderm.io's blocklist
+#
 blocklistUpdate:
-  handler: other.block_update
+  handler: backendpy.other.block_update
   timeout: 300
   events:
     - schedule: cron(0 8 * * ? *)

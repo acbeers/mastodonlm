@@ -94,7 +94,7 @@ package:
   # serverless-plugin-typescript seems to break the inclusion of *.py files.
   # so be explicit.
   include:
-    - "*.py"
+    - "backendpy/*.py"
 
 custom:
   # Table names
