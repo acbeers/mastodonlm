@@ -125,7 +125,7 @@ export async function info_followers(
     let followers: User[] = [];
     for await (const users of masto.v1.accounts.listFollowers(meid)) {
       const batch: User[] = users.map((acct) => {
-        const u = account2User(acct, true, false, domain);
+        const u = account2User(acct, false, true, domain);
         //userMap[u.id] = u;
         return u;
       });

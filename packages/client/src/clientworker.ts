@@ -170,6 +170,8 @@ export default class APIWorker extends WorkerBase {
           users: [],
         }))
         .then(async (data: APIData) => {
+          // Remember ourselves
+          self.me = data.me;
           // Build a map to track duplicates
           const userMap: Record<string, User> = {};
           const totalwork =
@@ -197,7 +199,8 @@ export default class APIWorker extends WorkerBase {
               res.forEach((acct) => {
                 if (userMap[acct.id]) {
                   userMap[acct.id].follower = true;
-                  return userMap[acct.id];
+                } else {
+                  userMap[acct.id] = acct;
                 }
               });
             }
