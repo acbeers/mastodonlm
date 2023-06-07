@@ -28,6 +28,11 @@ const style = {
         justifyContent: "space-between",
         backgroundColor: "lightblue",
       },
+      suspended: {
+        display: "flex" /* establish flex container */,
+        justifyContent: "space-between",
+        backgroundColor: "#fbb",
+      },
       padding: 4,
     },
     content: {
@@ -141,6 +146,20 @@ export default function UsersTable({
 
   let popover = <span></span>;
   if (follower) {
+    const headStyle = follower.suspended
+      ? style.card.header.suspended
+      : style.card.header.container;
+    const subhead = follower.suspended ? (
+      <div>
+        <span>{follower.acct}</span>
+        <br />
+        <span>(This account is suspended)</span>
+      </div>
+    ) : (
+      <div>
+        <span>{follower.acct}</span>
+      </div>
+    );
     popover = (
       <Popover
         id="mouse-over-popover"
@@ -151,13 +170,14 @@ export default function UsersTable({
           vertical: "bottom",
           horizontal: "right",
         }}
+        key={follower.id}
         sx={{
           pointerEvents: "none",
         }}
       >
         <Card sx={{ maxWidth: 400 }}>
           <CardHeader
-            style={style.card.header.container}
+            style={headStyle}
             avatar={
               <Avatar
                 aria-label="user"
@@ -166,9 +186,9 @@ export default function UsersTable({
               />
             }
             title={follower.display_name}
-            subheader={follower.acct}
+            subheader={subhead}
           />
-          <CardContent style={style.card.content.container}>
+          <CardContent sx={style.card.content.container}>
             <Typography variant="body2">
               <span dangerouslySetInnerHTML={{ __html: follower.note }}></span>
             </Typography>
@@ -238,9 +258,11 @@ export default function UsersTable({
     });
     const [user, domain] = fol.acct.split("@");
     const link = `https://${domain}/@${user}`;
+    const userClasses = ["usercell"];
+    if (fol.suspended) userClasses.push("suspended");
     return (
       <tr className="following-row" key={fol.id}>
-        <td align="right" className="usercell">
+        <td align="right" className={userClasses.join(" ")}>
           <Typography
             variant="body2"
             aria-owns={popoverOpen ? "mouse-over-popover" : undefined}

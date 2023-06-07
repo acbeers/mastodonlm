@@ -12,3 +12,4 @@ export {
   list_import,
 } from "./listcrud";
 export { info_meta, info_following, info_followers, info_lists } from "./info";
+export { account2User } from "./utils";

@@ -25,45 +25,11 @@ import {
   info_followers,
   info_lists,
 } from "@mastodonlm/shared";
-import type { mastodon } from "masto";
 
 // Endpoints
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
 const urlCallback = process.env.REACT_APP_BACKEND_URL + "/clientcallback";
 const urlLogout = process.env.REACT_APP_BACKEND_URL + "/clientlogout";
-
-async function asyncForEach(
-  array: any[],
-  callback: (a: any, n: number, x: any[]) => void
-) {
-  for (let index = 0; index < array.length; index++) {
-    await callback(array[index], index, array);
-  }
-}
-
-function account2User(
-  account: mastodon.v1.Account,
-  following: boolean,
-  follower: boolean,
-  domain: string | null
-): User {
-  return {
-    id: account.id,
-    display_name: account.displayName,
-    username: account.username,
-    avatar: account.avatar,
-    acct:
-      account.acct && account.acct.indexOf("@") > 0
-        ? account.acct
-        : account.acct + "@" + domain,
-    note: account.note,
-    following_count: 0,
-    follower_count: 0,
-    following: following,
-    follower: follower,
-    lists: [],
-  };
-}
 
 // Given a fetch response, check it for errors and throw
 // reasonable exceptions if so.  Otherwise, return the response

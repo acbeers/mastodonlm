@@ -20,6 +20,7 @@ function makeUser(acct: Account): User {
     follower_count: acct.followersCount,
     following: false,
     follower: false,
+    suspended: false,
   };
 }
 

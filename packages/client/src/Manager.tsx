@@ -130,6 +130,7 @@ function Manager({ api }: ManagerProps) {
       avatar: "",
       acct: "",
       note: "",
+      suspended: false,
       following_count: 0,
       follower_count: 0,
       following: false,
