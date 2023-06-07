@@ -24,6 +24,28 @@ const group_2members = {
   ],
 };
 
+const group_2members_suspended = {
+  users: [
+    {
+      id: "1",
+      display_name: "user-1",
+      acct: "user-1@domain",
+      following: true,
+      follower: false,
+      lists: [],
+    },
+    {
+      id: "2",
+      display_name: "user-2",
+      acct: "user-2@domain",
+      following: true,
+      follower: false,
+      suspended: true,
+      lists: ["a"],
+    },
+  ],
+};
+
 const lists_2members = [
   { id: "a", title: "list-a" },
   { id: "b", title: "list-b" },
@@ -53,6 +75,26 @@ test("renders the whole list of users when open", () => {
   group.users.forEach((fol) => {
     const elt = screen.getByText(fol.display_name);
     expect(elt).toBeInTheDocument();
+  });
+});
+
+test("renders suspended users correctly when open", () => {
+  const group = group_2members;
+  const lists = lists_2members;
+
+  render(
+    <UsersTable groupIndex={1} group={group} lists={lists} defaultOpen={true} />
+  );
+
+  group.users.forEach((fol) => {
+    const elt = screen.getByText(fol.display_name);
+    expect(elt).toBeInTheDocument();
+    // eslint-disable-next-line testing-library/no-node-access
+    const row = elt.closest("td");
+
+    expect(row.className).toBe(
+      fol.suspended ? "usercell suspended" : "usercell"
+    );
   });
 });
 

@@ -53,3 +53,14 @@ span.listTitle.newList {
   color: #77f;
   cursor: pointer;
 }
+
+td.usercell {
+  padding: 0;
+  padding-right: 4px;
+  border-right: 1px solid lightgray;
+  width: 300px;
+}
+
+td.suspended {
+  background-color: #fbb;
+}

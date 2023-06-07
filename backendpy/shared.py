@@ -150,6 +150,14 @@ def callback_helper(event, _, finish):
     cfg = Datastore.get_host_config(domain)
     logging.debug("callback for %s", domain)
 
+    # It shouldn't be possible to have cfg be None at this point, but
+    # I have seen it happen.  So, test for it.
+    #
+    if cfg is None:
+        logging.error("callback_helper: cfg is None!")
+        logging.error("Domain is %s", domain)
+        return err_response("ERROR - no host config")
+
     mastodon = Mastodon(
         client_id=cfg.client_id,
         client_secret=cfg.client_secret,

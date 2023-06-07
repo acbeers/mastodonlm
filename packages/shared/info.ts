@@ -3,6 +3,7 @@
 // Functions for following and unfollowing accounts
 import type { mastodon } from "masto";
 import { List, User } from "./types";
+import { account2User } from "./utils";
 
 // Convenient type aliases
 type Client = mastodon.Client;
@@ -21,30 +22,6 @@ async function asyncForEach(
   }
 }
 
-function account2User(
-  account: mastodon.v1.Account,
-  following: boolean,
-  follower: boolean,
-  domain: string | null
-): User {
-  return {
-    id: account.id,
-    display_name: account.displayName,
-    username: account.username,
-    avatar: account.avatar,
-    acct:
-      account.acct && account.acct.indexOf("@") > 0
-        ? account.acct
-        : account.acct + "@" + domain,
-    note: account.note,
-    following_count: 0,
-    follower_count: 0,
-    following: following,
-    follower: follower,
-    lists: [],
-  };
-}
-
 // Returns metadata about me and my lists
 export async function info_meta(masto: Client, domain: string): Promise<Meta> {
   return masto.v1.accounts.verifyCredentials().then(async (me) => {
@@ -60,6 +37,8 @@ export async function info_meta(masto: Client, domain: string): Promise<Meta> {
       follower_count: me.followersCount,
       following: false,
       follower: false,
+      limited: false,
+      suspended: false,
     };
     // Now fetch lists.
     let mylists: List[] = [];
