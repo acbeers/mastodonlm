@@ -68,6 +68,7 @@ export default class APIWorker extends WorkerBase {
     return login({
       url: `https://${this.domain}`,
       accessToken: this.token,
+      disableVersionCheck: true,
     });
   }
 
@@ -128,7 +129,12 @@ export default class APIWorker extends WorkerBase {
     return login({
       url: `https://${this.domain}`,
       accessToken: this.token,
-    }).then((masto) => {
+      disableVersionCheck: true,
+    }).then(async (masto) => {
+      // Fetch our server version and store it.
+      await masto.v1.instances.fetch().then((inst) => {
+        self.server_version = inst.version;
+      });
       return info_meta(masto, domain)
         .then((res) => ({
           me: res.me,

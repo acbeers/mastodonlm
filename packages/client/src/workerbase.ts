@@ -10,6 +10,7 @@ const urlError = process.env.REACT_APP_BACKEND_URL + "/error";
 export class WorkerBase {
   protected me: User | null = null;
   protected session: string = "";
+  protected server_version: string | null = null;
 
   constructor() {
     this.session = uuidv4();
@@ -19,6 +20,7 @@ export class WorkerBase {
   async telemetry(info: Record<string, any>): Promise<void> {
     const data = { ...info };
     if (this.me) data.acct = this.me.acct;
+    if (this.server_version) data.server_version = this.server_version;
     data.session = this.session;
 
     return fetch(urlTelemetry, {
