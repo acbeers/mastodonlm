@@ -200,20 +200,33 @@ function Manager({ api }: ManagerProps) {
   );
 
   const importCB = useCallback(
-    async (list_name: string, data: string[]) => {
+    async (list_name: string, toadd: string[], tofollow: string[]) => {
       const startTime = getTime();
       const remote = await api;
-      remote.importList(list_name, data).then(() => {
-        const elapsedMS = getElapsed(startTime);
-        const telem = {
-          action: "import",
-          num_imported: data.length,
-          elapsed_ms: elapsedMS,
-        };
-        telemetryCB(telem);
+      // First, follow those that are in the follow list.
+      return await remote.follow_by_names(tofollow).then((followed: User[]) => {
+        // Now, import everyone into this new list.
+        const folids = followed.map((x) => x.id);
+        // First, look up IDs for the accounts we know about.
+        const userMap: Record<string, User> = {};
+        info.users.forEach((x) => {
+          userMap[x.acct] = x;
+        });
+        // Now build a list of all items to add to the list.
+        const data = folids.concat(toadd.map((x) => userMap[x].id));
+        return remote.importList(list_name, data).then(() => {
+          const elapsedMS = getElapsed(startTime);
+          const telem = {
+            action: "import",
+            num_imported: data.length,
+            num_followed: tofollow.length,
+            elapsed_ms: elapsedMS,
+          };
+          telemetryCB(telem);
+        });
       });
     },
-    [api, telemetryCB]
+    [api, telemetryCB, info]
   );
 
   const loadDataCB = useCallback(async () => {
@@ -381,20 +394,19 @@ function Manager({ api }: ManagerProps) {
   const handleMenuImportList = () => {
     setImportOpen(true);
   };
-  const handleImportList = (list_name: string, data: string[]) => {
+  const handleImportList = (
+    list_name: string,
+    toadd: string[],
+    tofollow: string[]
+  ) => {
     // Figure out which people I'm not following
     const followerMap: Record<string, User> = {};
     info.users.forEach((x) => {
       followerMap[x.acct] = x;
     });
 
-    //const toFollow = data.filter((x) => !(x in followerMap));
-    //const toAdd = data.filter((x) => x in followerMap);
-    //console.log("To follow (not implemented):");
-    //console.log(toFollow);
-
     // Pass this off to our API, which will do the heavy lifting.
-    importCB(list_name, data).then(() => loadDataCB());
+    importCB(list_name, toadd, tofollow).then(() => loadDataCB());
   };
 
   // Build the crazy table.
@@ -477,7 +489,6 @@ function Manager({ api }: ManagerProps) {
   );
 
   const handleFollowClick = async (userid: string, follow: boolean) => {
-    console.log(`FOLLOW ${userid} -> ${follow}`);
     const use = await api;
     const method = follow ? use.follow : use.unfollow;
     await method(userid).then(() => {
@@ -615,6 +626,7 @@ function Manager({ api }: ManagerProps) {
       />
       <ImportListDialog
         open={importOpen}
+        users={info.users}
         handleImport={handleImportList}
         handleClose={() => setImportOpen(false)}
       />

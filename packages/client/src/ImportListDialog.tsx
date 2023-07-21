@@ -7,19 +7,31 @@ import DialogTitle from "@mui/material/DialogTitle";
 import FormControl from "@mui/material/FormControl";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import { User } from "@mastodonlm/shared";
 
 type ImportListDialogProps = {
   open: boolean;
-  handleImport: (list_name: string, data: string[]) => void;
+  users: User[]; // Users that we know about
+  handleImport: (
+    list_name: string,
+    tofollow: string[],
+    toadd: string[]
+  ) => void;
   handleClose: () => void;
 };
 
 function ImportListDialog({
   open,
+  users,
   handleImport,
   handleClose,
 }: ImportListDialogProps) {
   const [name, setName] = useState("");
+  // A list of people we are importing that we already follow
+  const [following, setFollowing] = useState<string[]>([]);
+  // A list of people we are importing that we don't yet follow
+  const [notfollowing, setNotfollowing] = useState<string[]>([]);
+  // The full list of people
   const [data, setData] = useState<string[]>([]);
 
   const clear = () => {
@@ -39,24 +51,62 @@ function ImportListDialog({
         // Convert to text, drop the header row.
         const strs = decoder.decode(value).split("\n").slice(1);
         setData(strs);
+
+        // Build a map of the people we know.
+        const userMap: Record<string, User> = {};
+        users.forEach((u) => {
+          userMap[u.acct] = u;
+        });
+
+        // Sort data into two lists
+        const fol: string[] = [];
+        const nfol: string[] = [];
+        strs.forEach((acct) => {
+          if (acct === "") return;
+
+          if (acct in userMap && userMap[acct].following) {
+            fol.push(acct);
+          } else {
+            nfol.push(acct);
+          }
+        });
+        setFollowing(fol);
+        setNotfollowing(nfol);
       });
     }
   };
 
   const sample = data.slice(0, 5).map((txt) => <div>{txt}</div>);
 
+  const nflist = (
+    <TextField
+      value={notfollowing.join("\n")}
+      multiline
+      rows={5}
+      style={{ width: 400 }}
+    />
+  );
+
+  const flist = (
+    <TextField
+      value={following.join("\n")}
+      multiline
+      rows={5}
+      style={{ width: 400 }}
+    />
+  );
+
   const showSample =
     sample.length > 0 ? (
-      <Typography variant="body2" sx={{ marginLeft: "10px", color: "gray" }}>
-        <h4>Accounts to add:</h4>
-        {sample}
-        <br />({data.length} items total)
+      <div>
+        <h4>{notfollowing.length} accounts to follow and add:</h4>
+        {nflist}
+        <h4>{following.length} accounts to add:</h4>
+        {flist}
         <br />
-        <br />
-        Note: only accounts you follow already will be added
         <br />
         Note: adding more than 100 will likely run afoul of Mastodon API limits.
-      </Typography>
+      </div>
     ) : (
       <span />
     );
@@ -101,7 +151,7 @@ function ImportListDialog({
             const listname = name;
             const listdata = data;
             clear();
-            handleImport(listname, listdata);
+            handleImport(listname, following, notfollowing);
           }}
           autoFocus
         >

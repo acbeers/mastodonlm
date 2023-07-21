@@ -10,6 +10,7 @@ jest.unstable_mockModule("./datastore", () => ({
 jest.unstable_mockModule("@mastodonlm/shared", () => ({
   follow: jest.fn(),
   unfollow: jest.fn(),
+  follow_by_names: jest.fn(),
 }));
 
 // Things I'm mocking
@@ -21,6 +22,7 @@ const Datastore = datastore.Datastore;
 const shared = await import("@mastodonlm/shared");
 const follow = shared.follow;
 const unfollow = shared.unfollow;
+const follow_by_names = shared.follow_by_names;
 
 // follow should resolve to a value.
 follow.mockResolvedValue(void 0);
@@ -30,6 +32,7 @@ unfollow.mockResolvedValue(void 0);
 const mod = await import("./follow_server");
 const follow_handler = mod.follow_handler;
 const unfollow_handler = mod.unfollow_handler;
+const follow_by_names_handler = mod.follow_by_names_handler;
 
 test("follow succeeds", (done) => {
   const event = {
@@ -104,6 +107,26 @@ test("unfollow fails", (done) => {
   unfollow_handler(event, {}).then((res) => {
     try {
       expect(res.statusCode).toBe(500);
+      done();
+    } catch (err) {
+      done(err);
+    }
+  });
+});
+
+test("follow_by_names succeeds", (done) => {
+  const event = {
+    headers: {},
+    queryStringParameters: { user_id: "123" },
+  };
+
+  Factory.fromCookie.mockResolvedValue(jest.fn());
+  Datastore.getAuth.mockResolvedValue(jest.fn());
+  follow_by_names.mockResolvedValue([{}]);
+
+  follow_by_names_handler(event, {}).then((res) => {
+    try {
+      expect(res.statusCode).toBe(200);
       done();
     } catch (err) {
       done(err);

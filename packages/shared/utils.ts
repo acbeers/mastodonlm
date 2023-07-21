@@ -46,7 +46,6 @@ export function account2User(
     lists: [],
   };
   if (account.moved) {
-    console.log("MOVED");
     u.moved = account2User(account.moved, false, false, domain);
   }
   return u;

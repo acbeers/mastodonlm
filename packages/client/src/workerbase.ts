@@ -9,8 +9,8 @@ const urlError = process.env.REACT_APP_BACKEND_URL + "/error";
 
 export class WorkerBase {
   protected me: User | null = null;
-  protected session: string = "";
   protected server_version: string | null = null;
+  protected session: string = "";
 
   constructor() {
     this.session = uuidv4();
