@@ -64,3 +64,7 @@ td.usercell {
 td.suspended {
   background-color: #fbb;
 }
+
+td.limited {
+  background-color: #ffb;
+}

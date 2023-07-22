@@ -46,6 +46,28 @@ const group_2members_suspended = {
   ],
 };
 
+const group_2members_limited = {
+  users: [
+    {
+      id: "1",
+      display_name: "user-1",
+      acct: "user-1@domain",
+      following: true,
+      follower: false,
+      lists: [],
+    },
+    {
+      id: "2",
+      display_name: "user-2",
+      acct: "user-2@domain",
+      following: true,
+      follower: false,
+      limited: true,
+      lists: ["a"],
+    },
+  ],
+};
+
 const lists_2members = [
   { id: "a", title: "list-a" },
   { id: "b", title: "list-b" },
@@ -276,4 +298,30 @@ test("removes on page 2", (done) => {
 
   const cell = screen.getByTestId(`${l1}${u1}`);
   fireEvent.click(cell);
+});
+
+test("shade suspended row", () => {
+  const group = group_2members_suspended;
+  const lists = lists_2members;
+
+  render(
+    <UsersTable groupIndex={1} group={group} lists={lists} defaultOpen={true} />
+  );
+
+  const u1 = group.users[1].id;
+  const cell = screen.getByTestId(`${u1}`);
+  expect(cell.className).toContain("suspended");
+});
+
+test("shade limited row", () => {
+  const group = group_2members_limited;
+  const lists = lists_2members;
+
+  render(
+    <UsersTable groupIndex={1} group={group} lists={lists} defaultOpen={true} />
+  );
+
+  const u1 = group.users[1].id;
+  const cell = screen.getByTestId(`${u1}`);
+  expect(cell.className).toContain("limited");
 });

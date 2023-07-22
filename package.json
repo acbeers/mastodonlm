@@ -4,9 +4,9 @@
     "test": "yarn workspace client test && yarn workspace @mastodonlm/server test",
     "build:packages": "npx tsc -b packages",
     "build:packages:watch": "npx tsc -b packages --watch",
-    "build:devstage": "yarn workspace client env-cmd -f .env.devstage npm run build",
-    "predeploy": "yarn workspace client build",
+    "predeploy:devstage": "yarn workspace client env-cmd -f .env.devstage npm run build",
     "deploy:devstage": "sls deploy --aws-profile slsdeploy deploy --stage devstage",
+    "predeploy": "yarn workspace client build",
     "deploy": "sls deploy --aws-profile slsdeploy deploy --stage newprod"
   },
   "dependencies": {

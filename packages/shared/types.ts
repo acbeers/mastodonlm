@@ -23,6 +23,7 @@ export type User = {
   note: string;
   lists: string[];
   suspended: boolean;
+  limited: boolean;
   following_count: number;
   follower_count: number;
   // Our relationships
