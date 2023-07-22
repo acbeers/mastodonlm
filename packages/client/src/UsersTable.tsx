@@ -156,11 +156,18 @@ export default function UsersTable({
       : follower.limited
       ? style.card.header.limited
       : style.card.header.container;
-    const subhead = follower.suspended ? (
+    const subheadText = follower.suspended
+      ? "(This account is suspended)"
+      : follower.limited
+      ? "(This account is limited)"
+      : follower.moved
+      ? `(This account has moved to ${follower.moved.acct})`
+      : null;
+    const subhead = subheadText ? (
       <div>
         <span>{follower.acct}</span>
         <br />
-        <span>(This account is suspended)</span>
+        <span>{subheadText}</span>
       </div>
     ) : (
       <div>
@@ -268,6 +275,7 @@ export default function UsersTable({
     const userClasses = ["usercell"];
     if (fol.suspended) userClasses.push("suspended");
     if (fol.limited) userClasses.push("limited");
+    if (fol.moved) userClasses.push("moved");
     return (
       <tr className="following-row" key={fol.id}>
         <td

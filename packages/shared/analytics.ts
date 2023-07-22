@@ -22,6 +22,7 @@ function makeUser(acct: Account): User {
     follower: false,
     suspended: false,
     limited: false,
+    moved: undefined,
   };
 }
 

@@ -132,6 +132,7 @@ function Manager({ api }: ManagerProps) {
       note: "",
       suspended: false,
       limited: false,
+      moved: undefined,
       following_count: 0,
       follower_count: 0,
       following: false,

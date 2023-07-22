@@ -68,3 +68,7 @@ td.suspended {
 td.limited {
   background-color: #ffb;
 }
+
+td.moved {
+  background-color: #bff;
+}

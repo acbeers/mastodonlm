@@ -26,6 +26,8 @@ export type User = {
   limited: boolean;
   following_count: number;
   follower_count: number;
+  // The account that we have moved to
+  moved: User | undefined;
   // Our relationships
   following: boolean;
   follower: boolean;

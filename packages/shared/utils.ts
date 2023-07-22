@@ -26,7 +26,7 @@ export function account2User(
 ): User {
   const v415 = account as unknown as Account_v415;
 
-  return {
+  const u: User = {
     id: account.id,
     display_name: account.displayName,
     username: account.username,
@@ -38,10 +38,16 @@ export function account2User(
     note: account.note,
     suspended: account.suspended || false,
     limited: v415.limited || false,
+    moved: undefined,
     following_count: 0,
     follower_count: 0,
     following: following,
     follower: follower,
     lists: [],
   };
+  if (account.moved) {
+    console.log("MOVED");
+    u.moved = account2User(account.moved, false, false, domain);
+  }
+  return u;
 }

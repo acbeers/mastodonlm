@@ -68,6 +68,31 @@ const group_2members_limited = {
   ],
 };
 
+const group_2members_moved = {
+  users: [
+    {
+      id: "1",
+      display_name: "user-1",
+      acct: "user-1@domain",
+      following: true,
+      follower: false,
+      lists: [],
+    },
+    {
+      id: "2",
+      display_name: "user-2",
+      acct: "user-2@domain",
+      following: true,
+      follower: false,
+      moved: {
+        id: "11",
+        acct: "moved@moved.io",
+      },
+      lists: ["a"],
+    },
+  ],
+};
+
 const lists_2members = [
   { id: "a", title: "list-a" },
   { id: "b", title: "list-b" },
@@ -324,4 +349,17 @@ test("shade limited row", () => {
   const u1 = group.users[1].id;
   const cell = screen.getByTestId(`${u1}`);
   expect(cell.className).toContain("limited");
+});
+
+test("shade moved row", () => {
+  const group = group_2members_moved;
+  const lists = lists_2members;
+
+  render(
+    <UsersTable groupIndex={1} group={group} lists={lists} defaultOpen={true} />
+  );
+
+  const u1 = group.users[1].id;
+  const cell = screen.getByTestId(`${u1}`);
+  expect(cell.className).toContain("moved");
 });
