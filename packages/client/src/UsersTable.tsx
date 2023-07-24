@@ -33,6 +33,11 @@ const style = {
         justifyContent: "space-between",
         backgroundColor: "#fbb",
       },
+      limited: {
+        display: "flex" /* establish flex container */,
+        justifyContent: "space-between",
+        backgroundColor: "#ffb",
+      },
       padding: 4,
     },
     content: {
@@ -148,12 +153,21 @@ export default function UsersTable({
   if (follower) {
     const headStyle = follower.suspended
       ? style.card.header.suspended
+      : follower.limited
+      ? style.card.header.limited
       : style.card.header.container;
-    const subhead = follower.suspended ? (
+    const subheadText = follower.suspended
+      ? "(This account is suspended)"
+      : follower.limited
+      ? "(This account is limited)"
+      : follower.moved
+      ? `(This account has moved to ${follower.moved.acct})`
+      : null;
+    const subhead = subheadText ? (
       <div>
         <span>{follower.acct}</span>
         <br />
-        <span>(This account is suspended)</span>
+        <span>{subheadText}</span>
       </div>
     ) : (
       <div>
@@ -260,9 +274,15 @@ export default function UsersTable({
     const link = `https://${domain}/@${user}`;
     const userClasses = ["usercell"];
     if (fol.suspended) userClasses.push("suspended");
+    if (fol.limited) userClasses.push("limited");
+    if (fol.moved) userClasses.push("moved");
     return (
       <tr className="following-row" key={fol.id}>
-        <td align="right" className={userClasses.join(" ")}>
+        <td
+          align="right"
+          className={userClasses.join(" ")}
+          data-testid={fol.id}
+        >
           <Typography
             variant="body2"
             aria-owns={popoverOpen ? "mouse-over-popover" : undefined}

@@ -21,6 +21,8 @@ function makeUser(acct: Account): User {
     following: false,
     follower: false,
     suspended: false,
+    limited: false,
+    moved: undefined,
   };
 }
 

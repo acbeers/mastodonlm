@@ -37,6 +37,7 @@ export async function info_meta(masto: Client, domain: string): Promise<Meta> {
       follower_count: me.followersCount,
       following: false,
       follower: false,
+      moved: undefined,
       limited: false,
       suspended: false,
     };
