@@ -15,11 +15,11 @@ import {
   fetchAnalytics,
   follow,
   unfollow,
+  follow_by_names,
   list_create,
   list_delete,
   list_add,
   list_remove,
-  list_import,
   info_meta,
   info_following,
   info_followers,
@@ -235,10 +235,13 @@ export default class APIWorker extends WorkerBase {
   }
 
   // Creates a new list and imports data into it
-  async importList(list_name: string, data: string[]): Promise<void> {
+  async importList(list_name: string, account_ids: string[]): Promise<void> {
     // FIXME: We should allow importing into an existing list.
+    // FIXME: Use list_create and list_add instead.
     return this.instance().then((masto) => {
-      list_import(masto, list_name, data);
+      list_create(masto, list_name).then((list) => {
+        list_add(masto, list.id, account_ids);
+      });
     });
   }
 
@@ -255,6 +258,11 @@ export default class APIWorker extends WorkerBase {
   // Follows an account
   async unfollow(userid: string): Promise<void> {
     return this.instance().then((masto) => unfollow(masto, userid));
+  }
+
+  // Follow a list of accounts by name (not ID)
+  async follow_by_names(names: string[]): Promise<User[]> {
+    return this.instance().then((masto) => follow_by_names(masto, names));
   }
 }
 Comlink.expose(APIWorker);

@@ -23,10 +23,10 @@ const urlDelete = process.env.REACT_APP_BACKEND_URL + "/delete";
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
 const urlCallback = process.env.REACT_APP_BACKEND_URL + "/callback";
 const urlLogout = process.env.REACT_APP_BACKEND_URL + "/logout";
-const urlImport = process.env.REACT_APP_BACKEND_URL + "/import";
 const urlAnalytics = process.env.REACT_APP_BACKEND_URL + "/analytics";
 const urlFollow = process.env.REACT_APP_BACKEND_URL + "/follow";
 const urlUnfollow = process.env.REACT_APP_BACKEND_URL + "/unfollow";
+const urlFollowByNames = process.env.REACT_APP_BACKEND_URL + "/follow_by_names";
 
 // Given a fetch response, check it for errors and throw
 // reasonable exceptions if so.  Otherwise, return the response
@@ -188,11 +188,9 @@ export default class ServerAPIWorker extends WorkerBase {
 
   // Creates a new list
   async createList(list_name: string): Promise<List> {
-    return this.authPOST(`${urlCreate}?list_name=${list_name}`)
-      .then((resp) => checkJSON(resp))
-      .then((data) => {
-        return data.list;
-      });
+    return this.authPOST(`${urlCreate}?list_name=${list_name}`).then((resp) =>
+      checkJSON(resp)
+    );
   }
 
   // Deletes a list
@@ -218,9 +216,14 @@ export default class ServerAPIWorker extends WorkerBase {
 
   // Creates a new list and imports data into it
   async importList(list_name: string, accounts: string[]): Promise<void> {
-    return this.authPOST(
-      `${urlImport}?list_name=${list_name}&accts=${accounts.join(",")}`
-    ).then((resp) => checkJSON(resp));
+    return this.authPOST(`${urlCreate}?list_name=${list_name}`)
+      .then((resp) => checkJSON(resp))
+      .then((list) => {
+        return this.authPOST(
+          `${urlAdd}?list_id=${list.id}&account_id=${accounts.join(",")}`
+        );
+      })
+      .then((resp) => checkJSON(resp));
   }
 
   // Computes analytics for the given list
@@ -250,6 +253,14 @@ export default class ServerAPIWorker extends WorkerBase {
     return this.authPOST(`${urlUnfollow}?user_id=${userid}`).then((resp) =>
       checkJSON(resp)
     );
+  }
+
+  // Follow a list of accounts by name (not ID)
+  async follow_by_names(names: string[]): Promise<User[]> {
+    // FIXME: This is not returning the an array of User
+    return this.authPOST(`${urlFollowByNames}?names=${names.join(",")}`)
+      .then((resp) => checkJSON(resp))
+      .then((data) => data.users);
   }
 }
 

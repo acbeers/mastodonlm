@@ -121,6 +121,14 @@ follow:
     - httpApi:
         path: /follow
         method: POST
+follow_by_names:
+  timeout: 30
+  runtime: nodejs16.x
+  handler: packages/server/follow_server.follow_by_names_handler
+  events:
+    - httpApi:
+        path: /follow_by_names
+        method: POST
 unfollow:
   timeout: 30
   runtime: nodejs16.x

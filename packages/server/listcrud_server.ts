@@ -5,7 +5,6 @@ import {
   list_delete,
   list_add,
   list_remove,
-  list_import,
 } from "@mastodonlm/shared";
 import { Handler } from "aws-lambda";
 import { Factory } from "./factory";
@@ -46,14 +45,5 @@ export const list_remove_handler: Handler = async (event, context) => {
 
   const method = (masto: Client, domain: string) =>
     list_remove(masto, list_id, accountids).then(() => ({}));
-  return gen_handler(event, context, method);
-};
-
-export const list_import_handler: Handler = async (event, context) => {
-  const list_name = event.queryStringParameters?.list_name;
-  const accountids = event.queryStringParameters?.accts.split(",");
-
-  const method = (masto: Client, domain: string) =>
-    list_import(masto, list_name, accountids).then(() => ({}));
   return gen_handler(event, context, method);
 };
