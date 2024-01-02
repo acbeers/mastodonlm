@@ -11,7 +11,7 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.310.0",
     "aws-lambda": "^1.0.7",
-    "aws-sdk": "^2.1353.0",
+    "aws-sdk": "^2.1528.0",
     "ts-jest": "^29.1.0"
   },
   "devDependencies": {
