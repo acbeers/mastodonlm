@@ -43,7 +43,7 @@ clientlogout:
 #
 meta:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/info_server.info_meta_handler
   events:
     - httpApi:
@@ -51,7 +51,7 @@ meta:
         method: GET
 following:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/info_server.info_following_handler
   events:
     - httpApi:
@@ -59,7 +59,7 @@ following:
         method: GET
 followers:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/info_server.info_followers_handler
   events:
     - httpApi:
@@ -67,7 +67,7 @@ followers:
         method: GET
 lists:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/info_server.info_lists_handler
   events:
     - httpApi:
@@ -75,7 +75,7 @@ lists:
         method: GET
 add:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/listcrud_server.list_add_handler
   events:
     - httpApi:
@@ -83,7 +83,7 @@ add:
         method: POST
 remove:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/listcrud_server.list_remove_handler
   events:
     - httpApi:
@@ -91,7 +91,7 @@ remove:
         method: POST
 create:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/listcrud_server.list_create_handler
   events:
     - httpApi:
@@ -99,7 +99,7 @@ create:
         method: POST
 delete:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/listcrud_server.list_delete_handler
   events:
     - httpApi:
@@ -107,7 +107,7 @@ delete:
         method: POST
 import:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/listcrud_server.list_import_handler
   events:
     - httpApi:
@@ -115,7 +115,7 @@ import:
         method: POST
 follow:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/follow_server.follow_handler
   events:
     - httpApi:
@@ -123,7 +123,7 @@ follow:
         method: POST
 follow_by_names:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/follow_server.follow_by_names_handler
   events:
     - httpApi:
@@ -131,7 +131,7 @@ follow_by_names:
         method: POST
 unfollow:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/follow_server.unfollow_handler
   events:
     - httpApi:
@@ -140,7 +140,7 @@ unfollow:
 
 analytics:
   timeout: 30
-  runtime: nodejs16.x
+  runtime: nodejs20.x
   handler: packages/server/analytics_server.analytics
   events:
     - httpApi:

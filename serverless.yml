@@ -2,7 +2,7 @@ service: list-manager
 
 frameworkVersion: "3"
 
-variablesResolutionMode: 20210326
+#variablesResolutionMode: 20210326
 
 provider:
   name: aws
@@ -93,9 +93,8 @@ package:
   patterns:
     - "!node_modules"
     - "!packages"
-  # serverless-plugin-typescript seems to break the inclusion of *.py files.
-  # so be explicit.
-  include:
+    # serverless-plugin-typescript seems to break the inclusion of *.py files.
+    # so be explicit.
     - "backendpy/*.py"
 
 custom:
