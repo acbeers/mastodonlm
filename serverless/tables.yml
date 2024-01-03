@@ -9,9 +9,7 @@ usersTable:
     KeySchema:
       - AttributeName: key
         KeyType: HASH
-    ProvisionedThroughput:
-      ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
-      WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
+    BillingMode: PAY_PER_REQUEST
     TimeToLiveSpecification:
       Enabled: true
       AttributeName: expires_at
@@ -27,9 +25,7 @@ allowTable:
     KeySchema:
       - AttributeName: host
         KeyType: HASH
-    ProvisionedThroughput:
-      ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
-      WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
+    BillingMode: PAY_PER_REQUEST
 
 # Essentially, a list of blocked hosts.
 blockTable:
@@ -42,9 +38,7 @@ blockTable:
     KeySchema:
       - AttributeName: hash
         KeyType: HASH
-    ProvisionedThroughput:
-      ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
-      WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
+    BillingMode: PAY_PER_REQUEST
 
 # Stores host information (secrets, urls, etc)
 hostsTable:
@@ -57,9 +51,7 @@ hostsTable:
     KeySchema:
       - AttributeName: host
         KeyType: HASH
-    ProvisionedThroughput:
-      ReadCapacityUnits: ${self:custom.readcapacity.${self:provider.stage}}
-      WriteCapacityUnits: ${self:custom.writecapacity.${self:provider.stage}}
+    BillingMode: PAY_PER_REQUEST
 
 readcapacity:
   dev: 2
