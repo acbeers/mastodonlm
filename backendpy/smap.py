@@ -28,7 +28,7 @@ def map_stacktrace(txt):
     """Parses a string stacktrace, returning an array of mapped frames in the trace."""
     res = []
     for line in txt.split("\n"):
-        m = re.search(r"\S+@(http[s]?://[^/]+[^:]*):(\d+):(\d+)", line)
+        m = re.search(r"(http[s]?://[^/]+[^:]*):(\d+):(\d+)", line)
         if m is not None:
             url = m.group(1)
             lineno = int(m.group(2)) - 1

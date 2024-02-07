@@ -13,7 +13,7 @@
     "@nova-odm/annotations": "^0.8.3",
     "@nova-odm/mapper": "^0.8.3",
     "serverless-cloudfront-invalidate": "^1.12.2",
-    "serverless-offline": "^11.3.0",
+    "serverless-offline": "^13.3.2",
     "serverless-python-requirements": "^6.0.1"
   },
   "resolutions": {

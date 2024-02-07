@@ -54,6 +54,10 @@ function App() {
     return res;
   }, [clientApiClass, serverApiClass]);
 
+  // Change the default number of stack frames
+
+  Error.stackTraceLimit = 30;
+
   // Set up a global error handler
 
   window.onerror = async (_event, _source, _lineno, _colno, error) => {

@@ -26,6 +26,9 @@ import {
   info_lists,
 } from "@mastodonlm/shared";
 
+// Change the default number of stack frames
+Error.stackTraceLimit = 30;
+
 // Endpoints
 const urlAuth = process.env.REACT_APP_BACKEND_URL + "/auth";
 const urlCallback = process.env.REACT_APP_BACKEND_URL + "/clientcallback";
