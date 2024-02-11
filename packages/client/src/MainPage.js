@@ -35,7 +35,7 @@ function Copyright() {
 
 const theme = createTheme();
 
-function MainPage() {
+function MainPage({ api }) {
   return (
     <ThemeProvider theme={theme}>
       <Box
@@ -53,7 +53,7 @@ function MainPage() {
             color="text.primary"
             gutterBottom
           >
-            Mastodon List Manager
+            Fedi List Manager
           </Typography>
           <Typography
             variant="h6"
@@ -61,12 +61,12 @@ function MainPage() {
             color="text.secondary"
             paragraph
           >
-            A really simple manager for all of your Mastodon Lists, letting you
-            quickly assign people that you are following to one or more lists.
-            Search, filter, and organize your follow list to make reasoning
-            about your lists easy.
+            A really simple manager for all of your Mastodon and Bluesky Lists,
+            letting you quickly assign people that you are following to one or
+            more lists. Search, filter, and organize your follow list to make
+            reasoning about your lists easy.
           </Typography>
-          <LoginForm />
+          <LoginForm api={api} />
         </Container>
       </Box>
       <Box sx={{ bgcolor: "background.paper" }}>
@@ -88,8 +88,8 @@ function MainPage() {
               </li>
               <li>
                 So far everything is free, and you are limited only by the API
-                limits on your Mastodon instance. However, if you'd like to
-                support, please feel free to{" "}
+                limits on your Mastodon or Bluesky instance. However, if you'd
+                like to support, please feel free to{" "}
                 <a href="https://ko-fi.com/acbeers">buy me a coffee!</a>
               </li>
             </ul>

@@ -22,7 +22,7 @@ export async function follow_by_names(
   names: string[]
 ): Promise<User[]> {
   // Lookup accounts first.
-  // FIXME: Here we ignore accounts that fail lookup. Better would be to report
+  // TODO: Here we ignore accounts that fail lookup. Better would be to report
   // them as failed.
   const proms = names.map((acct) =>
     masto.v1.accounts.lookup({ acct }).catch(() => null)

@@ -1,6 +1,6 @@
 // Types use in the Mastodon List Manager
 
-// A list returned by a Mastodon API
+// A list of users
 export type List = {
   id: string;
   title: string;
@@ -13,7 +13,7 @@ export enum Relationship {
   Mutual = "mutual",
 }
 
-// A user returned by the Mastodon API
+// A user / profile
 export type User = {
   id: string;
   display_name: string;
@@ -71,6 +71,9 @@ export class TimeoutError extends Error {
     super();
     this.name = "TimeoutError";
     this.message = msg;
+
+    // Set the prototype explicitly.
+    Object.setPrototypeOf(this, TimeoutError.prototype);
   }
 }
 
@@ -79,5 +82,46 @@ export class AuthError extends Error {
     super();
     this.name = "AuthError";
     this.message = "Not authenticated";
+
+    // Set the prototype explicitly.
+    Object.setPrototypeOf(this, AuthError.prototype);
+  }
+}
+
+// An error that indicates a bad hostname
+export class BadHostError extends Error {
+  constructor() {
+    super();
+    this.name = "BadHostError";
+    this.message = "Invalid hostname";
+
+    // Set the prototype explicitly.
+    Object.setPrototypeOf(this, BadHostError.prototype);
+  }
+}
+
+// An error that indicates a host that we have blocked from using the app.
+// possibly due to network or version problems
+export class BlockedHostError extends Error {
+  constructor() {
+    super();
+    this.name = "BlockedHostError";
+    this.message = "Host blocked";
+
+    // Set the prototype explicitly.
+    Object.setPrototypeOf(this, BlockedHostError.prototype);
+  }
+}
+
+// An error that indicates a host that we have blocked from using the app.
+// possibly due to network or version problems
+export class NotAllowedError extends Error {
+  constructor() {
+    super();
+    this.name = "NotAllowedError";
+    this.message = "Host not allowed";
+
+    // Set the prototype explicitly.
+    Object.setPrototypeOf(this, NotAllowedError.prototype);
   }
 }

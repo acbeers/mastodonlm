@@ -75,7 +75,7 @@ function App() {
     <React.StrictMode>
       <BrowserRouter basename={process.env.REACT_APP_BASE_PATH}>
         <Routes>
-          <Route path="/main" element={<MainPage />} />
+          <Route path="/main" element={<MainPage api={api} />} />
           <Route path="/callback" element={<Callback />} />
           <Route path="/manager" element={<MainApp api={api} />} />
           <Route path="/" element={<Navigate to="/main" />} />

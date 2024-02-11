@@ -33,6 +33,15 @@ export default function MainApp({ api }: MainAppProps) {
   const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // First, if our API is convinced we are ready, then we are ready!
+    // This is used for the bluesky login path, which doesn't need to
+    // redeem an oAuth code right now.
+    async function checkReady() {
+      const remote = await api;
+      remote.ready().then((ready) => setReady(ready));
+    }
+    checkReady();
+
     const timer = setTimeout(() => {
       setRedirect("/main");
     }, 10000);
