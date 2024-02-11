@@ -79,6 +79,7 @@ export default function Controls({
             handleRelationshipChange(event.target.value as Relationship)
           }
         >
+          <MenuItem value={Relationship.Any}>Any</MenuItem>
           <MenuItem value={Relationship.Following}>I'm following</MenuItem>
           <MenuItem value={Relationship.Follower}>Following me</MenuItem>
           <MenuItem value={Relationship.Mutual}>Following each other</MenuItem>

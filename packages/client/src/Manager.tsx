@@ -83,6 +83,7 @@ function info2Groups(
     following: (x) => x.following,
     follower: (x) => x.follower,
     mutual: (x) => x.following && x.follower,
+    any: (x) => true,
   };
 
   const users = info.users;
@@ -144,7 +145,7 @@ function Manager({ api }: ManagerProps) {
   const [groups, setGroups] = useState<Group[]>([]);
   // What relationships
   const [relationships, setRelationships] = useState<Relationship>(
-    Relationship.Following
+    Relationship.Any
   );
   // How we want things grouped
   const [groupBy, setGroupBy] = useState("none");
@@ -172,6 +173,7 @@ function Manager({ api }: ManagerProps) {
       setRedirect("/login");
     } else {
       setError(`Some other error happened: ${err.message}`);
+      console.log(err.stack);
     }
   };
 

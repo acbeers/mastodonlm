@@ -90,7 +90,7 @@ export default function TopBar({
             <MenuItem onClick={clickMenuNewAbout}>About</MenuItem>
             <MenuItem onClick={clickMenuLogout}>Logout</MenuItem>
           </Menu>{" "}
-          <Typography>Mastodon List Manager</Typography>&nbsp;
+          <Typography>Fedi List Manager</Typography>&nbsp;
           <Typography>(@{acct})</Typography>
           <div style={{ flexGrow: "100", textAlign: "right" }}>
             <a

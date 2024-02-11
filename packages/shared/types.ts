@@ -11,6 +11,7 @@ export enum Relationship {
   Follower = "follower",
   Following = "following",
   Mutual = "mutual",
+  Any = "any",
 }
 
 // A user / profile

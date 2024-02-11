@@ -61,6 +61,20 @@ async function getAllFollows(agent: BskyAgent, actor: string) {
   return res;
 }
 
+async function findFollowUri(agent: BskyAgent, actor: string, target: string) {
+  let ps: Params = { actor };
+  while (true) {
+    const xx = await agent.getFollows(ps, {});
+    const fol = xx.data.follows.filter((x) => x.did === target);
+    if (fol.length === 1) if (fol[0].viewer) return fol[0].viewer.following;
+    if (!xx.data.cursor) {
+      break;
+    }
+    ps.cursor = xx.data.cursor;
+  }
+  return undefined;
+}
+
 async function getAllFollowers(agent: BskyAgent, actor: string) {
   let res: User[] = [];
   let ps: Params = { actor };
@@ -96,12 +110,14 @@ interface ListParams {
   cursor?: string;
 }
 
-async function getListUserIds(agent: BskyAgent, listid: string) {
-  let res: string[] = [];
+async function getListUsers(agent: BskyAgent, listid: string) {
+  let res: User[] = [];
   let ps: ListParams = { list: listid };
   while (true) {
     const xx = await agent.api.app.bsky.graph.getList(ps, {});
-    res = res.concat(xx.data.items.map((x) => x.subject.did));
+    res = res.concat(
+      xx.data.items.map((x) => profile2User(x.subject, false, false))
+    );
     if (!xx.data.cursor) {
       break;
     }
@@ -194,8 +210,14 @@ export class BlueskyWorker extends WorkerBase {
     const lists = await getAllLists(this.agent, this.me.id);
     const agent = this.agent;
     const proms = lists.map(async (list) => {
-      const ids = await getListUserIds(agent, list.id);
-      ids.forEach((uid) => userMap[uid].lists.push(list.id));
+      const ids = await getListUsers(agent, list.id);
+      ids.forEach((user) => {
+        const uid = user.id;
+        // In bluesky, we can list someone who we don't have any relaitonship with.
+        // Add them here!
+        if (!userMap[uid]) userMap[uid] = user;
+        userMap[uid].lists.push(list.id);
+      });
     });
 
     const me = this.me;
@@ -290,10 +312,14 @@ export class BlueskyWorker extends WorkerBase {
 
   // Unfollows an account
   async unfollow(userid: string): Promise<void> {
+    if (!this.agent || !this.me) throw Error("API not ready");
     // FIXME: To unfollow, we need the follow URI, which is contained
     // in the viewer.following profile item.
     // Our User object doesn't store this.
-    throw Error("Not implemented");
+
+    // For now, we'll do this inefficiently.
+    const uri = await findFollowUri(this.agent, this.me.id, userid);
+    if (uri) await this.agent.deleteFollow(uri);
   }
 
   // Follow a list of accounts by name (not ID)
