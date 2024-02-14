@@ -41,9 +41,26 @@ div.boost_swatch {
   margin-right: 5px;
 }
 
+div.bar_reply {
+  display: inline-block;
+  background-color: #afa;
+  outline: 1px solid #282;
+  height: 1em;
+}
+
+div.reply_swatch {
+  display: inline-block;
+  background-color: #afa;
+  outline: 1px solid #282;
+  height: 1em;
+  width: 1em;
+  margin-right: 5px;
+}
+
 span.bar_label {
   margin-left: 5px;
   font-size: 10px;
+  vertical-align: top;
 }
 
 td.date {

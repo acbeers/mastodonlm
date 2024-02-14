@@ -47,6 +47,17 @@ export type APIData = {
   me: User;
 };
 
+// A post
+export type Post = {
+  created_at: string;
+  // The author of the content of this post
+  author: User;
+  is_reply: boolean;
+  is_repost: boolean;
+  // The person reposting this status.
+  repost_author: User | null;
+};
+
 // Analytics data for a list
 export type ListAnalytics = {
   list_id: string;
@@ -57,7 +68,12 @@ export type ListAnalytics = {
   num_orig_posts: number;
   num_boosts: number;
   num_replies: number;
-  top_posters: { acct: User; count_orig: number; count_boost: number }[];
+  top_posters: {
+    acct: User;
+    count_orig: number;
+    count_boost: number;
+    count_reply: number;
+  }[];
   top_boosts: { acct: User; count: number }[];
 };
 

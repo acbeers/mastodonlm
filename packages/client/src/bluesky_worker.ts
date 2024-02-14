@@ -6,10 +6,12 @@ import { WorkerBase } from "./workerbase";
 import {
   User,
   List,
+  Post,
   APIData,
   ListAnalytics,
   AuthError,
 } from "@mastodonlm/shared";
+import { ReasonRepost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
 function profile2User(
   profile: AppBskyActorDefs.ProfileView,
@@ -320,6 +322,60 @@ export class BlueskyWorker extends WorkerBase {
     // For now, we'll do this inefficiently.
     const uri = await findFollowUri(this.agent, this.me.id, userid);
     if (uri) await this.agent.deleteFollow(uri);
+  }
+
+  async list_timeline(
+    list_id: string,
+    min_posts: number,
+    max_posts: number,
+    min_days: number
+  ): Promise<Post[]> {
+    if (!this.agent || !this.me) throw Error("API not ready");
+
+    let posts: Post[] = [];
+    let ps: { list: string; cursor: string | undefined } = {
+      list: list_id,
+      cursor: undefined,
+    };
+    const now = new Date();
+    while (true) {
+      const batchres = await this.agent.api.app.bsky.feed.getListFeed(ps, {});
+      const batch = batchres.data.feed;
+
+      posts = posts.concat(
+        batch.map((st) => {
+          console.log(st);
+          const u = profile2User(st.post.author, false, false);
+          const ru = st.reason
+            ? profile2User((st.reason as ReasonRepost).by, false, false)
+            : null;
+
+          return {
+            created_at: st.post.indexedAt,
+            author: ru ? ru : u,
+            is_reply: st.reply !== undefined,
+            is_repost:
+              (st.post.embed &&
+                st.post.embed["$type"] === "app.bsky.embed.record#view") ||
+              false,
+            repost_author: ru ? u : null,
+          };
+        })
+      );
+
+      const earliest = new Date(posts[posts.length - 1].created_at);
+      const diff = now.getTime() - earliest.getTime();
+      const count = batch.length;
+      if (count > max_posts) break;
+      if (count > min_posts && diff > min_days) break;
+
+      if (!batchres.data.cursor) {
+        break;
+      }
+      ps.cursor = batchres.data.cursor;
+    }
+    console.log(posts);
+    return posts;
   }
 
   // Follow a list of accounts by name (not ID)

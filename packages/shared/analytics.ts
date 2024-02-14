@@ -161,6 +161,7 @@ export async function fetchAnalytics(
       acct: makeUser(authors[x]),
       count_orig: authorCounts[x] || 0,
       count_boost: authorReblogCounts[x] || 0,
+      count_reply: 0,
     })),
     top_boosts: topReblogAuthors.map((x) => ({
       acct: makeUser(reblogAuthors[x]),

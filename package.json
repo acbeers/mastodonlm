@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "serverless-domain-manager": "^6.2.2",
-    "serverless-plugin-typescript": "^2.1.4",
+    "serverless-plugin-typescript": "^2.1.5",
     "serverless-s3-sync": "^3.1.0",
     "serverless-website-domain": "^3.0.1",
     "typescript": "^5.0.4"

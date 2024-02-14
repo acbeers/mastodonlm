@@ -18,6 +18,7 @@ import {
 import {
   User,
   List,
+  Post,
   APIData,
   ListAnalytics,
   TimeoutError,
@@ -25,6 +26,7 @@ import {
   BadHostError,
   BlockedHostError,
   NotAllowedError,
+  account2User,
 } from "@mastodonlm/shared";
 
 // Endpoints
@@ -268,6 +270,49 @@ export class MastoWorker extends WorkerBase {
   // Unfollows an account
   async unfollow(userid: string): Promise<void> {
     return this.instance().then((masto) => unfollow(masto, userid));
+  }
+
+  async list_timeline(
+    list_id: string,
+    min_posts: number,
+    max_posts: number,
+    min_days: number
+  ): Promise<Post[]> {
+    return this.instance().then(async (masto) => {
+      let statuses: Post[] = [];
+      const now = new Date();
+      for await (const batch of masto.v1.timelines.listList(list_id)) {
+        if (batch.length === 0) break;
+
+        const posts: Post[] = batch.map((st) => {
+          // The author of the status.
+          const u = account2User(st.account, false, false, this.domain);
+          // The author of the original post, if this is a boost.
+          const ru = st.reblog
+            ? account2User(st.reblog.account, false, false, this.domain)
+            : null;
+          // FIXME: We are only a reply if we are replying to someone who isn't us.
+          const is_reply =
+            st.inReplyToId !== null && st.inReplyToAccountId !== st.account.id;
+          // If this is a repost/boost, then make the author
+          return {
+            created_at: st.createdAt,
+            author: u,
+            is_reply: is_reply,
+            is_repost: ru !== null,
+            repost_author: ru,
+          };
+        });
+
+        statuses = statuses.concat(posts);
+        const earliest = new Date(posts[posts.length - 1].created_at);
+        const diff = now.getTime() - earliest.getTime();
+        const count = statuses.length;
+        if (count > max_posts) break;
+        if (count > min_posts && diff > min_days) break;
+      }
+      return statuses;
+    });
   }
 
   // Follow a list of accounts by name (not ID)

@@ -101,8 +101,43 @@ function AnalyticsDialog({
     const topusersrows = analytics.top_posters.map((x) => {
       const barwidth_orig = (x.count_orig / analytics.num_posts) * 200;
       const barwidth_boost = (x.count_boost / analytics.num_posts) * 200;
+      const barwidth_reply = (x.count_reply / analytics.num_posts) * 200;
       const [user, domain] = x.acct.acct.split("@");
       const link = `https://${domain}/@${user}`;
+
+      const bar_orig =
+        barwidth_orig === 0 ? (
+          ""
+        ) : (
+          <div
+            style={{ width: barwidth_orig, verticalAlign: "middle" }}
+            className="bar_orig"
+          >
+            <span className="bar_label">{x.count_orig}</span>
+          </div>
+        );
+      const bar_boost =
+        barwidth_boost === 0 ? (
+          ""
+        ) : (
+          <div
+            style={{ width: barwidth_boost, verticalAlign: "middle" }}
+            className="bar_boost"
+          >
+            <span className="bar_label">{x.count_boost}</span>
+          </div>
+        );
+      const bar_reply =
+        barwidth_reply === 0 ? (
+          ""
+        ) : (
+          <div
+            style={{ width: barwidth_reply, verticalAlign: "middle" }}
+            className="bar_reply"
+          >
+            <span className="bar_label">{x.count_reply}</span>
+          </div>
+        );
       return (
         <TableRow key={x.acct.acct}>
           <TableCell
@@ -113,17 +148,9 @@ function AnalyticsDialog({
             </a>
           </TableCell>
           <TableCell>
-            <div
-              style={{ width: barwidth_orig, verticalAlign: "middle" }}
-              className="bar_orig"
-            ></div>
-            <div
-              style={{ width: barwidth_boost, verticalAlign: "middle" }}
-              className="bar_boost"
-            ></div>
-            <span className="bar_label">
-              {x.count_orig} / {x.count_boost}
-            </span>
+            {bar_orig}
+            {bar_boost}
+            {bar_reply}
           </TableCell>
         </TableRow>
       );
@@ -208,6 +235,16 @@ function AnalyticsDialog({
               </TableCell>
               <TableCell>
                 <div className="boost_swatch"></div>boosts
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell
+                sx={{ borderBottom: 0, textAlign: "right", paddingRight: 1 }}
+              >
+                {analytics.num_replies}
+              </TableCell>
+              <TableCell>
+                <div className="reply_swatch"></div>replies
               </TableCell>
             </TableRow>
             <TableRow sx={{ borderBottom: 0 }}>
