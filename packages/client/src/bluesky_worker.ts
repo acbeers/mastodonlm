@@ -8,8 +8,8 @@ import {
   List,
   Post,
   APIData,
-  ListAnalytics,
   AuthError,
+  retry,
 } from "@mastodonlm/shared";
 import { ReasonRepost } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
@@ -151,6 +151,10 @@ async function getListRecordMap(
 
 export class BlueskyWorker extends WorkerBase {
   private agent: BskyAgent | null = null;
+
+  async list_requires_follow(): Promise<boolean> {
+    return false;
+  }
 
   async ready(): Promise<boolean> {
     return this.agent !== null;
@@ -298,18 +302,49 @@ export class BlueskyWorker extends WorkerBase {
 
   // Creates a new list and imports data into it
   async importList(list_name: string, account_ids: string[]): Promise<void> {
-    throw Error("Not implemented");
-  }
+    if (!this.agent || !this.me) throw Error("API not ready");
 
-  // Computes analytics for the given list
-  async listAnalytics(list: List): Promise<ListAnalytics> {
-    throw Error("Not implemented");
+    // Create a new list
+    const record = {
+      purpose: "app.bsky.graph.defs#curatelist",
+      name: list_name,
+      description: "",
+      createdAt: new Date().toISOString(),
+    };
+    const crparams = { repo: this.me.id };
+    const cr = await this.agent.api.app.bsky.graph.list.create(
+      crparams,
+      record
+    );
+    // Get information about our newly created list
+    const lp = { list: cr.uri };
+    // We retry this, because the list often isn't available immediately.
+    const agent = this.agent;
+    const cl = await retry(() => agent.api.app.bsky.graph.getList(lp), 500, 3);
+    if (!cl) return;
+
+    // Now, add folks to the list.
+    const me = this.me;
+    const proms = account_ids.map((id) => {
+      const crec = {
+        subject: id,
+        list: cl.data.list.uri,
+        createdAt: new Date().toISOString(),
+      };
+      const crparams = { repo: me.id };
+      return agent.api.app.bsky.graph.listitem.create(crparams, crec);
+    });
+    await Promise.all(proms);
   }
 
   // Follows an account
-  async follow(userid: string): Promise<void> {
+  async follow(userids: string[]): Promise<void> {
     if (!this.agent || !this.me) throw Error("API not ready");
-    this.agent.follow(userid);
+
+    const agent = this.agent;
+    const proms = userids.map((x) => agent.follow(x));
+    await Promise.all(proms);
+    return;
   }
 
   // Unfollows an account
@@ -379,7 +414,23 @@ export class BlueskyWorker extends WorkerBase {
   }
 
   // Follow a list of accounts by name (not ID)
+  // NOTE: This isn't strictly needed for BlueSky, as you can happily
+  // add people that you do not follow to lists.
+  // FIXME: Eliminate this method, replacing it by a pair: lookup / follow
   async follow_by_names(names: string[]): Promise<User[]> {
     throw Error("Not implemented");
+  }
+
+  async lookup(names: string[]): Promise<User[]> {
+    if (!this.agent || !this.me) throw Error("API not ready");
+
+    return this.agent.getProfiles({ actors: names }, {}).then((resp) => {
+      const users = resp.data.profiles.map((p) => {
+        const following = !!p.viewer?.following;
+        const follower = !!p.viewer?.followedBy;
+        return profile2User(p, following, follower);
+      });
+      return users;
+    });
   }
 }

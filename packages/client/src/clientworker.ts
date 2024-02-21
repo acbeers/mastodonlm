@@ -59,9 +59,8 @@ function topCounts(counts: Record<string, number>, num = 5) {
   return sortedKeys.slice(0, 5);
 }
 
-// Create a new APIWorker that implements all functions by calling
-// to an implementation class.  This implementaiton class would have
-// WorkerBase as a baseclass.
+// APIWorker that implements all functions by calling to an implementation
+// class.  This implementaiton class would have WorkerBase as a baseclass.
 
 export default class APIWorker {
   private impl: MastoWorker | BlueskyWorker | null = null;
@@ -69,6 +68,11 @@ export default class APIWorker {
   private makeimpl(service: string) {
     if (service === "mastodon") this.impl = new MastoWorker();
     if (service === "bluesky") this.impl = new BlueskyWorker();
+  }
+
+  async list_requires_follow(): Promise<boolean> {
+    if (!this.impl) throw Error("API not ready");
+    return this.impl.list_requires_follow();
   }
 
   // Returns a string with the authorize redirect
@@ -235,9 +239,11 @@ export default class APIWorker {
   }
 
   // Follows an account
-  async follow(userid: string): Promise<void> {
+  async follow(userid: string | string[]): Promise<void> {
     if (!this.impl) throw Error("API not ready");
-    return this.impl.follow(userid);
+
+    if (userid instanceof Array) return this.impl.follow(userid);
+    return this.impl.follow([userid]);
   }
 
   // Follows an account
@@ -246,10 +252,10 @@ export default class APIWorker {
     return this.impl.unfollow(userid);
   }
 
-  // Follow a list of accounts by name (not ID)
-  async follow_by_names(names: string[]): Promise<User[]> {
+  // Lookup a list of users by account name.
+  async lookup(names: string[]): Promise<User[]> {
     if (!this.impl) throw Error("API not ready");
-    return this.impl.follow_by_names(names);
+    return this.impl.lookup(names);
   }
 
   // Pulls the timeline for a list

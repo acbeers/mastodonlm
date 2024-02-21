@@ -1,9 +1,9 @@
 import { login } from "masto";
 import { WorkerBase } from "./workerbase";
 import {
-  fetchAnalytics,
   follow,
   unfollow,
+  lookup,
   follow_by_names,
   list_create,
   list_delete,
@@ -20,7 +20,6 @@ import {
   List,
   Post,
   APIData,
-  ListAnalytics,
   TimeoutError,
   AuthError,
   BadHostError,
@@ -73,6 +72,10 @@ export class MastoWorker extends WorkerBase {
       accessToken: this.token,
       disableVersionCheck: true,
     });
+  }
+
+  async list_requires_follow(): Promise<boolean> {
+    return true;
   }
 
   async ready(): Promise<boolean> {
@@ -257,14 +260,13 @@ export class MastoWorker extends WorkerBase {
     });
   }
 
-  // Computes analytics for the given list
-  async listAnalytics(list: List): Promise<ListAnalytics> {
-    return this.instance().then((masto) => fetchAnalytics(masto, list));
-  }
-
   // Follows an account
-  async follow(userid: string): Promise<void> {
-    return this.instance().then((masto) => follow(masto, userid));
+  async follow(userids: string[]): Promise<void> {
+    return this.instance().then(async (masto) => {
+      const proms = userids.map((x) => follow(masto, x));
+      await Promise.all(proms);
+      return;
+    });
   }
 
   // Unfollows an account
@@ -316,7 +318,12 @@ export class MastoWorker extends WorkerBase {
   }
 
   // Follow a list of accounts by name (not ID)
+  // FIXME: Remove this, replace by a lookup function
   async follow_by_names(names: string[]): Promise<User[]> {
     return this.instance().then((masto) => follow_by_names(masto, names));
+  }
+
+  async lookup(names: string[]): Promise<User[]> {
+    return this.instance().then((masto) => lookup(masto, names));
   }
 }

@@ -6,18 +6,14 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import FormControl from "@mui/material/FormControl";
 import TextField from "@mui/material/TextField";
-import Typography from "@mui/material/Typography";
 import { User } from "@mastodonlm/shared";
 
 type ImportListDialogProps = {
   open: boolean;
   users: User[]; // Users that we know about
-  handleImport: (
-    list_name: string,
-    tofollow: string[],
-    toadd: string[]
-  ) => void;
+  handleImport: (list_name: string, known: string[], unknown: string[]) => void;
   handleClose: () => void;
+  followRequired: boolean;
 };
 
 function ImportListDialog({
@@ -25,6 +21,7 @@ function ImportListDialog({
   users,
   handleImport,
   handleClose,
+  followRequired,
 }: ImportListDialogProps) {
   const [name, setName] = useState("");
   // A list of people we are importing that we already follow
@@ -99,13 +96,20 @@ function ImportListDialog({
   const showSample =
     sample.length > 0 ? (
       <div>
-        <h4>{notfollowing.length} accounts to follow and add:</h4>
+        <h4>{notfollowing.length} accounts that you don't follow:</h4>
         {nflist}
-        <h4>{following.length} accounts to add:</h4>
+        <h4>{following.length} accounts that you follow:</h4>
+        {followRequired ? (
+          <p>
+            <em>NOTE: These will be followed automatically</em>
+          </p>
+        ) : (
+          ""
+        )}
         {flist}
         <br />
         <br />
-        Note: adding more than 100 will likely run afoul of Mastodon API limits.
+        Note: adding more than 100 may run into API limits.
       </div>
     ) : (
       <span />
@@ -149,7 +153,6 @@ function ImportListDialog({
           onClick={() => {
             handleClose();
             const listname = name;
-            const listdata = data;
             clear();
             handleImport(listname, following, notfollowing);
           }}

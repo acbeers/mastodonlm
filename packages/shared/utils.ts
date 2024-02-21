@@ -50,3 +50,31 @@ export function account2User(
   }
   return u;
 }
+
+// Translates a setTimeout() into a promise
+function timeout(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Execute the function fn, and if it throws any error, retry
+// it ntimes times, waiting ms milliseconds after each try
+export async function retry<T>(
+  fn: () => Promise<T>,
+  ms: number,
+  ntimes: number
+): Promise<T | undefined> {
+  let cnt = ntimes;
+  while (cnt > 0) {
+    try {
+      const res = await fn();
+      return res;
+    } catch (err) {
+      // Eat the exception, loop around and try again
+      console.log("Got an error, sleeping and retying...");
+      await timeout(ms);
+      if (cnt == 1) throw err;
+    }
+    cnt = cnt - 1;
+  }
+  return undefined;
+}

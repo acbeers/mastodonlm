@@ -15,6 +15,18 @@ export async function unfollow(masto: Client, userid: string): Promise<void> {
   await masto.v1.accounts.unfollow(userid);
 }
 
+// Looks up a list of accounts
+export async function lookup(masto: Client, names: string[]): Promise<User[]> {
+  const proms = names.map((acct) =>
+    masto.v1.accounts.lookup({ acct }).catch(() => null)
+  );
+  return Promise.all(proms)
+    .then((accts) => accts.filter((v) => v))
+    .then((accts: mastodon.v1.Account[]) =>
+      accts.map((x) => account2User(x, false, false, null))
+    );
+}
+
 // Follows a list of accounts by account name
 //
 export async function follow_by_names(

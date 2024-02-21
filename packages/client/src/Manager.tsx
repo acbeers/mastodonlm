@@ -164,6 +164,8 @@ function Manager({ api }: ManagerProps) {
   const [showTimeout, setShowTimeout] = useState(false);
   //
   const [loadProgress, setLoadProgress] = useState(0);
+  // Whether follows are required to add to a list
+  const [followRequired, setFollowRequired] = useState(true);
 
   // An error handler for API methods that we call.
   const handleError = (err: Error) => {
@@ -202,30 +204,38 @@ function Manager({ api }: ManagerProps) {
   );
 
   const importCB = useCallback(
-    async (list_name: string, toadd: string[], tofollow: string[]) => {
+    async (list_name: string, known: string[], unknown: string[]) => {
       const startTime = getTime();
       const remote = await api;
-      // First, follow those that are in the follow list.
-      return await remote.follow_by_names(tofollow).then((followed: User[]) => {
-        // Now, import everyone into this new list.
-        const folids = followed.map((x) => x.id);
-        // First, look up IDs for the accounts we know about.
-        const userMap: Record<string, User> = {};
-        info.users.forEach((x) => {
-          userMap[x.acct] = x;
+      // First, get User objects for all names.
+      const um = Object.fromEntries(info.users.map((x) => [x.acct, x]));
+      const knownUsers = known.map((x) => um[x]);
+      const unknownUsers = await remote.lookup(unknown).then((users) => {
+        users.forEach((u) => {
+          um[u.id] = u;
         });
-        // Now build a list of all items to add to the list.
-        const data = folids.concat(toadd.map((x) => userMap[x].id));
-        return remote.importList(list_name, data).then(() => {
-          const elapsedMS = getElapsed(startTime);
-          const telem = {
-            action: "import",
-            num_imported: data.length,
-            num_followed: tofollow.length,
-            elapsed_ms: elapsedMS,
-          };
-          telemetryCB(telem);
-        });
+        return users;
+      });
+
+      // If we must follow beofre adding to a list, then do it
+      await remote.list_requires_follow().then((res) => {
+        if (res) remote.follow(unknownUsers.map((x) => x.id));
+      });
+
+      // Now, create the list and add all users to it.
+      const kids = knownUsers.map((x) => x.id);
+      const uids = unknownUsers.map((x) => x.id);
+      const ids = kids.concat(uids);
+
+      return remote.importList(list_name, ids).then(() => {
+        const elapsedMS = getElapsed(startTime);
+        const telem = {
+          action: "import",
+          num_imported: ids.length,
+          num_followed: unknownUsers.length, // FIXME
+          elapsed_ms: elapsedMS,
+        };
+        telemetryCB(telem);
       });
     },
     [api, telemetryCB, info]
@@ -272,6 +282,11 @@ function Manager({ api }: ManagerProps) {
       });
   }, [api, telemetryCB, errorCB]);
 
+  const configCB = useCallback(async () => {
+    const remote = await api;
+    remote.list_requires_follow().then((x) => setFollowRequired(x));
+  }, [api]);
+
   const logoutCB = useCallback(async () => {
     const remote = await api;
     return remote.logout();
@@ -315,6 +330,7 @@ function Manager({ api }: ManagerProps) {
 
   // Fetch the data
   useEffect(() => {
+    configCB();
     loadDataCB();
     // eslint-disable-next-line
   }, []);
@@ -631,6 +647,7 @@ function Manager({ api }: ManagerProps) {
         users={info.users}
         handleImport={handleImportList}
         handleClose={() => setImportOpen(false)}
+        followRequired={followRequired}
       />
       <AnalyticsDialog
         open={analyticsOpen}
