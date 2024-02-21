@@ -47,7 +47,7 @@ export default function MainApp({ api }: MainAppProps) {
     }, 10000);
     setTimer(timer);
     return () => clearTimeout(timer);
-  }, []);
+  }, [api]);
 
   // Method to transform a code into a login token (which we'll never see,
   // but our worker will)

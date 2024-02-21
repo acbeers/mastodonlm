@@ -91,98 +91,120 @@ function LoginForm({ api }) {
     return <Navigate to={redirect} />;
   }
 
+  const mastoForm = (
+    <div>
+      <Typography variant="body">
+        Enter your instance name below (e.g. mastodon.social)
+      </Typography>
+      <TextField
+        value={domain}
+        onChange={(evt) => setDomain(evt.target.value)}
+        sx={{ width: "100%", mt: 2, mb: 1 }}
+        label="Host"
+        onKeyPress={(ev) => {
+          if (ev.key === "Enter") {
+            handleMastoGo();
+            ev.preventDefault();
+          }
+        }}
+      />
+      <br />
+      <Button
+        sx={{ width: "100%" }}
+        label={enabled ? "Go" : "Authenticating..."}
+        onClick={handleMastoGo}
+        variant="contained"
+        disabled={!enabled}
+      >
+        {enabled ? "Go" : "Authenticating..."}
+      </Button>
+      <div className="error">
+        <Typography variant="caption" color="error">
+          {error}
+        </Typography>
+      </div>
+    </div>
+  );
+
+  const blueskyForm = (
+    <div>
+      <Typography variant="body">
+        Enter your Bluesky username and app password.
+      </Typography>
+      <TextField
+        value={user}
+        onChange={(evt) => setUser(evt.target.value)}
+        sx={{ width: "100%", mt: 2, mb: 1 }}
+        label="Bluesky username"
+        onKeyPress={(ev) => {
+          if (ev.key === "Enter") {
+            handleBlueskyGo();
+            ev.preventDefault();
+          }
+        }}
+      />
+      <TextField
+        value={pass}
+        onChange={(evt) => setPass(evt.target.value)}
+        sx={{ width: "100%", mt: 0, mb: 1 }}
+        label="Password"
+        type="password"
+        onKeyPress={(ev) => {
+          if (ev.key === "Enter") {
+            handleBlueskyGo();
+            ev.preventDefault();
+          }
+        }}
+      />{" "}
+      <br />
+      <Button
+        sx={{ width: "100%" }}
+        label={enabled ? "Go" : "Authenticating..."}
+        onClick={handleBlueskyGo}
+        variant="contained"
+        disabled={!enabled}
+      >
+        {enabled ? "Go" : "Authenticating..."}
+      </Button>
+      <div className="error">
+        <Typography variant="caption" color="error">
+          {error}
+        </Typography>
+      </div>{" "}
+    </div>
+  );
+
+  const tabForm = (
+    <div>
+      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <Tabs
+          value={service}
+          onChange={(e, nv) => setService(nv)}
+          aria-label="basic tabs example"
+        >
+          <Tab label="Mastodon" />
+          <Tab label="Bluesky" />
+        </Tabs>
+      </Box>
+      <CustomTabPanel value={service} index={0}>
+        {mastoForm}
+      </CustomTabPanel>
+
+      <CustomTabPanel value={service} index={1}>
+        {blueskyForm}
+      </CustomTabPanel>
+    </div>
+  );
+
+  const forms = {
+    tab: tabForm,
+    masto: mastoForm,
+    bluesky: blueskyForm,
+  };
+
   return (
     <div className="loginform_container">
-      <div className="loginForm">
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-          <Tabs
-            value={service}
-            onChange={(e, nv) => setService(nv)}
-            aria-label="basic tabs example"
-          >
-            <Tab label="Mastodon" />
-            <Tab label="Bluesky" />
-          </Tabs>
-        </Box>
-        <CustomTabPanel value={service} index={0}>
-          <Typography variant="body">
-            Enter your instance name below (e.g. mastodon.social)
-          </Typography>
-          <TextField
-            value={domain}
-            onChange={(evt) => setDomain(evt.target.value)}
-            sx={{ width: "100%", mt: 2, mb: 1 }}
-            label="Host"
-            onKeyPress={(ev) => {
-              if (ev.key === "Enter") {
-                handleMastoGo();
-                ev.preventDefault();
-              }
-            }}
-          />
-          <br />
-          <Button
-            sx={{ width: "100%" }}
-            label={enabled ? "Go" : "Authenticating..."}
-            onClick={handleMastoGo}
-            variant="contained"
-            disabled={!enabled}
-          >
-            {enabled ? "Go" : "Authenticating..."}
-          </Button>
-          <div className="error">
-            <Typography variant="caption" color="error">
-              {error}
-            </Typography>
-          </div>
-        </CustomTabPanel>
-
-        <CustomTabPanel value={service} index={1}>
-          <Typography variant="body">
-            Enter your Bluesky username and app password.
-          </Typography>
-          <TextField
-            value={user}
-            onChange={(evt) => setUser(evt.target.value)}
-            sx={{ width: "100%", mt: 2, mb: 1 }}
-            label="Bluesky username"
-            onKeyPress={(ev) => {
-              if (ev.key === "Enter") {
-                handleBlueskyGo();
-                ev.preventDefault();
-              }
-            }}
-          />
-          <TextField
-            value={pass}
-            onChange={(evt) => setPass(evt.target.value)}
-            sx={{ width: "100%", mt: 0, mb: 1 }}
-            label="Password"
-            type="password"
-            onKeyPress={(ev) => {
-              if (ev.key === "Enter") {
-                handleBlueskyGo();
-                ev.preventDefault();
-              }
-            }}
-          />{" "}
-          <br />
-          <Button
-            sx={{ width: "100%" }}
-            label={enabled ? "Go" : "Authenticating..."}
-            onClick={handleBlueskyGo}
-            variant="contained"
-            disabled={!enabled}
-          >
-            {enabled ? "Go" : "Authenticating..."}
-          </Button>
-          <div className="error">
-            <Typography variant="caption" color="error">
-              {error}
-            </Typography>
-          </div>{" "}
-        </CustomTabPanel>
-      </div>
+      <div className="loginForm">{forms[process.env.REACT_APP_LOGIN_FORM]}</div>
     </div>
   );
 }

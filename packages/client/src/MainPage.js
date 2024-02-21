@@ -53,7 +53,7 @@ function MainPage({ api }) {
             color="text.primary"
             gutterBottom
           >
-            Fedi List Manager
+            {process.env.REACT_APP_NAME}
           </Typography>
           <Typography
             variant="h6"

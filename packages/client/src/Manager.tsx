@@ -145,7 +145,7 @@ function Manager({ api }: ManagerProps) {
   const [groups, setGroups] = useState<Group[]>([]);
   // What relationships
   const [relationships, setRelationships] = useState<Relationship>(
-    Relationship.Any
+    Relationship.Following
   );
   // How we want things grouped
   const [groupBy, setGroupBy] = useState("none");
