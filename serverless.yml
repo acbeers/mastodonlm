@@ -12,7 +12,7 @@ provider:
   runtime: python3.13
   stage: ${opt:stage, "dev"}
   region: us-west-2
-  logRetentionInDays: 14
+  logRetentionInDays: 60
   environment:
     TABLE_AUTH: ${self:custom.authTable}
     TABLE_ALLOWED: ${self:custom.allowedTable}
