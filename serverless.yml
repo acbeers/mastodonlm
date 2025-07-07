@@ -4,6 +4,9 @@ service: list-manager
 
 #variablesResolutionMode: 20210326
 
+build:
+  esbuild: false
+  
 provider:
   name: aws
   runtime: python3.13

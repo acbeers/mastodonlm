@@ -5,9 +5,9 @@
     "build:packages": "npx tsc -b packages",
     "build:packages:watch": "npx tsc -b packages --watch",
     "predeploy:devstage": "yarn workspace client env-cmd -f .env.devstage npm run build",
-    "deploy:devstage": "sls deploy --aws-profile slsdeploy deploy --stage devstage",
+    "deploy:devstage": "sls deploy --aws-profile slsdeploy --stage devstage",
     "predeploy": "yarn workspace client build",
-    "deploy": "sls deploy --aws-profile slsdeploy deploy --stage newprod"
+    "deploy": "sls deploy --aws-profile slsdeploy --stage newprod"
   },
   "dependencies": {
     "@nova-odm/annotations": "^0.8.3",

@@ -83,6 +83,7 @@ function info2Groups(
     following: (x) => x.following,
     follower: (x) => x.follower,
     mutual: (x) => x.following && x.follower,
+    any: (x) => true,
   };
 
   const users = info.users;
