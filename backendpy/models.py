@@ -131,7 +131,6 @@ class Datastore:
         m = hashlib.sha256()
         m.update(lhost.encode("utf-8"))
         sha = m.hexdigest()
-        print(sha)
         block = BlockedHost.lookup(sha)
         return block is None
 
