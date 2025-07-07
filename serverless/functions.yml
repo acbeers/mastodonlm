@@ -4,7 +4,7 @@
 auth:
   handler: backendpy.shared.auth
   timeout: 30
-  runtime: python3.9
+  runtime: python3.13
   events:
     - httpApi:
         path: /auth

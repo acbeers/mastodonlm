@@ -120,7 +120,7 @@ class TestAuth(TestCase):
         self.assertEqual(res["statusCode"], 200)
         self.assertEqual(json.loads(res["body"])["url"], "https://mock_redirect")
         # We should have made a mastodon instance from the stored config
-        self.assertTrue(factory.from_config.called_with(sentinel.host_cfg))
+        factory.from_config.assert_called_with(sentinel.host_cfg)
         # We should not have created a new app
         self.assertFalse(make_app.called)
 
@@ -142,7 +142,7 @@ class TestAuth(TestCase):
         self.assertEqual(res["statusCode"], 200)
         self.assertEqual(json.loads(res["body"])["status"], "OK")
         # We should have made a mastodon instance from the stored config
-        self.assertTrue(factory.from_cookie.called_with("mycookie"))
+        factory.from_cookie.assert_called_with("mycookie")
         # We should not have created a new app
         self.assertFalse(make_app.called)
 
@@ -164,7 +164,7 @@ class TestAuth(TestCase):
         self.assertEqual(res["statusCode"], 200)
         self.assertEqual(json.loads(res["body"])["url"], "https://mock_redirect")
         # We should have made a mastodon instance from the stored config
-        self.assertTrue(factory.from_cookie.called_with("mycookie"))
+        factory.from_cookie.assert_called_with("mycookie")
         # We should not have created a new app
         self.assertFalse(make_app.called)
 
@@ -190,7 +190,7 @@ class TestAuth(TestCase):
         self.assertEqual(res["statusCode"], 200)
         self.assertEqual(json.loads(res["body"])["url"], "https://mock_redirect")
         # We should have made a mastodon instance from the stored config
-        self.assertTrue(factory.from_cookie.called_with("mycookie"))
+        factory.from_cookie.assert_called_with("mycookie")
         # We should not have created a new app
         self.assertFalse(make_app.called)
 
@@ -201,7 +201,7 @@ class TestAuth(TestCase):
         """Test /auth when a cookie present but the domain doesn't match the one
         in the cookie"""
 
-        (event, context) = setupNoCookies()
+        (event, context) = setupWithCookies()
         event["queryStringParameters"] = {"domain": "anotherdomain"}
 
         data_store.is_allowed.return_value = True
@@ -213,8 +213,8 @@ class TestAuth(TestCase):
         # We should return a 200 response with the correct redirect URL.
         self.assertEqual(res["statusCode"], 200)
         self.assertEqual(json.loads(res["body"])["url"], "https://mock_redirect")
-        # We should have made a mastodon instance from the stored config
-        self.assertTrue(factory.from_cookie.called_with("mycookie"))
+        # We should have not used a cookie to make an instance
+        factory.from_cookie.assert_not_called()
         # We should not have created a new app
         self.assertFalse(make_app.called)
 
@@ -258,7 +258,7 @@ class TestAuth(TestCase):
         # We should drop the access token
         self.assertTrue(mastomock.revoke_access_token.called)
         # We should drop the auth from dynamodb
-        self.assertTrue(data_store.drop_auth.called_with("mycookie"))
+        data_store.drop_auth.assert_called_with("mycookie")
 
 
 class TestMakeApp(TestCase):

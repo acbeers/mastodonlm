@@ -10,7 +10,7 @@ pynamodb = "*"
 pytz = "*"
 requests = "*"
 decorator = "*"
-"mastodon.py" = "*"
+"mastodon.py" = "==1.8.0"
 sourcemap = "*"
 
 [dev-packages]
@@ -22,4 +22,4 @@ lint = "pylint backendpy"
 test = "python -m unittest discover backendpy"
 
 [requires]
-python_version = "3.9"
+python_version = "3.13"

@@ -1,15 +1,18 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: andrewbeers
 service: list-manager
-
-frameworkVersion: "3"
 
 #variablesResolutionMode: 20210326
 
+build:
+  esbuild: false
+  
 provider:
   name: aws
-  runtime: python3.9
+  runtime: python3.13
   stage: ${opt:stage, "dev"}
   region: us-west-2
-  logRetentionInDays: 14
+  logRetentionInDays: 60
   environment:
     TABLE_AUTH: ${self:custom.authTable}
     TABLE_ALLOWED: ${self:custom.allowedTable}
@@ -159,8 +162,6 @@ custom:
 
 plugins:
   - serverless-python-requirements
-  # For running typescript
-  - serverless-plugin-typescript
   - serverless-offline
   # For putting lambda functions behind a custom domain
   - serverless-domain-manager
